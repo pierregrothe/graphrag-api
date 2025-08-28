@@ -18,111 +18,77 @@ flowchart TD
         A2[API Client]
     end
 
-    %% API Gateway Layer
-    subgraph APILayer ["⚡ API Gateway & Processing"]
+    %% FastAPI Server Layer
+    subgraph ServerLayer ["⚡ FastAPI Server (Implemented)"]
         B(FastAPI Server)
-        B1{{Authentication}}
-        B2[/Rate Limiting/]
-        B3[\Request Validation\]
+        B1[Health Endpoints]
+        B2[Info Endpoints]
+        B3[Placeholder GraphRAG Endpoints]
     end
 
-    %% Provider Selection Layer
-    subgraph ProviderLayer ["🔄 LLM Provider Factory"]
-        C{Provider Selection}
-        C1[Configuration Loader]
-        C2((Health Monitor))
+    %% Configuration Layer
+    subgraph ConfigLayer ["⚙️ Configuration System (Implemented)"]
+        C1[Environment Variables]
+        C2[Pydantic Settings]
+        C3[Provider Selection]
     end
 
-    %% Local Processing Branch
-    subgraph LocalBranch ["🏠 Local Processing (Ollama)"]
-        D[(Ollama Integration)]
-        F[(Gemma3:4b Model)]
-        H[Local Embeddings]
-        D1[Model Manager]
+    %% Provider Factory Layer - IMPLEMENTED
+    subgraph FactoryLayer ["🔄 LLM Provider Factory (Implemented)"]
+        D{Provider Factory}
+        D1[Configuration Loader]
+        D2((Health Monitor))
+        D3[Provider Registry]
     end
 
-    %% Cloud Processing Branch
-    subgraph CloudBranch ["☁️ Cloud Processing (Google Gemini)"]
-        E[Gemini Integration]
-        G[(Gemini 2.5 Flash/Pro)]
-        I[Cloud Embeddings]
-        E1[/Vertex AI Handler/]
-        E2[API Key Manager]
+    %% Ollama Provider - IMPLEMENTED
+    subgraph OllamaLayer ["🏠 Ollama Provider (Implemented)"]
+        E[Ollama Client]
+        E1[Gemma 4b Integration]
+        E2[Embedding Support]
+        E3[Health Checks]
     end
 
-    %% GraphRAG Processing Engine
-    subgraph EngineLayer ["🧠 GraphRAG Processing Engine"]
-        J[Core Engine]
-        J1[Document Indexer]
-        J2[Query Processor]
-        J3((Context Builder))
+    %% Gemini Provider - IMPLEMENTED
+    subgraph GeminiLayer ["☁️ Google Gemini Provider (Implemented)"]
+        F[Gemini Client]
+        F1[Gemini 2.5 Flash/Pro]
+        F2[Vertex AI Support]
+        F3[API Key Management]
     end
 
-    %% Knowledge Graph Storage
-    subgraph StorageLayer ["📊 Knowledge Graph & Storage"]
-        K[(Knowledge Graph)]
-        K1[(Vector Store)]
-        K2[(Graph Database)]
-        K3[\Cache Layer\]
+    %% Future Implementation - NOT YET BUILT
+    subgraph FutureLayer ["🚧 Future: GraphRAG Core (Phase 3 - Not Implemented)"]
+        G[Document Indexing]
+        G1[Knowledge Graph Creation]
+        G2[Query Processing]
+        G3[Vector Storage]
     end
 
-    %% Flow Connections with Enhanced Arrows
-    ClientLayer --> B
-    A --> B1
-    A1 --> B2
-    A2 --> B3
+    %% Current Implementation Flow
+    ClientLayer --> ServerLayer
+    ServerLayer --> ConfigLayer
+    ConfigLayer --> FactoryLayer
 
-    B --> C
-    B1 -.-> C1
-    B2 -.-> C2
+    FactoryLayer -->|Provider Selection| OllamaLayer
+    FactoryLayer -->|Provider Selection| GeminiLayer
 
-    C -->|"🏠 Local"| LocalBranch
-    C -->|"☁️ Cloud"| CloudBranch
-    C1 --> D1
-    C2 --> E1
+    %% Placeholder connections (not functional yet)
+    ServerLayer -.->|Placeholder Only| FutureLayer
+    OllamaLayer -.->|Not Connected Yet| FutureLayer
+    GeminiLayer -.->|Not Connected Yet| FutureLayer
 
-    D --> F
-    D --> H
-    D1 -.-> F
-
-    E --> G
-    E --> I
-    E1 --> G
-    E2 -.-> E1
-
-    F ---> J
-    G ---> J
-    H ---> J1
-    I ---> J1
-
-    J --> J2
-    J1 --> J3
-    J2 --> StorageLayer
-    J3 --> K
-
-    K --> K1
-    K --> K2
-    K1 -.-> K3
-
-    %% Enhanced Styling with Modern Colors
-    classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000,stroke-dasharray: 5 5
-    classDef apiStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
-    classDef factoryStyle fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
-    classDef localStyle fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#000
-    classDef cloudStyle fill:#e1f5fe,stroke:#0288d1,stroke-width:3px,color:#000
-    classDef engineStyle fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#000
-    classDef storageStyle fill:#f1f8e9,stroke:#689f38,stroke-width:3px,color:#000
-    classDef subgraphStyle fill:#fafafa,stroke:#424242,stroke-width:2px,color:#000
+    %% Styling
+    classDef implementedStyle fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
+    classDef placeholderStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef futureStyle fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#666,stroke-dasharray: 5 5
+    classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
 
     %% Apply Classes
-    class A,A1,A2 clientStyle
-    class B,B1,B2,B3 apiStyle
-    class C,C1,C2 factoryStyle
-    class D,F,H,D1 localStyle
-    class E,G,I,E1,E2 cloudStyle
-    class J,J1,J2,J3 engineStyle
-    class K,K1,K2,K3 storageStyle
-    class ClientLayer,APILayer,ProviderLayer,LocalBranch,CloudBranch,EngineLayer,StorageLayer subgraphStyle
+    class ClientLayer clientStyle
+    class ServerLayer,ConfigLayer,FactoryLayer,OllamaLayer,GeminiLayer implementedStyle
+    class B3 placeholderStyle
+    class FutureLayer,G,G1,G2,G3 futureStyle
 ```
 
 ## Key Features
@@ -158,127 +124,124 @@ flowchart TD
 
 ## System Flow Diagrams
 
-### Request Processing Sequence
+### Current System Flow - What's Actually Implemented
 
 ```mermaid
 sequenceDiagram
     participant Client as 📱 Client App
     participant API as ⚡ FastAPI Server
-    participant Auth as 🔐 Auth Handler
+    participant Config as ⚙️ Configuration System
     participant Factory as 🔄 Provider Factory
     participant Ollama as 🏠 Ollama Provider
     participant Gemini as ☁️ Gemini Provider
-    participant Engine as 🧠 GraphRAG Engine
-    participant Storage as 📊 Knowledge Graph
+
+    rect rgb(232, 245, 233)
+        Note over Client,API: Health & Info Endpoints (✅ Implemented)
+        Client->>+API: GET /health
+        API-->>-Client: Server Status ✅
+
+        Client->>+API: GET /info
+        API->>+Config: Load Settings
+        Config-->>-API: Provider Configuration
+        API-->>-Client: System Information ✅
+    end
 
     rect rgb(230, 245, 255)
-        Note over Client,Storage: Authentication & Request Validation
-        Client->>+API: POST /graphrag/query
-        API->>+Auth: Validate API Key
-        Auth-->>-API: Authentication Success
+        Note over Client,Factory: Provider Status & Health Monitoring (✅ Implemented)
+        Client->>+API: GET /graphrag/status
+        API->>+Config: Load Provider Settings
+        Config-->>-API: Current Provider Type
+
+        API->>+Factory: Get Provider Health
+        Factory->>Factory: Load Configuration
+
+        alt Ollama Provider Configured
+            Factory->>+Ollama: Health Check
+            Ollama->>Ollama: Check localhost:11434
+            Ollama->>Ollama: Verify Models Available
+            Ollama-->>-Factory: Health Status ✅/❌
+        else Gemini Provider Configured
+            Factory->>+Gemini: Health Check
+            Gemini->>Gemini: Validate API Key/ADC
+            Gemini->>Gemini: Test Model Access
+            Gemini-->>-Factory: Health Status ✅/❌
+        end
+
+        Factory-->>-API: Provider Health Info
+        API-->>-Client: Complete System Status ✅
     end
 
     rect rgb(255, 243, 224)
-        Note over API,Factory: Provider Selection & Configuration
-        API->>+Factory: Get Active Provider
-        Factory->>Factory: Load Configuration
-        Factory->>Factory: Health Check Providers
+        Note over Client,API: GraphRAG Endpoints (🚧 Placeholder Only - Not Functional)
+        Client->>+API: POST /graphrag/query
+        Note over API: No actual GraphRAG processing
+        API-->>-Client: "Placeholder response - not implemented"
 
-        alt Ollama Provider Selected
-            Factory->>+Ollama: Initialize Connection
-            Ollama->>Ollama: Check Models Available
-            Ollama-->>-Factory: Ready ✅
-        else Gemini Provider Selected
-            Factory->>+Gemini: Initialize Connection
-            Gemini->>Gemini: Validate API Key/ADC
-            Gemini-->>-Factory: Ready ✅
-        end
-
-        Factory-->>-API: Provider Instance
-    end
-
-    rect rgb(232, 245, 233)
-        Note over API,Engine: Query Processing & Response Generation
-        API->>+Engine: Process Query Request
-        Engine->>+Storage: Retrieve Context
-        Storage-->>-Engine: Vector + Graph Data
-
-        alt Using Ollama
-            Engine->>+Ollama: Generate Response
-            Ollama->>Ollama: Local LLM Processing
-            Ollama-->>-Engine: Generated Text
-        else Using Gemini
-            Engine->>+Gemini: Generate Response
-            Gemini->>Gemini: Cloud LLM Processing
-            Gemini-->>-Engine: Generated Text
-        end
-
-        Engine->>Engine: Combine Context + Response
-        Engine-->>-API: Final Answer
-    end
-
-    rect rgb(252, 228, 236)
-        Note over API,Client: Response & Caching
-        API->>Storage: Cache Response (Optional)
-        API-->>-Client: JSON Response with Answer
+        Client->>+API: POST /graphrag/index
+        Note over API: No actual indexing logic
+        API-->>-Client: "Placeholder response - not implemented"
     end
 ```
 
-### Provider State Management
+### Provider System States - Current Implementation
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Initializing: System Startup
+    [*] --> ServerStartup: FastAPI Server Start
 
-    state "Provider Selection" as Selection {
-        [*] --> LoadConfig: Load .env Configuration
-        LoadConfig --> ValidateConfig: Parse Settings
-        ValidateConfig --> SelectProvider: Determine Active Provider
+    state "Configuration Loading (✅ Implemented)" as ConfigLoad {
+        [*] --> LoadEnv: Load .env Variables
+        LoadEnv --> ParseSettings: Pydantic Validation
+        ParseSettings --> SelectProvider: Determine LLM_PROVIDER
 
         state SelectProvider {
             [*] --> CheckProvider
-            CheckProvider --> Ollama: LLM_PROVIDER=ollama
-            CheckProvider --> Gemini: LLM_PROVIDER=google_gemini
+            CheckProvider --> OllamaConfig: LLM_PROVIDER=ollama
+            CheckProvider --> GeminiConfig: LLM_PROVIDER=google_gemini
         }
     }
 
-    Initializing --> Selection
+    ServerStartup --> ConfigLoad
 
-    state "Ollama Branch" as OllamaBranch {
-        [*] --> ConnectOllama: Connect to localhost:11434
-        ConnectOllama --> CheckModels: Verify Required Models
-        CheckModels --> OllamaReady: Gemma:4b + nomic-embed-text
-        CheckModels --> OllamaError: Missing Models
-        OllamaError --> [*]: Retry Connection
-        OllamaReady --> Processing: Ready for Requests
+    state "Ollama Provider (✅ Implemented)" as OllamaProvider {
+        [*] --> InitOllama: Initialize Ollama Client
+        InitOllama --> TestConnection: Check localhost:11434
+        TestConnection --> OllamaHealthy: Connection Success
+        TestConnection --> OllamaUnhealthy: Connection Failed
+        OllamaHealthy --> [*]: Provider Ready
+        OllamaUnhealthy --> [*]: Provider Unavailable
     }
 
-    state "Gemini Branch" as GeminiBranch {
-        [*] --> ValidateAuth: Check API Key/ADC
-        ValidateAuth --> InitGemini: Configure Google AI
-        InitGemini --> CheckModels2: Test Model Access
-        CheckModels2 --> GeminiReady: Gemini-2.5-flash Available
-        CheckModels2 --> GeminiError: Auth/Access Error
-        GeminiError --> [*]: Retry Authentication
-        GeminiReady --> Processing: Ready for Requests
+    state "Gemini Provider (✅ Implemented)" as GeminiProvider {
+        [*] --> InitGemini: Initialize Gemini Client
+        InitGemini --> ValidateAuth: Check API Key/ADC
+        ValidateAuth --> TestModels: Verify Model Access
+        TestModels --> GeminiHealthy: Authentication Success
+        TestModels --> GeminiUnhealthy: Auth/Access Failed
+        GeminiHealthy --> [*]: Provider Ready
+        GeminiUnhealthy --> [*]: Provider Unavailable
     }
 
-    Selection --> OllamaBranch: Ollama Selected
-    Selection --> GeminiBranch: Gemini Selected
+    ConfigLoad --> OllamaProvider: Ollama Selected
+    ConfigLoad --> GeminiProvider: Gemini Selected
 
-    state "Active Processing" as Processing {
-        [*] --> Idle: Waiting for Requests
-        Idle --> ProcessingRequest: Incoming Query
-        ProcessingRequest --> GeneratingResponse: LLM Generation
-        GeneratingResponse --> Idle: Response Complete
+    state "API Service (✅ Implemented)" as APIService {
+        [*] --> ServingRequests: Ready for HTTP Requests
+        ServingRequests --> HealthCheck: GET /health
+        ServingRequests --> InfoRequest: GET /info
+        ServingRequests --> StatusRequest: GET /graphrag/status
+        ServingRequests --> PlaceholderRequest: GraphRAG Endpoints
 
-        ProcessingRequest --> Error: Request Failed
-        Error --> Idle: Error Handled
+        HealthCheck --> ServingRequests: OK Response
+        InfoRequest --> ServingRequests: Configuration Info
+        StatusRequest --> ServingRequests: Provider Status
+        PlaceholderRequest --> ServingRequests: Placeholder Response
     }
 
-    Processing --> Maintenance: Health Check Failed
-    Maintenance --> Processing: Recovery Complete
-    Processing --> [*]: System Shutdown
+    OllamaProvider --> APIService: Provider Initialized
+    GeminiProvider --> APIService: Provider Initialized
+
+    APIService --> [*]: Server Shutdown
 ```
 
 ### Developer Experience
