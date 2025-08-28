@@ -93,14 +93,14 @@ class TestLLMProviderConfiguration:
         assert gemini_settings.google_project_id == "test_project_id"
         assert gemini_settings.gemini_model == "gemini-2.5-flash"
 
-    @patch.dict(os.environ, {"LLM_PROVIDER": "google_gemini", "GOOGLE_PROJECT_ID": "test_project"})
-    def test_google_gemini_validation_missing_api_key(self):
+    def test_google_gemini_validation_missing_api_key(self, clean_env):
         """Test validation error when Google API key is missing."""
-        with pytest.raises(
-            ValueError,
-            match="google_api_key is required when using google_gemini provider without Vertex AI",
-        ):
-            Settings()
+        with patch.dict(os.environ, {"LLM_PROVIDER": "google_gemini", "GOOGLE_PROJECT_ID": "test_project"}):
+            with pytest.raises(
+                ValueError,
+                match="google_api_key is required when using google_gemini provider without Vertex AI",
+            ):
+                Settings(_env_file=None)
 
     @patch.dict(os.environ, {"LLM_PROVIDER": "google_gemini", "GOOGLE_API_KEY": "test_key"})
     def test_google_gemini_validation_missing_project_id(self):
@@ -116,7 +116,7 @@ class TestLLMProviderConfiguration:
         provider_info = settings.get_provider_info()
         assert provider_info["provider"] == "ollama"
         assert provider_info["base_url"] == "http://localhost:11434"
-        assert provider_info["llm_model"] == "gemma:4b"
+        assert provider_info["llm_model"] == "gemma3:4b"
         assert provider_info["embedding_model"] == "nomic-embed-text"
 
     @patch.dict(
@@ -170,23 +170,20 @@ class TestLLMProviderConfiguration:
         assert settings.gemini_model == "gemini-2.5-pro"
         assert settings.google_location == "europe-west1"
 
-    @patch.dict(
-        os.environ,
-        {
+    def test_vertex_ai_configuration(self, clean_env):
+        """Test Vertex AI configuration without API key."""
+        with patch.dict(os.environ, {
             "LLM_PROVIDER": "google_gemini",
             "GOOGLE_PROJECT_ID": "vertex_project",
             "GOOGLE_CLOUD_USE_VERTEX_AI": "true",
             "VERTEX_AI_LOCATION": "us-west1",
-        },
-    )
-    def test_vertex_ai_configuration(self):
-        """Test Vertex AI configuration without API key."""
-        settings = Settings()
-        assert settings.google_cloud_use_vertex_ai is True
-        assert settings.is_vertex_ai_enabled() is True
-        assert settings.vertex_ai_location == "us-west1"
-        # No API key required for Vertex AI
-        assert settings.google_api_key is None
+        }):
+            settings = Settings(_env_file=None)
+            assert settings.google_cloud_use_vertex_ai is True
+            assert settings.is_vertex_ai_enabled() is True
+            assert settings.vertex_ai_location == "us-west1"
+            # No API key required for Vertex AI
+            assert settings.google_api_key is None
 
     @patch.dict(
         os.environ,

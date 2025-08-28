@@ -26,7 +26,7 @@ poetry run uvicorn src.graphrag_api_service.main:app --reload
 poetry run pytest tests/ -v
 
 # Testing - Provider validation (tests configured provider from .env)
-python test_provider.py
+poetry run pytest tests/test_provider.py -v
 
 # Code formatting
 poetry run black src/ tests/
@@ -75,10 +75,7 @@ tests/                       # Test suite
 ├── test_config.py           # Configuration tests
 ├── test_logging_config.py   # Logging tests
 ├── test_providers_base.py   # Provider abstraction layer tests
-├── test_ollama_provider.py  # Ollama provider implementation tests (unit + integration)
-└── test_gemini_provider.py  # Google Gemini provider implementation tests (unit + integration)
-
-test_provider.py             # Single provider validation script
+└── test_provider.py         # Unified provider validation tests (unit + integration)
 ```
 
 ### API Endpoints
@@ -119,30 +116,34 @@ Environment variables (via `.env` file):
 
 **Unified Testing Approach:**
 
-1. **Single Provider Script**: Tests the configured provider from .env file
-   ```bash
-   python test_provider.py
-   ```
-   - Validates configuration completeness
-   - Tests implementation patterns (no LLM access required)
-   - Validates LLM connectivity (health, text generation, embeddings)
-   - Provides clear [OK]/[FAIL]/[WARN] status indicators
+1. **Provider Validation Tests**: Comprehensive pytest-based provider testing
 
-2. **Complete Unit Test Suite**: Comprehensive pytest coverage
-   ```bash
-   poetry run pytest tests/ -v  # All 82 tests
-   poetry run pytest -m integration -v  # Integration tests only
-   ```
+    ```bash
+    poetry run pytest tests/test_provider.py -v  # Provider validation
+    poetry run pytest tests/test_provider.py -m integration -v  # LLM connectivity tests
+    ```
+
+    - Validates configuration completeness
+    - Tests implementation patterns (no LLM access required)
+    - Validates LLM connectivity (health, text generation, embeddings)
+    - Uses proper pytest fixtures and integration markers
+
+2. **Complete Unit Test Suite**: Full pytest coverage
+
+    ```bash
+    poetry run pytest tests/ -v  # All tests
+    poetry run pytest -m integration -v  # Integration tests only
+    ```
 
 **Provider Setup Requirements:**
 
 - **Ollama**: Requires Ollama server running at `http://localhost:11434` with models:
-  - `gemma3:4b` (LLM model)
-  - `nomic-embed-text` (embedding model)
+    - `gemma3:4b` (LLM model)
+    - `nomic-embed-text` (embedding model)
 
 - **Gemini**: Requires environment variables in .env:
-  - `GOOGLE_API_KEY`: Google Cloud API key
-  - `GOOGLE_PROJECT_ID`: Google Cloud project ID
+    - `GOOGLE_API_KEY`: Google Cloud API key
+    - `GOOGLE_PROJECT_ID`: Google Cloud project ID
 
 **Testing Features:**
 

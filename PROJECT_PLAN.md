@@ -156,7 +156,7 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 #### Step 3.1: Configuration Constants & API Consistency ✅ **COMPLETED 2025-08-28**
 
 - [x] Add API configuration constants to config.py (API_PREFIX, GRAPHQL_PREFIX)
-- [x] Add validation constants (MAX_COMMUNITY_LEVEL, MIN_MAX_TOKENS)  
+- [x] Add validation constants (MAX_COMMUNITY_LEVEL, MIN_MAX_TOKENS)
 - [x] Add test environment constants (TEST_API_KEY, TEST_PROJECT_ID, TEST_DATA_PATH, TEST_CONFIG_PATH)
 - [x] Add environment variable name constants for consistent usage across tests
 - [x] Update main.py to use configuration constants instead of hardcoded strings
@@ -178,7 +178,7 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 
 - [x] All 82 tests passing after refactoring
 - [x] Black code formatting applied to all modified files
-- [x] Ruff linting passed with all issues resolved  
+- [x] Ruff linting passed with all issues resolved
 - [x] mypy type checking passed with strict type safety
 - [x] Fix Ollama provider type safety issues with model availability checks
 - [x] Clean up unused variables and optimize imports
