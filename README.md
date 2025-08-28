@@ -10,37 +10,119 @@ local (Ollama) and cloud-based (Google Gemini) language models for flexible depl
 ### Multi-Provider LLM Support
 
 ```mermaid
-graph TD
-    A[Client] --> B[FastAPI Server]
-    B --> C{LLM Provider Factory}
-    C -->|Local| D[Ollama Integration]
-    C -->|Cloud| E[Google Gemini Integration]
-    D --> F[Gemma3:4b Model]
-    E --> G[Gemini 2.5 Flash/Pro]
-    D --> H[Local Embeddings]
-    E --> I[Cloud Embeddings]
-    F --> J[GraphRAG Engine]
-    G --> J
-    H --> J
-    I --> J
-    J --> K[Knowledge Graph]
+flowchart TD
+    %% Client Layer
+    subgraph ClientLayer ["🌐 Client Applications"]
+        A[Web Client]
+        A1[Mobile App]
+        A2[API Client]
+    end
 
-    %% Styling
-    classDef client fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000
-    classDef server fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
-    classDef factory fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
-    classDef local fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
-    classDef cloud fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
-    classDef engine fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
-    classDef knowledge fill:#f1f8e9,stroke:#558b2f,stroke-width:2px,color:#000
+    %% API Gateway Layer
+    subgraph APILayer ["⚡ API Gateway & Processing"]
+        B[FastAPI Server]@{ shape: stadium}
+        B1[Authentication]@{ shape: hexagon}
+        B2[Rate Limiting]@{ shape: pentagon}
+        B3[Request Validation]@{ shape: lean-r}
+    end
 
-    class A client
-    class B server
-    class C factory
-    class D,F,H local
-    class E,G,I cloud
-    class J engine
-    class K knowledge
+    %% Provider Selection Layer
+    subgraph ProviderLayer ["🔄 LLM Provider Factory"]
+        C{Provider Selection}@{ shape: diamond}
+        C1[Configuration Loader]@{ shape: docs}
+        C2[Health Monitor]@{ shape: circle}
+    end
+
+    %% Local Processing Branch
+    subgraph LocalBranch ["🏠 Local Processing (Ollama)"]
+        D[Ollama Integration]@{ shape: cylinder}
+        F[Gemma3:4b Model]@{ shape: lin-cyl}
+        H[Local Embeddings]@{ shape: subroutine}
+        D1[Model Manager]@{ shape: manual-input}
+    end
+
+    %% Cloud Processing Branch
+    subgraph CloudBranch ["☁️ Cloud Processing (Google Gemini)"]
+        E[Gemini Integration]@{ shape: cloud}
+        G[Gemini 2.5 Flash/Pro]@{ shape: lin-cyl}
+        I[Cloud Embeddings]@{ shape: subroutine}
+        E1[Vertex AI Handler]@{ shape: trapezoid}
+        E2[API Key Manager]@{ shape: manual-file}
+    end
+
+    %% GraphRAG Processing Engine
+    subgraph EngineLayer ["🧠 GraphRAG Processing Engine"]
+        J[Core Engine]@{ shape: div-rect}
+        J1[Document Indexer]@{ shape: lined-doc}
+        J2[Query Processor]@{ shape: process}
+        J3[Context Builder]@{ shape: junction-circle}
+    end
+
+    %% Knowledge Graph Storage
+    subgraph StorageLayer ["📊 Knowledge Graph & Storage"]
+        K[Knowledge Graph]@{ shape: database}
+        K1[Vector Store]@{ shape: h-cyl}
+        K2[Graph Database]@{ shape: cylinder}
+        K3[Cache Layer]@{ shape: lean-l}
+    end
+
+    %% Flow Connections with Enhanced Arrows
+    ClientLayer --> B
+    A --> B1
+    A1 --> B2
+    A2 --> B3
+
+    B --> C
+    B1 -.-> C1
+    B2 -.-> C2
+
+    C -->|"🏠 Local"| LocalBranch
+    C -->|"☁️ Cloud"| CloudBranch
+    C1 --> D1
+    C2 --> E1
+
+    D --> F
+    D --> H
+    D1 -.-> F
+
+    E --> G
+    E --> I
+    E1 --> G
+    E2 -.-> E1
+
+    F ---> J
+    G ---> J
+    H ---> J1
+    I ---> J1
+
+    J --> J2
+    J1 --> J3
+    J2 --> StorageLayer
+    J3 --> K
+
+    K --> K1
+    K --> K2
+    K1 -.-> K3
+
+    %% Enhanced Styling with Modern Colors
+    classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000,stroke-dasharray: 5 5
+    classDef apiStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
+    classDef factoryStyle fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    classDef localStyle fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#000
+    classDef cloudStyle fill:#e1f5fe,stroke:#0288d1,stroke-width:3px,color:#000
+    classDef engineStyle fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#000
+    classDef storageStyle fill:#f1f8e9,stroke:#689f38,stroke-width:3px,color:#000
+    classDef subgraphStyle fill:#fafafa,stroke:#424242,stroke-width:2px,color:#000
+
+    %% Apply Classes
+    class A,A1,A2 clientStyle
+    class B,B1,B2,B3 apiStyle
+    class C,C1,C2 factoryStyle
+    class D,F,H,D1 localStyle
+    class E,G,I,E1,E2 cloudStyle
+    class J,J1,J2,J3 engineStyle
+    class K,K1,K2,K3 storageStyle
+    class ClientLayer,APILayer,ProviderLayer,LocalBranch,CloudBranch,EngineLayer,StorageLayer subgraphStyle
 ```
 
 ## Key Features
@@ -73,6 +155,131 @@ graph TD
 - **Querying**: Global and local search modes with configurable community levels
 - **Workspace Management**: Multi-project support with isolated configurations
 - **Real-time Status**: Progress tracking and health monitoring
+
+## System Flow Diagrams
+
+### Request Processing Sequence
+
+```mermaid
+sequenceDiagram
+    participant Client as 📱 Client App
+    participant API as ⚡ FastAPI Server
+    participant Auth as 🔐 Auth Handler
+    participant Factory as 🔄 Provider Factory
+    participant Ollama as 🏠 Ollama Provider
+    participant Gemini as ☁️ Gemini Provider
+    participant Engine as 🧠 GraphRAG Engine
+    participant Storage as 📊 Knowledge Graph
+
+    rect rgb(230, 245, 255)
+        Note over Client,Storage: Authentication & Request Validation
+        Client->>+API: POST /graphrag/query
+        API->>+Auth: Validate API Key
+        Auth-->>-API: Authentication Success
+    end
+
+    rect rgb(255, 243, 224)
+        Note over API,Factory: Provider Selection & Configuration
+        API->>+Factory: Get Active Provider
+        Factory->>Factory: Load Configuration
+        Factory->>Factory: Health Check Providers
+
+        alt Ollama Provider Selected
+            Factory->>+Ollama: Initialize Connection
+            Ollama->>Ollama: Check Models Available
+            Ollama-->>-Factory: Ready ✅
+        else Gemini Provider Selected
+            Factory->>+Gemini: Initialize Connection
+            Gemini->>Gemini: Validate API Key/ADC
+            Gemini-->>-Factory: Ready ✅
+        end
+
+        Factory-->>-API: Provider Instance
+    end
+
+    rect rgb(232, 245, 233)
+        Note over API,Engine: Query Processing & Response Generation
+        API->>+Engine: Process Query Request
+        Engine->>+Storage: Retrieve Context
+        Storage-->>-Engine: Vector + Graph Data
+
+        alt Using Ollama
+            Engine->>+Ollama: Generate Response
+            Ollama->>Ollama: Local LLM Processing
+            Ollama-->>-Engine: Generated Text
+        else Using Gemini
+            Engine->>+Gemini: Generate Response
+            Gemini->>Gemini: Cloud LLM Processing
+            Gemini-->>-Engine: Generated Text
+        end
+
+        Engine->>Engine: Combine Context + Response
+        Engine-->>-API: Final Answer
+    end
+
+    rect rgb(252, 228, 236)
+        Note over API,Client: Response & Caching
+        API->>Storage: Cache Response (Optional)
+        API-->>-Client: JSON Response with Answer
+    end
+```
+
+### Provider State Management
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initializing: System Startup
+
+    state "Provider Selection" as Selection {
+        [*] --> LoadConfig: Load .env Configuration
+        LoadConfig --> ValidateConfig: Parse Settings
+        ValidateConfig --> SelectProvider: Determine Active Provider
+
+        state SelectProvider {
+            [*] --> CheckProvider
+            CheckProvider --> Ollama: LLM_PROVIDER=ollama
+            CheckProvider --> Gemini: LLM_PROVIDER=google_gemini
+        }
+    }
+
+    Initializing --> Selection
+
+    state "Ollama Branch" as OllamaBranch {
+        [*] --> ConnectOllama: Connect to localhost:11434
+        ConnectOllama --> CheckModels: Verify Required Models
+        CheckModels --> OllamaReady: Gemma:4b + nomic-embed-text
+        CheckModels --> OllamaError: Missing Models
+        OllamaError --> [*]: Retry Connection
+        OllamaReady --> Processing: Ready for Requests
+    }
+
+    state "Gemini Branch" as GeminiBranch {
+        [*] --> ValidateAuth: Check API Key/ADC
+        ValidateAuth --> InitGemini: Configure Google AI
+        InitGemini --> CheckModels2: Test Model Access
+        CheckModels2 --> GeminiReady: Gemini-2.5-flash Available
+        CheckModels2 --> GeminiError: Auth/Access Error
+        GeminiError --> [*]: Retry Authentication
+        GeminiReady --> Processing: Ready for Requests
+    }
+
+    Selection --> OllamaBranch: Ollama Selected
+    Selection --> GeminiBranch: Gemini Selected
+
+    state "Active Processing" as Processing {
+        [*] --> Idle: Waiting for Requests
+        Idle --> ProcessingRequest: Incoming Query
+        ProcessingRequest --> GeneratingResponse: LLM Generation
+        GeneratingResponse --> Idle: Response Complete
+
+        ProcessingRequest --> Error: Request Failed
+        Error --> Idle: Error Handled
+    }
+
+    Processing --> Maintenance: Health Check Failed
+    Maintenance --> Processing: Recovery Complete
+    Processing --> [*]: System Shutdown
+```
 
 ### Developer Experience
 
