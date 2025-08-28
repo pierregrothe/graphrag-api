@@ -24,6 +24,23 @@ graph TD
     H --> J
     I --> J
     J --> K[Knowledge Graph]
+
+    %% Styling
+    classDef client fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000
+    classDef server fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef factory fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    classDef local fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef cloud fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef engine fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    classDef graph fill:#f1f8e9,stroke:#558b2f,stroke-width:2px,color:#000
+
+    class A client
+    class B server
+    class C factory
+    class D,F,H local
+    class E,G,I cloud
+    class J engine
+    class K graph
 ```
 
 ## Key Features
