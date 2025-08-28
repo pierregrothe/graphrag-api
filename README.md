@@ -38,17 +38,17 @@ graph TD
 ### LLM Provider Support
 
 - **Local Ollama**: Privacy-focused local deployment with Gemma3:4b
-  - No external API costs
-  - Complete data privacy
-  - Local embeddings with nomic-embed-text
-  - Direct integration without proxy layers
+    - No external API costs
+    - Complete data privacy
+    - Local embeddings with nomic-embed-text
+    - Direct integration without proxy layers
 
 - **Google Cloud Gemini**: Cloud-based high-performance deployment
-  - Latest Gemini models (2.5-flash, 2.5-pro)
-  - Enterprise-grade reliability and scaling
-  - Advanced multimodal capabilities
-  - Support for both Google Cloud API and Vertex AI endpoints
-  - Flexible authentication (API keys or Application Default Credentials)
+    - Latest Gemini models (2.5-flash, 2.5-pro)
+    - Enterprise-grade reliability and scaling
+    - Advanced multimodal capabilities
+    - Support for both Google Cloud API and Vertex AI endpoints
+    - Flexible authentication (API keys or Application Default Credentials)
 
 ### GraphRAG Operations
 
@@ -59,11 +59,13 @@ graph TD
 
 ### Developer Experience
 
-- **Code Quality**: Black formatting + Ruff linting + mypy type checking with 100% test coverage
-- **Type Safety**: Static type analysis prevents runtime errors and improves IDE support
+- **Code Quality**: Black formatting + Ruff linting + mypy type checking with 100% clean pipeline
+- **Type Safety**: Complete static type analysis with zero type errors in production code
+- **Documentation Quality**: markdownlint + prettier for consistent documentation formatting
 - **Configuration Management**: Environment-based settings with Pydantic validation
-- **Comprehensive Testing**: pytest framework with provider-specific test suites
-- **Documentation**: Auto-generated API docs and comprehensive project documentation
+- **Comprehensive Testing**: pytest framework with 41 tests across all components
+- **Quality Assurance**: Integrated quality pipeline catching errors before runtime
+- **Development Workflow**: Auto-generated API docs and comprehensive project documentation
 
 ## Getting Started
 
@@ -77,56 +79,56 @@ graph TD
 
 1. **Clone the repository:**
 
-   ```bash
-   git clone https://github.com/pierregrothe/graphrag-api.git
-   cd graphrag-api
-   ```
+    ```bash
+    git clone https://github.com/pierregrothe/graphrag-api.git
+    cd graphrag-api
+    ```
 
 2. **Install dependencies:**
 
-   ```bash
-   poetry install
-   ```
+    ```bash
+    poetry install
+    ```
 
 3. **Configure your LLM provider:**
 
-   **For Ollama (Local):**
+    **For Ollama (Local):**
 
-   ```bash
-   # Install and start Ollama
-   # Pull required models
-   ollama pull gemma:4b
-   ollama pull nomic-embed-text
+    ```bash
+    # Install and start Ollama
+    # Pull required models
+    ollama pull gemma:4b
+    ollama pull nomic-embed-text
 
-   # Set environment variables
-   export GRAPHRAG_LLM_PROVIDER=ollama
-   export OLLAMA_BASE_URL=http://localhost:11434
-   ```
+    # Set environment variables
+    export GRAPHRAG_LLM_PROVIDER=ollama
+    export OLLAMA_BASE_URL=http://localhost:11434
+    ```
 
-   **For Google Gemini (Cloud):**
+    **For Google Gemini (Cloud):**
 
-   ```bash
-   # Standard Google Cloud API (requires API key)
-   export GRAPHRAG_LLM_PROVIDER=google_gemini
-   export GOOGLE_API_KEY=your_api_key
-   export GOOGLE_PROJECT_ID=your_project_id
+    ```bash
+    # Standard Google Cloud API (requires API key)
+    export GRAPHRAG_LLM_PROVIDER=google_gemini
+    export GOOGLE_API_KEY=your_api_key
+    export GOOGLE_PROJECT_ID=your_project_id
 
-   # Optional: Use Vertex AI endpoints (no API key needed if using ADC)
-   export GOOGLE_CLOUD_USE_VERTEX_AI=true
-   export VERTEX_AI_LOCATION=us-central1
-   export VERTEX_AI_ENDPOINT=https://custom-vertex.googleapis.com  # Optional custom endpoint
-   ```
+    # Optional: Use Vertex AI endpoints (no API key needed if using ADC)
+    export GOOGLE_CLOUD_USE_VERTEX_AI=true
+    export VERTEX_AI_LOCATION=us-central1
+    export VERTEX_AI_ENDPOINT=https://custom-vertex.googleapis.com  # Optional custom endpoint
+    ```
 
 4. **Run the application:**
 
-   ```bash
-   poetry run uvicorn src.graphrag_api_service.main:app --reload
-   ```
+    ```bash
+    poetry run uvicorn src.graphrag_api_service.main:app --reload
+    ```
 
 5. **Access the API:**
-   - **API Documentation**: <http://localhost:8001/docs>
-   - **Health Check**: <http://localhost:8001/health>
-   - **GraphRAG Status**: <http://localhost:8001/graphrag/status>
+    - **API Documentation**: <http://localhost:8001/docs>
+    - **Health Check**: <http://localhost:8001/health>
+    - **GraphRAG Status**: <http://localhost:8001/graphrag/status>
 
 ## API Endpoints
 
@@ -141,6 +143,17 @@ graph TD
 - `POST /graphrag/index` - Index documents for knowledge graph creation
 - `POST /graphrag/query` - Query the knowledge graph
 - `GET /graphrag/status` - Get GraphRAG system status and configuration
+
+## Current Development Status
+
+**Phase 2 Complete** ✅ (Provider Abstraction Layer - August 2025)
+
+- **Multi-Provider Architecture**: Ollama (local) + Google Gemini (cloud) with Vertex AI support
+- **Quality Assurance**: 100% clean code quality pipeline (Black + Ruff + mypy + markdownlint)
+- **Type Safety**: Complete static type checking with zero production errors
+- **Test Coverage**: 41 comprehensive tests across configuration, providers, and API endpoints
+- **Documentation**: Consistent formatting and linting across all project documentation
+- **Next Phase**: GraphRAG Core Implementation (indexing, querying, workspace management)
 
 ## Project Documentation
 

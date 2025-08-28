@@ -15,13 +15,13 @@ architecture focusing on flexibility and deployment options.
 **Providers**:
 
 - **Ollama (Local)**: Gemma3:4b model for privacy-focused, cost-effective local deployments
-  - Direct integration without proxy layers
-  - Local embeddings with nomic-embed-text
-  - Complete data privacy and no external API costs
+    - Direct integration without proxy layers
+    - Local embeddings with nomic-embed-text
+    - Complete data privacy and no external API costs
 - **Google Cloud Gemini**: gemini-2.5-flash/pro for cloud-based, high-performance deployments
-  - Latest Gemini models with multimodal capabilities
-  - Enterprise-grade reliability and scaling
-  - Integrated with Vertex AI platform
+    - Latest Gemini models with multimodal capabilities
+    - Enterprise-grade reliability and scaling
+    - Integrated with Vertex AI platform
 
 **Implementation Strategy**: Small incremental steps with comprehensive testing and validation at each phase.
 
@@ -40,33 +40,33 @@ architecture focusing on flexibility and deployment options.
 
 1. **Install dependencies:**
 
-   ```bash
-   poetry install
-   ```
+    ```bash
+    poetry install
+    ```
 
 2. **Configure LLM Provider:**
 
-   **For Ollama (Local Development):**
+    **For Ollama (Local Development):**
 
-   ```bash
-   export GRAPHRAG_LLM_PROVIDER=ollama
-   export OLLAMA_LLM_MODEL=gemma:4b
-   export OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-   ```
+    ```bash
+    export GRAPHRAG_LLM_PROVIDER=ollama
+    export OLLAMA_LLM_MODEL=gemma:4b
+    export OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+    ```
 
-   **For Google Gemini (Cloud Deployment):**
+    **For Google Gemini (Cloud Deployment):**
 
-   ```bash
-   export GRAPHRAG_LLM_PROVIDER=google_gemini
-   export GOOGLE_API_KEY=your_api_key
-   export GOOGLE_PROJECT_ID=your_project_id
-   ```
+    ```bash
+    export GRAPHRAG_LLM_PROVIDER=google_gemini
+    export GOOGLE_API_KEY=your_api_key
+    export GOOGLE_PROJECT_ID=your_project_id
+    ```
 
 3. **Run the FastAPI application:**
 
-   ```bash
-   poetry run uvicorn src.graphrag_api_service.main:app --reload
-   ```
+    ```bash
+    poetry run uvicorn src.graphrag_api_service.main:app --reload
+    ```
 
 ## Development Conventions
 
@@ -135,12 +135,28 @@ from src.graphrag_api_service.config import Settings
 
 - Validates return type annotations match actual return values
 - Detects Pydantic configuration issues (ConfigDict vs SettingsConfigDict)
-- Identifies unused type ignore comments
+- Identifies unused type ignore comments and unreachable code
 - Ensures type consistency across function signatures
 - Prevents runtime type errors through static analysis
+- Catches all type issues that caused development problems
 
-**Quality Check Command:**
+**Markdown Quality Control:**
+
+- markdownlint-cli v0.45.0 for consistent markdown standards
+- prettier v3.6.2 with 4-space indentation matching markdownlint
+- Automated formatting and linting for all documentation files
+- npm scripts for markdown quality control (lint:md, fix:md, check:md)
+- Integration with development workflow for documentation quality
+
+**Complete Quality Pipeline:**
 
 ```bash
+# Python code quality (all checks must pass)
 poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run mypy src/graphrag_api_service --show-error-codes
+
+# Markdown documentation quality
+npm run check:md
+
+# Combined quality verification
+poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run mypy src/graphrag_api_service --show-error-codes && npm run check:md
 ```
