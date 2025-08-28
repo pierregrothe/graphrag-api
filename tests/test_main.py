@@ -7,21 +7,20 @@
 
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent.parent))
 
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
 
-from src.graphrag_api_service.main import app
 from src.graphrag_api_service.config import settings
+from src.graphrag_api_service.main import app
 
 client = TestClient(app)
 
 
 class TestHealthEndpoints:
     """Test health and basic endpoints."""
-    
+
     def test_read_root(self):
         """Test root endpoint returns correct information."""
         response = client.get("/")
@@ -33,13 +32,13 @@ class TestHealthEndpoints:
         assert data["status"] == "healthy"
         assert "docs_url" in data
         assert "redoc_url" in data
-    
+
     def test_health_check(self):
         """Test health check endpoint."""
         response = client.get("/health")
         assert response.status_code == 200
         assert response.json() == {"status": "healthy"}
-    
+
     def test_get_info(self):
         """Test info endpoint returns application information."""
         response = client.get("/info")
@@ -55,7 +54,7 @@ class TestHealthEndpoints:
 
 class TestErrorHandling:
     """Test error handling."""
-    
+
     def test_404_error(self):
         """Test 404 error handling."""
         response = client.get("/nonexistent")
@@ -68,7 +67,7 @@ class TestErrorHandling:
 
 class TestAPIDocumentation:
     """Test API documentation endpoints."""
-    
+
     def test_openapi_json(self):
         """Test OpenAPI JSON endpoint."""
         response = client.get("/openapi.json")
@@ -78,13 +77,13 @@ class TestAPIDocumentation:
         assert "info" in data
         assert data["info"]["title"] == settings.app_name
         assert data["info"]["version"] == settings.app_version
-    
+
     def test_docs_endpoint(self):
         """Test Swagger UI docs endpoint."""
         response = client.get("/docs")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
-    
+
     def test_redoc_endpoint(self):
         """Test ReDoc docs endpoint."""
         response = client.get("/redoc")
