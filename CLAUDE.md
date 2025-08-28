@@ -138,6 +138,18 @@ poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run 
 
 ### Coding Standards to Prevent Issues
 
+#### CRITICAL: NO EMOJIS IN CODE
+
+**⚠️ NEVER use emojis in Python code, strings, or any code output that will be executed.**
+
+- Emojis cause `UnicodeEncodeError: 'charmap' codec can't encode character` on Windows
+- This includes checkmarks (✅), warnings (⚠️), or any Unicode symbols in Python strings
+- Use text alternatives: "SUCCESS", "ERROR", "WARNING", "[PASS]", "[FAIL]"
+- Example that FAILS: `print("✅ Config loaded")`
+- Example that WORKS: `print("Config loaded successfully")`
+
+#### Import Organization and Code Style
+
 **Import Organization (Ruff I001):**
 
 ```python
