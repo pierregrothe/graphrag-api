@@ -20,50 +20,50 @@ flowchart TD
 
     %% API Gateway Layer
     subgraph APILayer ["⚡ API Gateway & Processing"]
-        B[FastAPI Server]@{ shape: stadium}
-        B1[Authentication]@{ shape: hexagon}
-        B2[Rate Limiting]@{ shape: pentagon}
-        B3[Request Validation]@{ shape: lean-r}
+        B(FastAPI Server)
+        B1{{Authentication}}
+        B2[/Rate Limiting/]
+        B3[\Request Validation\]
     end
 
     %% Provider Selection Layer
     subgraph ProviderLayer ["🔄 LLM Provider Factory"]
-        C{Provider Selection}@{ shape: diamond}
-        C1[Configuration Loader]@{ shape: docs}
-        C2[Health Monitor]@{ shape: circle}
+        C{Provider Selection}
+        C1[Configuration Loader]
+        C2((Health Monitor))
     end
 
     %% Local Processing Branch
     subgraph LocalBranch ["🏠 Local Processing (Ollama)"]
-        D[Ollama Integration]@{ shape: cylinder}
-        F[Gemma3:4b Model]@{ shape: lin-cyl}
-        H[Local Embeddings]@{ shape: subroutine}
-        D1[Model Manager]@{ shape: manual-input}
+        D[(Ollama Integration)]
+        F[(Gemma3:4b Model)]
+        H[Local Embeddings]
+        D1[Model Manager]
     end
 
     %% Cloud Processing Branch
     subgraph CloudBranch ["☁️ Cloud Processing (Google Gemini)"]
-        E[Gemini Integration]@{ shape: cloud}
-        G[Gemini 2.5 Flash/Pro]@{ shape: lin-cyl}
-        I[Cloud Embeddings]@{ shape: subroutine}
-        E1[Vertex AI Handler]@{ shape: trapezoid}
-        E2[API Key Manager]@{ shape: manual-file}
+        E[Gemini Integration]
+        G[(Gemini 2.5 Flash/Pro)]
+        I[Cloud Embeddings]
+        E1[/Vertex AI Handler/]
+        E2[API Key Manager]
     end
 
     %% GraphRAG Processing Engine
     subgraph EngineLayer ["🧠 GraphRAG Processing Engine"]
-        J[Core Engine]@{ shape: div-rect}
-        J1[Document Indexer]@{ shape: lined-doc}
-        J2[Query Processor]@{ shape: process}
-        J3[Context Builder]@{ shape: junction-circle}
+        J[Core Engine]
+        J1[Document Indexer]
+        J2[Query Processor]
+        J3((Context Builder))
     end
 
     %% Knowledge Graph Storage
     subgraph StorageLayer ["📊 Knowledge Graph & Storage"]
-        K[Knowledge Graph]@{ shape: database}
-        K1[Vector Store]@{ shape: h-cyl}
-        K2[Graph Database]@{ shape: cylinder}
-        K3[Cache Layer]@{ shape: lean-l}
+        K[(Knowledge Graph)]
+        K1[(Vector Store)]
+        K2[(Graph Database)]
+        K3[\Cache Layer\]
     end
 
     %% Flow Connections with Enhanced Arrows
