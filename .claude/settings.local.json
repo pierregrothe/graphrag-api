@@ -20,7 +20,8 @@
       "Bash(npm run format:md:*)",
       "WebFetch(domain:docs.mermaidchart.com)",
       "WebFetch(domain:docs.github.com)",
-      "Bash(poetry run python:*)"
+      "Bash(poetry run python:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

@@ -142,12 +142,16 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
             # Check if our required models are available
             # Handle the ListResponse object from Ollama client
             if hasattr(models, "models"):
-                available_models = [model.model for model in models.models if model.model is not None]
+                available_models = [
+                    model.model for model in models.models if model.model is not None
+                ]
             else:
                 # Fallback for dictionary response
                 available_models = [model.get("name", "") for model in models.get("models", [])]
             llm_available = any(self.llm_model in model for model in available_models if model)
-            embed_available = any(self.embedding_model in model for model in available_models if model)
+            embed_available = any(
+                self.embedding_model in model for model in available_models if model
+            )
 
             if not llm_available or not embed_available:
                 missing_models = []

@@ -267,7 +267,9 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                     "vertex_ai_endpoint": self.vertex_ai_endpoint,
                     "vertex_ai_location": self.vertex_ai_location,
                     "embedding_available": embedding_available,
-                    "embedding_dimensions": len(embed_result["embedding"]) if embed_result.get("embedding") else 0,
+                    "embedding_dimensions": (
+                        len(embed_result["embedding"]) if embed_result.get("embedding") else 0
+                    ),
                 },
             )
 
