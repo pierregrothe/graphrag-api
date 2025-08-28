@@ -75,13 +75,21 @@ tests/                       # Test suite
 ├── test_config.py           # Configuration tests
 ├── test_logging_config.py   # Logging tests
 ├── test_providers_base.py   # Provider abstraction layer tests
-└── test_provider.py         # Unified provider validation tests (unit + integration)
+├── test_provider.py         # Unified provider validation tests (unit + integration)
+└── test_workspace.py        # Workspace management tests (15 comprehensive tests)
+
+src/graphrag_api_service/
+├── workspace/               # Workspace management module
+    ├── __init__.py         # Module exports
+    ├── models.py           # Workspace data models (Workspace, WorkspaceConfig, etc.)
+    └── manager.py          # WorkspaceManager implementation
 ```
 
 ### API Endpoints
 
 - **Health**: `/`, `/health`, `/info`
-- **GraphRAG**: `/graphrag/query`, `/graphrag/index`, `/graphrag/status`
+- **GraphRAG**: `/api/query`, `/api/index`, `/api/status`
+- **Workspace Management**: `/api/workspaces` (CRUD operations for multi-project support)
 - **Documentation**: `/docs`, `/redoc`
 
 ### Configuration
@@ -152,13 +160,54 @@ Environment variables (via `.env` file):
 - Real connectivity testing with detailed performance metrics
 - Graceful error handling and informative failure messages
 
+### Workspace Management
+
+**Multi-Project Support**: Complete workspace management system for GraphRAG projects
+
+**Key Features**:
+
+- **Workspace Creation**: Individual isolated environments with custom configurations
+- **Data Directory Management**: Automatic directory structure creation and management  
+- **Configuration Generation**: Provider-specific GraphRAG settings.yaml files
+- **CRUD Operations**: Full REST API for workspace lifecycle management
+- **Persistence**: JSON-based workspace index with UUID identification
+
+**API Endpoints**:
+
+```bash
+# Create workspace
+POST /api/workspaces
+{
+  "name": "project-name",
+  "description": "Project description", 
+  "data_path": "/path/to/source/data",
+  "chunk_size": 1200,  # optional
+  "max_entities": 1000  # optional
+}
+
+# List all workspaces
+GET /api/workspaces
+
+# Get specific workspace
+GET /api/workspaces/{workspace_id}
+
+# Update workspace config
+PUT /api/workspaces/{workspace_id}
+
+# Delete workspace  
+DELETE /api/workspaces/{workspace_id}?remove_files=false
+
+# Get workspace GraphRAG config
+GET /api/workspaces/{workspace_id}/config
+```
+
 ### Development Notes
 
-- **Current Status**: Phase 3 complete - Unified provider testing system operational
-- **Architecture**: Complete GraphRAGLLM abstraction with streamlined validation
-- **Next Steps**: Implement Phase 4 GraphRAG Core Integration with Microsoft GraphRAG library
-- **Code Standards**: All code must pass Black formatting and Ruff linting (see coding standards below)
-- **Testing**: Single script approach for provider validation, comprehensive pytest suite
+- **Current Status**: Phase 4.1 complete - Full workspace management system operational
+- **Architecture**: Multi-project GraphRAG with workspace isolation and provider abstraction
+- **Next Steps**: Implement Phase 4.2 - Background indexing with progress tracking
+- **Code Standards**: All code must pass Black formatting and Ruff linting (see coding standards below)  
+- **Testing**: 66 comprehensive tests covering all functionality
 - **Git**: Use semantic commit messages, main branch for development
 - **Implementation**: Small incremental steps with validation at each phase
 - **Documentation**: Always update PROJECT_PLAN.md when completing tasks or steps

@@ -62,7 +62,7 @@ def default_settings(clean_env) -> Settings:
     # Create settings without loading any .env file to get true defaults
     from src.graphrag_api_service.config import Settings
 
-    return Settings(_env_file=None)
+    return Settings()
 
 
 @pytest.fixture

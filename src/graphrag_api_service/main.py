@@ -16,12 +16,31 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import API_PREFIX, GRAPHQL_PREFIX, settings
+from .indexing import IndexingManager
+from .indexing.models import (
+    IndexingJob,
+    IndexingJobCreate,
+    IndexingJobStatus,
+    IndexingJobSummary,
+    IndexingStats,
+)
 from .logging_config import get_logger, setup_logging
 from .providers import register_providers
+from .workspace import WorkspaceManager
+from .workspace.models import (
+    Workspace,
+    WorkspaceCreateRequest,
+    WorkspaceSummary,
+    WorkspaceUpdateRequest,
+)
 
 # Setup logging
 setup_logging()
 logger = get_logger(__name__)
+
+# Initialize workspace manager and indexing manager
+workspace_manager = WorkspaceManager(settings)
+indexing_manager = IndexingManager(settings)
 
 
 @asynccontextmanager
@@ -33,7 +52,15 @@ async def lifespan(app: FastAPI):
     register_providers()
     logger.info("LLM providers registered successfully")
 
+    # Start indexing manager
+    await indexing_manager.start()
+    logger.info("Indexing manager started successfully")
+
     yield
+
+    # Shutdown indexing manager
+    await indexing_manager.stop()
+    logger.info("Indexing manager stopped")
     logger.info("Shutting down application")
 
 
@@ -125,6 +152,9 @@ async def read_root() -> dict[str, Any]:
             "status": "/api/status",
             "query": "/api/query",
             "index": "/api/index",
+            "workspaces": "/api/workspaces",
+            "indexing_jobs": "/api/indexing/jobs",
+            "indexing_stats": "/api/indexing/stats",
         },
     }
 
@@ -298,8 +328,180 @@ async def get_graphrag_status() -> dict[str, Any]:
             "/api/query",
             "/api/index",
             "/api/status",
+            "/api/workspaces",
         ],
+        "workspace_stats": workspace_manager.get_workspace_stats(),
     }
+
+
+# Workspace Management API endpoints
+@api_router.post("/workspaces", response_model=Workspace, tags=["Workspace"])
+async def create_workspace(request: WorkspaceCreateRequest) -> Workspace:
+    """Create a new GraphRAG workspace.
+
+    Creates a new workspace with its own configuration, data directory,
+    and isolated GraphRAG processing environment.
+
+    Args:
+        request: Workspace creation request
+
+    Returns:
+        Created workspace information
+
+    Raises:
+        HTTPException: If workspace creation fails
+    """
+    logger.info(f"Creating workspace: {request.name}")
+
+    try:
+        workspace = workspace_manager.create_workspace(request)
+        logger.info(f"Successfully created workspace: {workspace.id}")
+        return workspace
+    except ValueError as e:
+        logger.error(f"Workspace creation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except OSError as e:
+        logger.error(f"Workspace directory creation failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create workspace directories: {e}"
+        ) from e
+
+
+@api_router.get("/workspaces", response_model=list[WorkspaceSummary], tags=["Workspace"])
+async def list_workspaces() -> list[WorkspaceSummary]:
+    """List all GraphRAG workspaces.
+
+    Returns:
+        List of workspace summaries with key information
+    """
+    logger.info("Listing workspaces")
+    workspaces = workspace_manager.list_workspaces()
+    logger.info(f"Found {len(workspaces)} workspaces")
+    return workspaces
+
+
+@api_router.get("/workspaces/{workspace_id}", response_model=Workspace, tags=["Workspace"])
+async def get_workspace(workspace_id: str) -> Workspace:
+    """Get workspace by ID.
+
+    Args:
+        workspace_id: Unique workspace identifier
+
+    Returns:
+        Workspace information
+
+    Raises:
+        HTTPException: If workspace not found
+    """
+    logger.info(f"Getting workspace: {workspace_id}")
+
+    workspace = workspace_manager.get_workspace(workspace_id)
+    if not workspace:
+        logger.warning(f"Workspace not found: {workspace_id}")
+        raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
+
+    return workspace
+
+
+@api_router.put("/workspaces/{workspace_id}", response_model=Workspace, tags=["Workspace"])
+async def update_workspace(workspace_id: str, request: WorkspaceUpdateRequest) -> Workspace:
+    """Update workspace configuration.
+
+    Args:
+        workspace_id: Unique workspace identifier
+        request: Workspace update request
+
+    Returns:
+        Updated workspace information
+
+    Raises:
+        HTTPException: If workspace not found or update fails
+    """
+    logger.info(f"Updating workspace: {workspace_id}")
+
+    try:
+        workspace = workspace_manager.update_workspace(workspace_id, request)
+        logger.info(f"Successfully updated workspace: {workspace_id}")
+        return workspace
+    except ValueError as e:
+        logger.error(f"Workspace update failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@api_router.delete("/workspaces/{workspace_id}", tags=["Workspace"])
+async def delete_workspace(workspace_id: str, remove_files: bool = False) -> dict[str, Any]:
+    """Delete workspace.
+
+    Args:
+        workspace_id: Unique workspace identifier
+        remove_files: Whether to remove workspace files from disk
+
+    Returns:
+        Deletion status information
+
+    Raises:
+        HTTPException: If workspace not found
+    """
+    logger.info(f"Deleting workspace: {workspace_id} (remove_files={remove_files})")
+
+    success = workspace_manager.delete_workspace(workspace_id, remove_files)
+    if not success:
+        logger.warning(f"Workspace not found for deletion: {workspace_id}")
+        raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
+
+    logger.info(f"Successfully deleted workspace: {workspace_id}")
+    return {
+        "status": "deleted",
+        "workspace_id": workspace_id,
+        "files_removed": remove_files,
+        "message": f"Workspace {workspace_id} deleted successfully",
+    }
+
+
+@api_router.get("/workspaces/{workspace_id}/config", tags=["Workspace"])
+async def get_workspace_config(workspace_id: str) -> dict[str, Any]:
+    """Get workspace GraphRAG configuration file content.
+
+    Args:
+        workspace_id: Unique workspace identifier
+
+    Returns:
+        Workspace GraphRAG configuration
+
+    Raises:
+        HTTPException: If workspace not found or config not available
+    """
+    logger.info(f"Getting workspace config: {workspace_id}")
+
+    workspace = workspace_manager.get_workspace(workspace_id)
+    if not workspace:
+        logger.warning(f"Workspace not found: {workspace_id}")
+        raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
+
+    if not workspace.config_file_path:
+        raise HTTPException(status_code=404, detail="Workspace configuration not available")
+
+    try:
+        from pathlib import Path
+
+        import yaml
+
+        config_path = Path(workspace.config_file_path)
+        if not config_path.exists():
+            raise HTTPException(status_code=404, detail="Configuration file not found")
+
+        with open(config_path, encoding="utf-8") as f:
+            config_content = yaml.safe_load(f)
+
+        return {
+            "workspace_id": workspace_id,
+            "config_file": str(config_path),
+            "configuration": config_content,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to read workspace config: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to read configuration: {e}") from e
 
 
 # GraphQL placeholder endpoints
@@ -353,6 +555,186 @@ async def graphql_query_placeholder(request: dict) -> dict[str, Any]:
             }
         ],
     }
+
+
+# Indexing API endpoints under /api/indexing prefix
+@api_router.post("/indexing/jobs", response_model=IndexingJob, tags=["Indexing"])
+async def create_indexing_job(request: IndexingJobCreate) -> IndexingJob:
+    """Create a new indexing job for a workspace.
+
+    Args:
+        request: Job creation request
+
+    Returns:
+        Created indexing job
+
+    Raises:
+        HTTPException: If workspace not found or not ready for indexing
+    """
+    logger.info(f"Creating indexing job for workspace {request.workspace_id}")
+
+    # Get workspace
+    workspace = workspace_manager.get_workspace(request.workspace_id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail=f"Workspace not found: {request.workspace_id}")
+
+    try:
+        job = indexing_manager.create_indexing_job(request, workspace)
+
+        # Update workspace status
+        workspace.update_status(workspace.status)  # Trigger timestamp update
+        workspace_manager._save_workspaces_index()
+
+        logger.info(f"Created indexing job {job.id}")
+        return job
+
+    except ValueError as e:
+        logger.error(f"Failed to create indexing job: {e}")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@api_router.get("/indexing/jobs", response_model=list[IndexingJobSummary], tags=["Indexing"])
+async def list_indexing_jobs(
+    status: IndexingJobStatus | None = None, limit: int = 100
+) -> list[IndexingJobSummary]:
+    """List indexing jobs with optional status filter.
+
+    Args:
+        status: Optional status filter
+        limit: Maximum number of jobs to return
+
+    Returns:
+        List of job summaries
+    """
+    logger.info(f"Listing indexing jobs (status: {status}, limit: {limit})")
+
+    jobs = indexing_manager.list_jobs(status=status, limit=limit)
+    return jobs
+
+
+@api_router.get("/indexing/jobs/{job_id}", response_model=IndexingJob, tags=["Indexing"])
+async def get_indexing_job(job_id: str) -> IndexingJob:
+    """Get indexing job by ID.
+
+    Args:
+        job_id: Job ID
+
+    Returns:
+        Indexing job details
+
+    Raises:
+        HTTPException: If job not found
+    """
+    logger.info(f"Getting indexing job {job_id}")
+
+    job = indexing_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Indexing job not found: {job_id}")
+
+    return job
+
+
+@api_router.delete("/indexing/jobs/{job_id}", tags=["Indexing"])
+async def cancel_indexing_job(job_id: str) -> dict[str, Any]:
+    """Cancel an indexing job.
+
+    Args:
+        job_id: Job ID to cancel
+
+    Returns:
+        Cancellation result
+
+    Raises:
+        HTTPException: If job not found
+    """
+    logger.info(f"Cancelling indexing job {job_id}")
+
+    job = indexing_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Indexing job not found: {job_id}")
+
+    success = indexing_manager.cancel_job(job_id)
+
+    return {
+        "job_id": job_id,
+        "cancelled": success,
+        "message": f"Job {job_id} {'cancelled' if success else 'could not be cancelled'}",
+    }
+
+
+@api_router.post("/indexing/jobs/{job_id}/retry", response_model=IndexingJob, tags=["Indexing"])
+async def retry_indexing_job(job_id: str) -> IndexingJob:
+    """Retry a failed indexing job.
+
+    Args:
+        job_id: Job ID to retry
+
+    Returns:
+        Updated indexing job
+
+    Raises:
+        HTTPException: If job not found or cannot be retried
+    """
+    logger.info(f"Retrying indexing job {job_id}")
+
+    job = indexing_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Indexing job not found: {job_id}")
+
+    if not job.can_retry():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job {job_id} cannot be retried (status: {job.status}, retries: {job.retry_count}/{job.max_retries})",
+        )
+
+    success = indexing_manager.retry_job(job_id)
+    if not success:
+        raise HTTPException(status_code=500, detail=f"Failed to retry job {job_id}")
+
+    retried_job = indexing_manager.get_job(job_id)
+    if not retried_job:
+        raise HTTPException(status_code=404, detail=f"Job not found after retry: {job_id}")
+
+    return retried_job
+
+
+@api_router.get(
+    "/indexing/workspaces/{workspace_id}/jobs", response_model=list[IndexingJob], tags=["Indexing"]
+)
+async def get_workspace_indexing_jobs(workspace_id: str) -> list[IndexingJob]:
+    """Get all indexing jobs for a workspace.
+
+    Args:
+        workspace_id: Workspace ID
+
+    Returns:
+        List of indexing jobs for the workspace
+
+    Raises:
+        HTTPException: If workspace not found
+    """
+    logger.info(f"Getting indexing jobs for workspace {workspace_id}")
+
+    # Verify workspace exists
+    workspace = workspace_manager.get_workspace(workspace_id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
+
+    jobs = indexing_manager.get_jobs_for_workspace(workspace_id)
+    return jobs
+
+
+@api_router.get("/indexing/stats", response_model=IndexingStats, tags=["Indexing"])
+async def get_indexing_stats() -> IndexingStats:
+    """Get indexing system statistics.
+
+    Returns:
+        Indexing statistics
+    """
+    logger.info("Getting indexing statistics")
+
+    stats = indexing_manager.get_indexing_stats()
+    return stats
 
 
 # Register routers with the main app
