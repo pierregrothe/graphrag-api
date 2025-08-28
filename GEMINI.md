@@ -15,13 +15,13 @@ architecture focusing on flexibility and deployment options.
 **Providers**:
 
 - **Ollama (Local)**: Gemma3:4b model for privacy-focused, cost-effective local deployments
-    - Direct integration without proxy layers
-    - Local embeddings with nomic-embed-text
-    - Complete data privacy and no external API costs
+  - Direct integration without proxy layers
+  - Local embeddings with nomic-embed-text
+  - Complete data privacy and no external API costs
 - **Google Cloud Gemini**: gemini-2.5-flash/pro for cloud-based, high-performance deployments
-    - Latest Gemini models with multimodal capabilities
-    - Enterprise-grade reliability and scaling
-    - Integrated with Vertex AI platform
+  - Latest Gemini models with multimodal capabilities
+  - Enterprise-grade reliability and scaling
+  - Integrated with Vertex AI platform
 
 **Implementation Strategy**: Small incremental steps with comprehensive testing and validation at each phase.
 

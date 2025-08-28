@@ -89,8 +89,9 @@ class LLMProviderFactory:
                 "llm_model": settings.gemini_model,
                 "embedding_model": settings.gemini_embedding_model,
             }
-        else:
-            return {}
+
+        # This should never be reached due to enum validation
+        raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
 
     @classmethod
     def get_supported_providers(cls) -> list[str]:

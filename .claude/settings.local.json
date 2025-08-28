@@ -15,7 +15,9 @@
       "Bash(poetry run python -m mypy:*)",
       "Bash(npm run fix:md:*)",
       "Bash(npm run lint:*)",
-      "Bash(npm run check:md:*)"
+      "Bash(npm run check:md:*)",
+      "Bash(prettier:*)",
+      "Bash(npm run format:md:*)"
     ],
     "deny": [],
     "ask": []

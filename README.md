@@ -38,17 +38,17 @@ graph TD
 ### LLM Provider Support
 
 - **Local Ollama**: Privacy-focused local deployment with Gemma3:4b
-    - No external API costs
-    - Complete data privacy
-    - Local embeddings with nomic-embed-text
-    - Direct integration without proxy layers
+  - No external API costs
+  - Complete data privacy
+  - Local embeddings with nomic-embed-text
+  - Direct integration without proxy layers
 
 - **Google Cloud Gemini**: Cloud-based high-performance deployment
-    - Latest Gemini models (2.5-flash, 2.5-pro)
-    - Enterprise-grade reliability and scaling
-    - Advanced multimodal capabilities
-    - Support for both Google Cloud API and Vertex AI endpoints
-    - Flexible authentication (API keys or Application Default Credentials)
+  - Latest Gemini models (2.5-flash, 2.5-pro)
+  - Enterprise-grade reliability and scaling
+  - Advanced multimodal capabilities
+  - Support for both Google Cloud API and Vertex AI endpoints
+  - Flexible authentication (API keys or Application Default Credentials)
 
 ### GraphRAG Operations
 
