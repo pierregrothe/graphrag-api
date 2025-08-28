@@ -32,7 +32,7 @@ graph TD
     classDef local fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
     classDef cloud fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
     classDef engine fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
-    classDef graph fill:#f1f8e9,stroke:#558b2f,stroke-width:2px,color:#000
+    classDef knowledge fill:#f1f8e9,stroke:#558b2f,stroke-width:2px,color:#000
 
     class A client
     class B server
@@ -40,7 +40,7 @@ graph TD
     class D,F,H local
     class E,G,I cloud
     class J engine
-    class K graph
+    class K knowledge
 ```
 
 ## Key Features
