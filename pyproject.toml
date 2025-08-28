@@ -1,0 +1,15 @@
+[project]
+name = "graphrag-api"
+version = "0.1.0"
+description = "A FastAPI-based API for the microsoft/graphrag library."
+authors = [{ name = "Pierre Grothé" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "graphrag",
+    "fastapi",
+    "uvicorn[standard]",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
