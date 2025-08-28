@@ -29,44 +29,77 @@ architecture focusing on flexibility and deployment options.
 
 - **Dependency Management:** Poetry for environment and dependency management
 - **Python Version:** Python 3.12 specifically for latest language features
-- **Project Structure:** Standard Python project with `src` directory organization
+
+### API Endpoints
+
+- **Health**: `/`, `/health`, `/info`
+- **GraphRAG**: `/graphrag/query`, `/graphrag/index`, `/graphrag/status`
+- **Documentation**: `/docs`, `/redoc`
+
+### Configuration
+
+```bash
+src/graphrag_api_service/    # Main application package
+├── main.py                  # FastAPI application with GraphRAG endpoints
+├── config.py                # Pydantic settings configuration
+├── logging_config.py        # Logging setup
+└── providers/              # LLM provider abstraction layer
+    ├── __init__.py         # Provider package exports
+    ├── base.py             # GraphRAGLLM abstract base class
+    ├── factory.py          # LLMProviderFactory for dynamic provider creation
+    ├── ollama_provider.py  # Ollama local LLM provider implementation
+    ├── gemini_provider.py  # Google Gemini cloud LLM provider implementation
+    └── registry.py         # Provider registration for automatic startup
+
+tests/                       # Test suite
+├── test_main.py            # API endpoint tests
+├── test_config.py          # Configuration tests
+├── test_logging_config.py  # Logging tests
+├── test_providers_base.py  # Provider abstraction layer tests
+├── test_ollama_provider.py # Ollama provider implementation tests
+└── test_gemini_provider.py # Google Gemini provider implementation tests
+```
+
 - **Code Quality:** Black formatter + Ruff linter with 100% test coverage requirement
 - **Testing Strategy:** pytest framework with provider-specific test suites
 - **Version Control:** GitHub repository with semantic commit messages
 
 ## Building and Running
 
-### Development Setup
+### Key Commands
 
-1. **Install dependencies:**
+```bash
+# Development server
+poetry run uvicorn src.graphrag_api_service.main:app --reload
 
-    ```bash
-    poetry install
-    ```
+# Testing
+poetry run pytest tests/ -v
 
-2. **Configure LLM Provider:**
+# Code formatting
+poetry run black src/ tests/
 
-    **For Ollama (Local Development):**
+# Code linting
+poetry run ruff check src/ tests/
 
-    ```bash
-    export GRAPHRAG_LLM_PROVIDER=ollama
-    export OLLAMA_LLM_MODEL=gemma:4b
-    export OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-    ```
+# Type checking
+poetry run mypy src/graphrag_api_service --show-error-codes
 
-    **For Google Gemini (Cloud Deployment):**
+# Markdown linting and formatting
+npm run lint:md
+npm run fix:md
 
-    ```bash
-    export GRAPHRAG_LLM_PROVIDER=google_gemini
-    export GOOGLE_API_KEY=your_api_key
-    export GOOGLE_PROJECT_ID=your_project_id
-    ```
+# Full quality check (run all tools)
+poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run mypy src/graphrag_api_service --show-error-codes && npm run check:md
 
-3. **Run the FastAPI application:**
+# Install dependencies
+poetry install
 
-    ```bash
-    poetry run uvicorn src.graphrag_api_service.main:app --reload
-    ```
+# Add new dependency
+poetry add <package-name>
+
+# Add dev dependency
+poetry add --group dev <package-name>
+```
 
 ## Development Conventions
 
@@ -184,4 +217,20 @@ No Python tools exist for reliable Mermaid validation. Use GitHub as the validat
 5. **Visual Confirmation**: All diagrams render without parse errors or missing shapes
 6. **Shape Compatibility**: Stick to universal shapes: `()`, `{}`, `[]`, `(())`, `[()]`, `{{}}`, `[//]`, `[\\]`
 
-This workflow ensures Mermaid diagrams work across all platforms and renderers.
+### Common Issues & Solutions
+
+- **Test Failures**: Run `poetry run pytest tests/ -v` to identify issues
+- **Formatting Issues**: Run `poetry run black src/ tests/` to auto-format
+- **Linting Issues**: Run `poetry run ruff check --fix src/ tests/` to auto-fix
+- **Type Errors**: Run `poetry run mypy src/graphrag_api_service --show-error-codes` to detect type issues
+- **Markdown Issues**: Run `npm run fix:md` to auto-fix markdown formatting and linting issues
+- **Pydantic Config Issues**: Use `SettingsConfigDict` for `BaseSettings` classes, not `ConfigDict`
+- **Return Type Mismatches**: Ensure function return types match actual returned values
+- **Dependency Issues**: Run `poetry install` to sync dependencies
+
+### Important Files
+
+- `pyproject.toml`: Poetry configuration, dependencies, tool settings
+- `src/graphrag_api_service/main.py`: Main FastAPI application
+- `src/graphrag_api_service/config.py`: Settings and environment configuration
+- `tests/`: Comprehensive test suite covering all functionality

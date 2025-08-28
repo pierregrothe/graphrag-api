@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .config import settings
+from .config import API_PREFIX, GRAPHQL_PREFIX, settings
 from .logging_config import get_logger, setup_logging
 from .providers import register_providers
 
@@ -48,9 +48,9 @@ app = FastAPI(
 )
 
 # Create API router for REST endpoints
-api_router = APIRouter(prefix="/api", tags=["REST API"])
+api_router = APIRouter(prefix=API_PREFIX, tags=["REST API"])
 # Create GraphQL router for GraphQL endpoints
-graphql_router = APIRouter(prefix="/graphql", tags=["GraphQL API"])
+graphql_router = APIRouter(prefix=GRAPHQL_PREFIX, tags=["GraphQL API"])
 
 # Add CORS middleware
 app.add_middleware(
@@ -111,8 +111,8 @@ async def read_root() -> dict[str, Any]:
         "version": settings.app_version,
         "status": "healthy",
         "interfaces": {
-            "rest_api": "/api",
-            "graphql": "/graphql",
+            "rest_api": API_PREFIX,
+            "graphql": GRAPHQL_PREFIX,
             "documentation": {
                 "swagger_ui": "/docs",
                 "redoc": "/redoc",

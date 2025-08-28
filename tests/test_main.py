@@ -12,7 +12,14 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from fastapi.testclient import TestClient
 
-from src.graphrag_api_service.config import Settings
+from src.graphrag_api_service.config import (
+    API_PREFIX,
+    GRAPHQL_PREFIX,
+    MAX_COMMUNITY_LEVEL,
+    MIN_MAX_TOKENS,
+    TEST_DATA_PATH,
+    Settings,
+)
 from src.graphrag_api_service.main import app
 
 
@@ -34,8 +41,8 @@ class TestHealthEndpoints:
         assert "endpoints" in data
         # Check that interfaces are properly structured
         interfaces = data["interfaces"]
-        assert interfaces["rest_api"] == "/api"
-        assert interfaces["graphql"] == "/graphql"
+        assert interfaces["rest_api"] == API_PREFIX
+        assert interfaces["graphql"] == GRAPHQL_PREFIX
         assert "documentation" in interfaces
 
     def test_health_check(self, test_client: TestClient):
@@ -117,7 +124,7 @@ class TestGraphRAGEndpoints:
 
         # Mock the settings to have a data path
         with patch("src.graphrag_api_service.main.settings") as mock_settings:
-            mock_settings.graphrag_data_path = "/test/data"
+            mock_settings.graphrag_data_path = TEST_DATA_PATH
             response = test_client.post("/api/query", json=graphrag_query_request)
             assert response.status_code == 200
             data = response.json()
@@ -159,8 +166,8 @@ class TestGraphRAGEndpoints:
         """Test GraphRAG query endpoint validation with invalid data."""
         invalid_request = {
             "query": "",  # Empty query should fail validation
-            "community_level": 10,  # Invalid community level (max 4)
-            "max_tokens": 50,  # Below minimum (100)
+            "community_level": MAX_COMMUNITY_LEVEL + 6,  # Invalid community level (above max)
+            "max_tokens": MIN_MAX_TOKENS - 50,  # Below minimum
         }
         response = test_client.post("/api/query", json=invalid_request)
         assert response.status_code == 422

@@ -148,19 +148,78 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 - [x] Integrate markdown quality checks into development workflow
 - [x] Update CLAUDE.md with complete quality pipeline documentation
 
-### Phase 3: GraphRAG Core Implementation 📋
+### Phase 3: Test Infrastructure Enhancement ✅
+
+**Status**: Completed 2025-08-28  
+**Goal**: Modernize test suite with pytest fixtures and centralized configuration
+
+#### Step 3.1: Configuration Constants & API Consistency ✅ **COMPLETED 2025-08-28**
+
+- [x] Add API configuration constants to config.py (API_PREFIX, GRAPHQL_PREFIX)
+- [x] Add validation constants (MAX_COMMUNITY_LEVEL, MIN_MAX_TOKENS)  
+- [x] Add test environment constants (TEST_API_KEY, TEST_PROJECT_ID, TEST_DATA_PATH, TEST_CONFIG_PATH)
+- [x] Add environment variable name constants for consistent usage across tests
+- [x] Update main.py to use configuration constants instead of hardcoded strings
+- [x] Update API endpoints to reference centralized constants
+- [x] Verify API consistency across all endpoints
+
+#### Step 3.2: Test Suite Fixture Implementation ✅ **COMPLETED 2025-08-28**
+
+- [x] Fix default_settings fixture to properly bypass .env file loading
+- [x] Enhance conftest.py with robust environment isolation
+- [x] Update test_main.py to use configuration constants (API_PREFIX, GRAPHQL_PREFIX, validation constants)
+- [x] Update test_config.py to leverage fixtures (default_settings, gemini_settings) and constants
+- [x] Refactor test_ollama_provider.py unit tests to use ollama_config fixture consistently
+- [x] Fix all 12 unit test methods to eliminate self.provider pattern
+- [x] Preserve integration tests (TestOllamaIntegration) with existing working patterns
+- [x] Remove hardcoded values in favor of configuration constants and fixtures
+
+#### Step 3.3: Code Quality Verification ✅ **COMPLETED 2025-08-28**
+
+- [x] All 82 tests passing after refactoring
+- [x] Black code formatting applied to all modified files
+- [x] Ruff linting passed with all issues resolved  
+- [x] mypy type checking passed with strict type safety
+- [x] Fix Ollama provider type safety issues with model availability checks
+- [x] Clean up unused variables and optimize imports
+- [x] Maintain 100% test success rate throughout refactoring process
+
+#### Step 3.4: Google Gemini Provider Test Refactoring ✅ **COMPLETED 2025-08-28**
+
+- [x] Refactor all 17 test methods in test_gemini_provider.py to use gemini_config fixture
+- [x] Replace self.config pattern with consistent fixture-based approach
+- [x] Update methods using config = self.config.copy() pattern to use fixture
+- [x] Fix assertions in test_get_configuration_info to match actual fixture values
+- [x] Maintain all existing test logic, mocks, and assertions - only change provider instantiation
+- [x] Verify all 17 Gemini provider tests pass with fixture-based approach
+- [x] Confirm full test suite continues to pass (82/82 tests)
+- [x] Apply Black formatting and maintain code quality standards
+
+#### Step 3.5: Simplified Provider Testing ✅ **COMPLETED 2025-08-28**
+
+- [x] Create unified test_provider.py script for simple provider validation
+- [x] Test configured provider from .env file automatically
+- [x] Implement LLM-free implementation pattern tests (method validation, configuration building, enum consistency)
+- [x] Add comprehensive LLM connectivity tests (health check, text generation, embeddings)
+- [x] Create clean test output with [OK]/[FAIL]/[WARN] indicators
+- [x] Fix Ollama model configuration to use available models (gemma3:4b, nomic-embed-text)
+- [x] Validate all provider abstraction patterns without external dependencies
+- [x] Replace complex multi-provider testing infrastructure with single focused script
+- [x] Achieve 100% test success rate for configured provider
+
+### Phase 4: GraphRAG Core Implementation 📋
 
 **Status**: Planned  
 **Goal**: Implement actual GraphRAG functionality
 
-#### Step 3.1: Workspace Management
+#### Step 4.1: Workspace Management
 
 - [ ] Create GraphRAG workspace structure
 - [ ] Multi-project support
 - [ ] Configuration file generation
 - [ ] Data directory management
 
-#### Step 3.2: Indexing Implementation
+#### Step 4.2: Indexing Implementation
 
 - [ ] Background task processing
 - [ ] Progress tracking and logging
@@ -174,7 +233,7 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 - [ ] Community-level search
 - [ ] Response formatting and caching
 
-### Phase 4: API Enhancement & Testing 📋
+### Phase 5: API Enhancement & Testing 📋
 
 **Status**: Planned  
 **Goal**: Comprehensive testing and API refinement
@@ -200,7 +259,7 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 - [ ] Metrics collection
 - [ ] Health monitoring
 
-### Phase 5: Production Readiness 📋
+### Phase 6: Production Readiness 📋
 
 **Status**: Planned  
 **Goal**: Production deployment preparation
@@ -228,31 +287,34 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 
 ## Current Status
 
-- **Phase**: Phase 2 (Provider Abstraction Layer) ✅ **COMPLETED 2025-08-28**
-- **Current Step**: All provider abstraction and quality assurance steps completed
+- **Phase**: Phase 3 (Test Infrastructure Enhancement) ✅ **COMPLETED 2025-08-28**
+- **Current Step**: All testing infrastructure and provider validation completed
 - **Quality Status**: 100% clean code quality pipeline (Black + Ruff + mypy + markdownlint + prettier)
-- **Next Milestone**: Phase 3 - GraphRAG Core Implementation
-- **Test Coverage**: 41 tests passing across configuration, providers, and API endpoints
+- **Next Milestone**: Phase 4 - GraphRAG Core Implementation
+- **Test Coverage**: 82 pytest tests + unified provider validation script
+- **Provider Status**: Ollama fully validated, Gemini ready for credentials
 
 ## Testing Strategy
 
-Every step must include:
+**Unified Provider Testing**: Single script approach for simplicity and effectiveness
 
-1. **Unit Tests**: Component-level validation
-2. **Integration Tests**: Provider connectivity
-3. **API Tests**: Endpoint functionality
-4. **Configuration Tests**: Settings validation
+1. **Configuration Validation**: Environment settings, provider-specific parameters, enum consistency
+2. **Implementation Pattern Tests**: Abstract method compliance, factory patterns, configuration building
+3. **LLM Connectivity Tests**: Health checks, text generation, embedding generation
+4. **Comprehensive Test Suite**: 82 pytest tests for complete component validation
+
+**Usage**: `python test_provider.py` - Tests currently configured provider from .env file
 
 ## Quality Gates
 
 Before proceeding to next phase:
 
-- [ ] All tests pass (100% success rate)
-- [ ] Code formatting (Black) passes
-- [ ] Linting (Ruff) passes
-- [ ] Static type checking (mypy) passes
-- [ ] Documentation updated
-- [ ] Manual validation completed
+- [x] All tests pass (100% success rate) ✅
+- [x] Code formatting (Black) passes ✅
+- [x] Linting (Ruff) passes ✅
+- [x] Static type checking (mypy) passes ✅
+- [x] Documentation updated ✅
+- [x] Manual validation completed ✅
 
 ## Risk Mitigation
 

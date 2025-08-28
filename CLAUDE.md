@@ -22,8 +22,11 @@ local and cloud deployments.
 # Development server
 poetry run uvicorn src.graphrag_api_service.main:app --reload
 
-# Testing
+# Testing - Basic test suite
 poetry run pytest tests/ -v
+
+# Testing - Provider validation (tests configured provider from .env)
+python test_provider.py
 
 # Code formatting
 poetry run black src/ tests/
@@ -67,12 +70,15 @@ src/graphrag_api_service/    # Main application package
     └── registry.py         # Provider registration for automatic startup
 
 tests/                       # Test suite
-├── test_main.py            # API endpoint tests
-├── test_config.py          # Configuration tests
-├── test_logging_config.py  # Logging tests
-├── test_providers_base.py  # Provider abstraction layer tests
-├── test_ollama_provider.py # Ollama provider implementation tests
-└── test_gemini_provider.py # Google Gemini provider implementation tests
+├── conftest.py              # Pytest fixtures and configuration
+├── test_main.py             # API endpoint tests
+├── test_config.py           # Configuration tests
+├── test_logging_config.py   # Logging tests
+├── test_providers_base.py   # Provider abstraction layer tests
+├── test_ollama_provider.py  # Ollama provider implementation tests (unit + integration)
+└── test_gemini_provider.py  # Google Gemini provider implementation tests (unit + integration)
+
+test_provider.py             # Single provider validation script
 ```
 
 ### API Endpoints
@@ -109,13 +115,49 @@ Environment variables (via `.env` file):
 - `GOOGLE_PROJECT_ID`: Google Cloud project ID
 - `GEMINI_MODEL`: Gemini model version (default: gemini-2.5-flash)
 
+### Provider Testing
+
+**Unified Testing Approach:**
+
+1. **Single Provider Script**: Tests the configured provider from .env file
+   ```bash
+   python test_provider.py
+   ```
+   - Validates configuration completeness
+   - Tests implementation patterns (no LLM access required)
+   - Validates LLM connectivity (health, text generation, embeddings)
+   - Provides clear [OK]/[FAIL]/[WARN] status indicators
+
+2. **Complete Unit Test Suite**: Comprehensive pytest coverage
+   ```bash
+   poetry run pytest tests/ -v  # All 82 tests
+   poetry run pytest -m integration -v  # Integration tests only
+   ```
+
+**Provider Setup Requirements:**
+
+- **Ollama**: Requires Ollama server running at `http://localhost:11434` with models:
+  - `gemma3:4b` (LLM model)
+  - `nomic-embed-text` (embedding model)
+
+- **Gemini**: Requires environment variables in .env:
+  - `GOOGLE_API_KEY`: Google Cloud API key
+  - `GOOGLE_PROJECT_ID`: Google Cloud project ID
+
+**Testing Features:**
+
+- Automatic provider detection from .env configuration
+- LLM-free implementation pattern validation
+- Real connectivity testing with detailed performance metrics
+- Graceful error handling and informative failure messages
+
 ### Development Notes
 
-- **Current Status**: Dual provider system fully operational with comprehensive testing
-- **Architecture**: Complete GraphRAGLLM abstraction with both Ollama and Google Gemini providers
-- **Next Steps**: Implement Phase 3 GraphRAG Core Integration with Microsoft GraphRAG library
+- **Current Status**: Phase 3 complete - Unified provider testing system operational
+- **Architecture**: Complete GraphRAGLLM abstraction with streamlined validation
+- **Next Steps**: Implement Phase 4 GraphRAG Core Integration with Microsoft GraphRAG library
 - **Code Standards**: All code must pass Black formatting and Ruff linting (see coding standards below)
-- **Testing**: Maintain 100% test pass rate before committing, test each provider independently
+- **Testing**: Single script approach for provider validation, comprehensive pytest suite
 - **Git**: Use semantic commit messages, main branch for development
 - **Implementation**: Small incremental steps with validation at each phase
 - **Documentation**: Always update PROJECT_PLAN.md when completing tasks or steps

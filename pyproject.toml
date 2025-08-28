@@ -97,3 +97,19 @@ module = [
     "google.cloud.*"
 ]
 ignore_missing_imports = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests that require external services (deselect with '-m \"not integration\"')",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra"
+]

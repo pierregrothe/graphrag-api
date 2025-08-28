@@ -21,9 +21,6 @@ from src.graphrag_api_service.main import app
 @pytest.fixture
 def clean_env() -> Generator[None, None, None]:
     """Fixture that provides a clean environment without any settings."""
-    # Store original environment
-    original_env = dict(os.environ)
-
     # Clear GraphRAG-related environment variables
     env_vars_to_clear = [
         "APP_NAME",
@@ -45,22 +42,27 @@ def clean_env() -> Generator[None, None, None]:
         "VERTEX_AI_LOCATION",
     ]
 
+    # Store which ones were actually cleared
+    cleared_vars = {}
     for var in env_vars_to_clear:
-        os.environ.pop(var, None)
+        if var in os.environ:
+            cleared_vars[var] = os.environ.pop(var)
 
     yield
 
-    # Restore original environment
-    os.environ.clear()
-    os.environ.update(original_env)
+    # Restore only the variables we cleared (don't touch global environment)
+    for var, value in cleared_vars.items():
+        os.environ[var] = value
 
 
 @pytest.fixture
 def default_settings(clean_env) -> Settings:
     """Fixture providing default settings without environment overrides."""
     # Use clean_env fixture to ensure no environment variables are set
-    # This creates settings with only the default values
-    return Settings()
+    # Create settings without loading any .env file to get true defaults
+    from src.graphrag_api_service.config import Settings
+
+    return Settings(_env_file=None)
 
 
 @pytest.fixture
