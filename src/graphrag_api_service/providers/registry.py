@@ -7,6 +7,7 @@
 
 from ..config import LLMProvider
 from .factory import LLMProviderFactory
+from .gemini_provider import GeminiGraphRAGLLM
 from .ollama_provider import OllamaGraphRAGLLM
 
 
@@ -19,8 +20,8 @@ def register_providers():
     # Register Ollama provider
     LLMProviderFactory.register_provider(LLMProvider.OLLAMA, OllamaGraphRAGLLM)
 
-    # TODO: Register Google Gemini provider when implemented
-    # LLMProviderFactory.register_provider(LLMProvider.GOOGLE_GEMINI, GeminiGraphRAGLLM)
+    # Register Google Gemini provider
+    LLMProviderFactory.register_provider(LLMProvider.GOOGLE_GEMINI, GeminiGraphRAGLLM)
 
 
 def get_registered_providers() -> list[str]:
