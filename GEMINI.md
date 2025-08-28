@@ -82,6 +82,7 @@ This project aims to create a comprehensive FastAPI-based API service for Micros
 * **Provider Testing:** Each LLM provider tested independently
 * **Configuration Validation:** All settings validated with pytest
 * **Error Handling:** Comprehensive error handling with structured logging
+* **Documentation Tracking:** Always update PROJECT_PLAN.md when completing tasks or steps
 
 ### Quality Gates
 
@@ -90,5 +91,39 @@ Before proceeding to next development phase:
 * All tests pass (100% success rate)
 * Code formatting passes (Black)
 * Linting passes (Ruff)
-* Documentation updated
+* Documentation updated (including PROJECT_PLAN.md)
 * Manual validation completed
+
+### Coding Standards to Prevent Linting Issues
+
+**Import Organization (Ruff I001):**
+
+```python
+# Standard library imports first
+import os
+import sys
+from pathlib import Path
+
+# Third-party imports second  
+import pytest
+from unittest.mock import patch
+
+# Local imports last
+from src.graphrag_api_service.config import Settings
+```
+
+**Black Formatting Guidelines:**
+
+* Line length: 100 characters (configured in pyproject.toml)
+* Use double quotes for strings consistently
+* Include trailing commas in multiline structures
+* Apply before committing: `poetry run black src/ tests/`
+
+**Ruff Rules Applied:**
+
+* Import sorting (I) - prevents I001 errors
+* PEP 8 compliance (E, W) - style consistency  
+* Pyflakes (F) - unused import detection
+* Bugbear (B) - common Python gotchas
+* Comprehensions (C4) - list/dict comprehension improvements
+* Pyupgrade (UP) - modern Python syntax

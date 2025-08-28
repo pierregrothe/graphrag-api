@@ -44,17 +44,20 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 #### Step 1.1: Update Documentation
 
 - [x] Create PROJECT_PLAN.md
-- [ ] Update README.md with multi-provider architecture
-- [ ] Update CLAUDE.md with new context
-- [ ] Update GEMINI.md with architectural decisions
+- [x] Update README.md with multi-provider architecture
+- [x] Update CLAUDE.md with new context
+- [x] Update GEMINI.md with architectural decisions
 
-#### Step 1.2: Configuration Extension
+#### Step 1.2: Configuration Extension ✅ **COMPLETED 2025-08-28**
 
-- [ ] Extend config.py for multi-provider support
-- [ ] Add LLM provider enumeration
-- [ ] Add Ollama-specific configuration
-- [ ] Add Google Gemini-specific configuration
-- [ ] Create configuration validation tests
+- [x] Extend config.py for multi-provider support
+- [x] Add LLM provider enumeration (LLMProvider enum)
+- [x] Add Ollama-specific configuration (base_url, llm_model, embedding_model)
+- [x] Add Google Gemini-specific configuration (api_key, project_id, models)
+- [x] Create configuration validation tests (11 new tests, all passing)
+- [x] Update API endpoints with provider information (/info, /graphrag/status)
+- [x] Implement modern Pydantic v2 field validators
+- [x] Add helper methods (is_ollama_provider, get_provider_info)
 
 #### Step 1.3: Dependencies
 

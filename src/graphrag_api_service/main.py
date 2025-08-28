@@ -129,6 +129,7 @@ async def get_info() -> dict[str, Any]:
         "log_level": settings.log_level,
         "graphrag_config_path": settings.graphrag_config_path,
         "graphrag_data_path": settings.graphrag_data_path,
+        "llm_provider_info": settings.get_provider_info(),
     }
 
 
@@ -264,6 +265,7 @@ async def get_graphrag_status() -> dict[str, Any]:
         "graphrag_configured": bool(settings.graphrag_data_path),
         "data_path": settings.graphrag_data_path,
         "config_path": settings.graphrag_config_path,
-        "implementation_status": "placeholder - not yet implemented",
+        "llm_provider_info": settings.get_provider_info(),
+        "implementation_status": "multi-provider configuration implemented",
         "available_endpoints": ["/graphrag/query", "/graphrag/index", "/graphrag/status"],
     }

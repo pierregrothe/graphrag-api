@@ -65,7 +65,7 @@ graph TD
 
 ### Prerequisites
 
-- **Python 3.12**: Project uses Python 3.12 specifically
+* **Python 3.12**: Project uses Python 3.12 specifically
 * **Poetry**: For dependency management
 * **Provider Setup**: Either Ollama (local) or Google Cloud credentials
 
@@ -115,86 +115,29 @@ graph TD
     ```
 
 5. **Access the API:**
-    * **API Documentation**: <http://localhost:8000/docs>
-    * **Health Check**: <http://localhost:8000/health>
-    * **GraphRAG Status**: <http://localhost:8000/graphrag/status>
+
+    * **API Documentation**: <http://localhost:8001/docs>
+    * **Health Check**: <http://localhost:8001/health>
+    * **GraphRAG Status**: <http://localhost:8001/graphrag/status>
 
 ## API Endpoints
 
 ### Core Endpoints
 
-- `GET /` - API information and status
+* `GET /` - API information and status
 * `GET /health` - Health check
 * `GET /info` - Application configuration details
 
-### GraphRAG Operations
+### GraphRAG Endpoints
 
-- `POST /graphrag/index` - Index documents for knowledge graph creation
+* `POST /graphrag/index` - Index documents for knowledge graph creation
 * `POST /graphrag/query` - Query the knowledge graph
 * `GET /graphrag/status` - Get GraphRAG system status and configuration
 
-### Documentation
+## Project Documentation
 
-- `GET /docs` - Interactive Swagger UI documentation
-* `GET /redoc` - ReDoc API documentation
-
-## Configuration
-
-The service supports flexible configuration via environment variables:
-
-```bash
-# Core Application
-GRAPHRAG_LLM_PROVIDER=ollama|google_gemini
-DEBUG=false
-LOG_LEVEL=INFO
-PORT=8000
-
-# GraphRAG Settings  
-GRAPHRAG_DATA_PATH=/path/to/data
-GRAPHRAG_CONFIG_PATH=/path/to/config
-
-# Ollama Configuration
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_LLM_MODEL=gemma:4b
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-
-# Google Gemini Configuration
-GOOGLE_API_KEY=your_api_key
-GOOGLE_PROJECT_ID=your_project_id
-GEMINI_MODEL=gemini-2.5-flash
-```
-
-## Development
-
-### Code Quality
-
-```bash
-# Format code
-poetry run black src/ tests/
-
-# Lint code  
-poetry run ruff check src/ tests/
-
-# Run tests
-poetry run pytest tests/ -v
-```
-
-### Project Structure
-
-```
-src/graphrag_api_service/    # Main application
-├── main.py                  # FastAPI app with GraphRAG endpoints  
-├── config.py                # Multi-provider configuration
-└── logging_config.py        # Logging setup
-
-tests/                       # Comprehensive test suite
-├── test_main.py            # API endpoint tests
-├── test_config.py          # Configuration validation tests  
-└── test_logging_config.py  # Logging tests
-```
-
-## Documentation
-
+* **API Documentation**: Interactive Swagger UI documentation at `/docs`
+* **ReDoc Documentation**: ReDoc API documentation at `/redoc`
 * **Project Plan**: [PROJECT_PLAN.md](PROJECT_PLAN.md) - Implementation roadmap and phases
 * **Development Notes**: [GEMINI.md](GEMINI.md) - Key decisions and conventions  
 * **Claude Code Context**: [CLAUDE.md](CLAUDE.md) - Development environment context
