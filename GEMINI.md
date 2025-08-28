@@ -6,7 +6,7 @@ This project aims to create a FastAPI-based API for the `microsoft/graphrag` lib
 
 ## Key Decisions
 
-*   **Dependency Management:** We are using a `pyproject.toml` file to manage dependencies, which are installed in a virtual environment.
+*   **Dependency Management:** We are using Poetry for dependency management and environment setup.
 *   **Python Version:** The project uses Python 3.12.
 *   **Project Structure:** The project follows a standard Python project structure, with the source code located in a `src` directory.
 *   **Version Control:** The project is hosted on GitHub at [https://github.com/pierregrothe/graphrag-api](https://github.com/pierregrothe/graphrag-api).
@@ -14,16 +14,16 @@ This project aims to create a FastAPI-based API for the `microsoft/graphrag` lib
 
 ## Building and Running
 
-1.  **Activate the virtual environment:**
+1.  **Install dependencies:**
     ```bash
-    .\.venv\Scripts\activate
+    poetry install
     ```
 2.  **Run the FastAPI application:**
     ```bash
-    uvicorn graphrag_api.main:app --reload
+    poetry run uvicorn graphrag_api.main:app --reload
     ```
 
 ## Development Conventions
 
-*   **Virtual Environment:** All dependencies are installed and managed within the `.venv` virtual environment.
+*   **Virtual Environment:** Poetry automatically manages the virtual environment.
 *   **Coding Style:** We will follow the PEP 8 style guide for Python code.

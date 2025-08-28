@@ -18,10 +18,25 @@ graph TD
 *   **FastAPI Backend:** A modern, fast (high-performance), web framework for building APIs with Python 3.11+ based on standard Python type hints.
 *   **GraphRAG Integration:** Seamless integration with the `microsoft/graphrag` library.
 *   **Scalable Architecture:** Designed to be scalable and easy to deploy.
+*   **Poetry:** Dependency management with [Poetry](https://python-poetry.org/).
 
 ## Getting Started
 
-**TODO:** Add instructions on how to get started with the project.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/pierregrothe/graphrag-api.git
+    cd graphrag-api
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    poetry install
+    ```
+
+3.  **Run the application:**
+    ```bash
+    poetry run uvicorn src.graphrag_api.main:app --reload
+    ```
 
 ## License
 
