@@ -8,7 +8,7 @@
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -40,12 +40,17 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="A FastAPI-based API for the microsoft/graphrag library",
+    description="A FastAPI-based API for the microsoft/graphrag library with REST API and GraphQL interfaces",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
     lifespan=lifespan,
 )
+
+# Create API router for REST endpoints
+api_router = APIRouter(prefix="/api", tags=["REST API"])
+# Create GraphQL router for GraphQL endpoints
+graphql_router = APIRouter(prefix="/graphql", tags=["GraphQL API"])
 
 # Add CORS middleware
 app.add_middleware(
@@ -92,24 +97,40 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     )
 
 
-@app.get("/", tags=["Health"])
+# Root endpoints (not under /api prefix)
+@app.get("/", tags=["Root"])
 async def read_root() -> dict[str, Any]:
-    """Root endpoint providing basic API information.
+    """Root endpoint providing basic API information and available interfaces.
 
     Returns:
-        Dict containing API name, version, and status
+        Dict containing API name, version, status, and available interfaces
     """
     logger.info("Root endpoint accessed")
     return {
         "name": settings.app_name,
         "version": settings.app_version,
         "status": "healthy",
-        "docs_url": "/docs",
-        "redoc_url": "/redoc",
+        "interfaces": {
+            "rest_api": "/api",
+            "graphql": "/graphql",
+            "documentation": {
+                "swagger_ui": "/docs",
+                "redoc": "/redoc",
+                "openapi_json": "/openapi.json",
+            },
+        },
+        "endpoints": {
+            "health": "/api/health",
+            "info": "/api/info",
+            "status": "/api/status",
+            "query": "/api/query",
+            "index": "/api/index",
+        },
     }
 
 
-@app.get("/health", tags=["Health"])
+# REST API endpoints under /api prefix
+@api_router.get("/health", tags=["Health"])
 async def health_check() -> dict[str, str]:
     """Health check endpoint.
 
@@ -120,7 +141,7 @@ async def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-@app.get("/info", tags=["Information"])
+@api_router.get("/info", tags=["Information"])
 async def get_info() -> dict[str, Any]:
     """Get application information and configuration.
 
@@ -185,8 +206,8 @@ class IndexResponse(BaseModel):
     relationships_extracted: int = Field(default=0, description="Number of relationships extracted")
 
 
-# GraphRAG endpoints
-@app.post("/graphrag/query", response_model=QueryResponse, tags=["GraphRAG"])
+# GraphRAG REST API endpoints
+@api_router.post("/query", response_model=QueryResponse, tags=["GraphRAG"])
 async def query_graphrag(request: QueryRequest) -> QueryResponse:
     """Query the GraphRAG system with a question.
 
@@ -223,7 +244,7 @@ async def query_graphrag(request: QueryRequest) -> QueryResponse:
     )
 
 
-@app.post("/graphrag/index", response_model=IndexResponse, tags=["GraphRAG"])
+@api_router.post("/index", response_model=IndexResponse, tags=["GraphRAG"])
 async def index_data(request: IndexRequest) -> IndexResponse:
     """Index data using GraphRAG.
 
@@ -258,7 +279,7 @@ async def index_data(request: IndexRequest) -> IndexResponse:
     )
 
 
-@app.get("/graphrag/status", tags=["GraphRAG"])
+@api_router.get("/status", tags=["GraphRAG"])
 async def get_graphrag_status() -> dict[str, Any]:
     """Get GraphRAG system status and configuration.
 
@@ -273,5 +294,67 @@ async def get_graphrag_status() -> dict[str, Any]:
         "config_path": settings.graphrag_config_path,
         "llm_provider_info": settings.get_provider_info(),
         "implementation_status": "multi-provider configuration implemented",
-        "available_endpoints": ["/graphrag/query", "/graphrag/index", "/graphrag/status"],
+        "available_endpoints": [
+            "/api/query",
+            "/api/index",
+            "/api/status",
+        ],
     }
+
+
+# GraphQL placeholder endpoints
+@graphql_router.get("/", tags=["GraphQL"])
+async def graphql_info() -> dict[str, Any]:
+    """GraphQL interface information endpoint.
+
+    Returns:
+        Dict containing GraphQL interface information and status
+    """
+    logger.info("GraphQL info endpoint accessed")
+    return {
+        "interface": "GraphQL",
+        "status": "placeholder",
+        "message": "GraphQL interface is planned for future implementation",
+        "current_implementation": "REST API endpoints available at /api",
+        "planned_features": [
+            "GraphQL schema for GraphRAG queries",
+            "Real-time subscriptions for indexing progress",
+            "Nested queries for complex data relationships",
+            "GraphQL playground for interactive queries",
+        ],
+        "rest_api_alternative": "/api",
+    }
+
+
+@graphql_router.post("/", tags=["GraphQL"])
+async def graphql_query_placeholder(request: dict) -> dict[str, Any]:
+    """GraphQL query placeholder endpoint.
+
+    Args:
+        request: GraphQL query request (placeholder)
+
+    Returns:
+        Dict containing placeholder response
+    """
+    logger.info("GraphQL query placeholder accessed")
+    return {
+        "data": None,
+        "errors": [
+            {
+                "message": "GraphQL interface is not yet implemented. Please use REST API at /api",
+                "extensions": {
+                    "code": "NOT_IMPLEMENTED",
+                    "rest_endpoints": {
+                        "query": "/api/query",
+                        "index": "/api/index",
+                        "status": "/api/status",
+                    },
+                },
+            }
+        ],
+    }
+
+
+# Register routers with the main app
+app.include_router(api_router)
+app.include_router(graphql_router)

@@ -19,7 +19,8 @@
       "Bash(prettier:*)",
       "Bash(npm run format:md:*)",
       "WebFetch(domain:docs.mermaidchart.com)",
-      "WebFetch(domain:docs.github.com)"
+      "WebFetch(domain:docs.github.com)",
+      "Bash(poetry run python:*)"
     ],
     "deny": [],
     "ask": []
