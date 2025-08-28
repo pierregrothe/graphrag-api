@@ -27,13 +27,15 @@ class TestLoggingConfig:
         assert root_logger.level == logging.INFO
         assert len(root_logger.handlers) > 0
     
-    @patch.object(Settings, 'log_level', 'DEBUG')
-    def test_debug_log_level(self):
+    @patch('src.graphrag_api_service.logging_config.settings')
+    def test_debug_log_level(self, mock_settings):
         """Test debug log level configuration."""
+        mock_settings.log_level = 'DEBUG'
+        mock_settings.log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        
         setup_logging()
         root_logger = logging.getLogger()
-        # Note: This test might not work as expected due to Settings being a singleton
-        # In a real scenario, you'd want to mock the settings import
+        assert root_logger.level == logging.DEBUG
     
     def test_get_logger(self):
         """Test logger creation."""
