@@ -22,8 +22,9 @@ class TestSettings:
     """Test configuration settings."""
 
     def test_default_settings(self):
-        """Test default configuration values."""
-        settings = Settings()
+        """Test default configuration values (without .env file)."""
+        # Create settings without loading .env file
+        settings = Settings(_env_file=None)
         assert settings.app_name == "GraphRAG API Service"
         assert settings.app_version == "0.1.0"
         assert settings.debug is False

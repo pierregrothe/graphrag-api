@@ -19,8 +19,11 @@ from src.graphrag_api_service.logging_config import get_logger, setup_logging
 class TestLoggingConfig:
     """Test logging configuration."""
 
-    def test_setup_logging(self):
-        """Test logging setup."""
+    @patch("src.graphrag_api_service.logging_config.settings")
+    def test_setup_logging(self, mock_settings):
+        """Test logging setup with INFO level."""
+        mock_settings.log_level = "INFO"
+        mock_settings.log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         setup_logging()
         root_logger = logging.getLogger()
         assert root_logger.level == logging.INFO
