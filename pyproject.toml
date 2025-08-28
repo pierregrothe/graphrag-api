@@ -1,16 +1,23 @@
-[project]
+[tool.poetry]
 name = "graphrag_api_service"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Pierre Grothé",email = "pierre@grothe.ca"}
-]
+authors = ["Pierre Grothé <pierre@grothe.ca>"]
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
-dependencies = [
-]
+packages = [{include = "graphrag_api_service", from = "src"}]
 
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+graphrag = "^2.5.0"
+fastapi = "^0.116.1"
+uvicorn = {extras = ["standard"], version = "^0.35.0"}
+pydantic = "^2.10.0"
+pydantic-settings = "^2.7.0"
+python-multipart = "^0.0.12"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

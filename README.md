@@ -35,7 +35,7 @@ graph TD
 
 3.  **Run the application:**
     ```bash
-    poetry run uvicorn src.graphrag_api.main:app --reload
+    poetry run uvicorn src.graphrag_api_service.main:app --reload
     ```
 
 ## License
