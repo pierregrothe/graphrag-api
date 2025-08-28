@@ -93,7 +93,9 @@ class Workspace(BaseModel):
     status: WorkspaceStatus = Field(
         default=WorkspaceStatus.CREATED, description="Current workspace status"
     )
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Creation timestamp")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Creation timestamp"
+    )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC), description="Last update timestamp"
     )

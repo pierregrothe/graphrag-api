@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import API_PREFIX, GRAPHQL_PREFIX, settings
+from .graphrag_integration import GraphRAGError, GraphRAGIntegration
 from .indexing import IndexingManager
 from .indexing.models import (
     IndexingJob,
@@ -26,6 +27,7 @@ from .indexing.models import (
 )
 from .logging_config import get_logger, setup_logging
 from .providers import register_providers
+from .providers.factory import LLMProviderFactory
 from .workspace import WorkspaceManager
 from .workspace.models import (
     Workspace,
@@ -38,9 +40,10 @@ from .workspace.models import (
 setup_logging()
 logger = get_logger(__name__)
 
-# Initialize workspace manager and indexing manager
+# Initialize workspace manager, indexing manager, and GraphRAG integration
 workspace_manager = WorkspaceManager(settings)
 indexing_manager = IndexingManager(settings)
+graphrag_integration: GraphRAGIntegration | None = None
 
 
 @asynccontextmanager
@@ -51,6 +54,16 @@ async def lifespan(app: FastAPI):
     # Register LLM providers
     register_providers()
     logger.info("LLM providers registered successfully")
+
+    # Initialize GraphRAG integration with provider
+    global graphrag_integration
+    try:
+        provider = LLMProviderFactory.create_provider(settings)
+        graphrag_integration = GraphRAGIntegration(settings, provider)
+        logger.info("GraphRAG integration initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize GraphRAG integration: {e}")
+        graphrag_integration = None
 
     # Start indexing manager
     await indexing_manager.start()
@@ -255,6 +268,13 @@ async def query_graphrag(request: QueryRequest) -> QueryResponse:
     """
     logger.info(f"GraphRAG query received: {request.query[:100]}...")
 
+    # Check if GraphRAG integration is available
+    if not graphrag_integration:
+        raise HTTPException(
+            status_code=503,
+            detail="GraphRAG integration not available. Please check configuration and provider settings.",
+        )
+
     # Check if GraphRAG is configured
     if not settings.graphrag_data_path:
         raise HTTPException(
@@ -262,16 +282,39 @@ async def query_graphrag(request: QueryRequest) -> QueryResponse:
             detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
         )
 
-    # TODO: Implement actual GraphRAG query logic
-    # This is a placeholder implementation
-    logger.warning("GraphRAG query endpoint is not yet fully implemented")
+    try:
+        # Determine search type based on community level
+        if request.community_level > 0:
+            # Use global search for community-level queries
+            result = await graphrag_integration.query_global(
+                query=request.query,
+                data_path=settings.graphrag_data_path,
+                community_level=request.community_level,
+                max_tokens=request.max_tokens,
+            )
+        else:
+            # Use local search for entity-level queries
+            result = await graphrag_integration.query_local(
+                query=request.query,
+                data_path=settings.graphrag_data_path,
+                max_tokens=request.max_tokens,
+            )
 
-    return QueryResponse(
-        answer=f"This is a placeholder response for query: '{request.query}'. GraphRAG integration is not yet implemented.",
-        sources=["placeholder_source.txt"],
-        community_level=request.community_level,
-        tokens_used=len(request.query.split()) * 2,  # Rough estimate
-    )
+        return QueryResponse(
+            answer=result["answer"],
+            sources=result["sources"],
+            community_level=result["community_level"],
+            tokens_used=result["tokens_used"],
+        )
+
+    except GraphRAGError as e:
+        logger.error(f"GraphRAG query failed: {e}")
+        raise HTTPException(status_code=500, detail=f"GraphRAG query failed: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error during GraphRAG query: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error during query processing"
+        ) from e
 
 
 @api_router.post("/index", response_model=IndexResponse, tags=["GraphRAG"])
@@ -292,21 +335,39 @@ async def index_data(request: IndexRequest) -> IndexResponse:
     """
     logger.info(f"GraphRAG indexing requested for path: {request.data_path}")
 
+    # Check if GraphRAG integration is available
+    if not graphrag_integration:
+        raise HTTPException(
+            status_code=503,
+            detail="GraphRAG integration not available. Please check configuration and provider settings.",
+        )
+
     # Basic validation
     if not request.data_path:
         raise HTTPException(status_code=400, detail="Data path is required")
 
-    # TODO: Implement actual GraphRAG indexing logic
-    # This is a placeholder implementation
-    logger.warning("GraphRAG indexing endpoint is not yet fully implemented")
+    try:
+        # Perform GraphRAG indexing
+        result = await graphrag_integration.index_data(
+            data_path=request.data_path,
+            config_path=request.config_path,
+            force_reindex=request.force_reindex,
+        )
 
-    return IndexResponse(
-        status="completed",
-        message=f"Placeholder indexing completed for {request.data_path}. Actual GraphRAG integration pending.",
-        files_processed=0,
-        entities_extracted=0,
-        relationships_extracted=0,
-    )
+        return IndexResponse(
+            status=result["status"],
+            message=result["message"],
+            files_processed=result["files_processed"],
+            entities_extracted=result["entities_extracted"],
+            relationships_extracted=result["relationships_extracted"],
+        )
+
+    except GraphRAGError as e:
+        logger.error(f"GraphRAG indexing failed: {e}")
+        raise HTTPException(status_code=500, detail=f"GraphRAG indexing failed: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error during GraphRAG indexing: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during indexing") from e
 
 
 @api_router.get("/status", tags=["GraphRAG"])

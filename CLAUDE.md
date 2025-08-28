@@ -167,7 +167,7 @@ Environment variables (via `.env` file):
 **Key Features**:
 
 - **Workspace Creation**: Individual isolated environments with custom configurations
-- **Data Directory Management**: Automatic directory structure creation and management  
+- **Data Directory Management**: Automatic directory structure creation and management
 - **Configuration Generation**: Provider-specific GraphRAG settings.yaml files
 - **CRUD Operations**: Full REST API for workspace lifecycle management
 - **Persistence**: JSON-based workspace index with UUID identification
@@ -179,7 +179,7 @@ Environment variables (via `.env` file):
 POST /api/workspaces
 {
   "name": "project-name",
-  "description": "Project description", 
+  "description": "Project description",
   "data_path": "/path/to/source/data",
   "chunk_size": 1200,  # optional
   "max_entities": 1000  # optional
@@ -194,7 +194,7 @@ GET /api/workspaces/{workspace_id}
 # Update workspace config
 PUT /api/workspaces/{workspace_id}
 
-# Delete workspace  
+# Delete workspace
 DELETE /api/workspaces/{workspace_id}?remove_files=false
 
 # Get workspace GraphRAG config
@@ -206,7 +206,7 @@ GET /api/workspaces/{workspace_id}/config
 - **Current Status**: Phase 4.1 complete - Full workspace management system operational
 - **Architecture**: Multi-project GraphRAG with workspace isolation and provider abstraction
 - **Next Steps**: Implement Phase 4.2 - Background indexing with progress tracking
-- **Code Standards**: All code must pass Black formatting and Ruff linting (see coding standards below)  
+- **Code Standards**: All code must pass Black formatting and Ruff linting (see coding standards below)
 - **Testing**: 66 comprehensive tests covering all functionality
 - **Git**: Use semantic commit messages, main branch for development
 - **Implementation**: Small incremental steps with validation at each phase
