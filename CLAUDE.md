@@ -29,6 +29,12 @@ poetry run black src/ tests/
 # Code linting  
 poetry run ruff check src/ tests/
 
+# Type checking
+poetry run mypy src/graphrag_api_service --show-error-codes
+
+# Full quality check (run all tools)
+poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run mypy src/graphrag_api_service --show-error-codes
+
 # Install dependencies
 poetry install
 

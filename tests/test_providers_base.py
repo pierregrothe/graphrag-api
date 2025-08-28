@@ -25,13 +25,11 @@ class MockGraphRAGLLM(GraphRAGLLM):
     def _get_provider_name(self) -> str:
         return "mock"
 
-    async def generate_text(self, prompt: str, max_tokens: int = 1500,
-                          temperature: float = 0.1, **kwargs) -> LLMResponse:
+    async def generate_text(
+        self, prompt: str, max_tokens: int = 1500, temperature: float = 0.1, **kwargs
+    ) -> LLMResponse:
         return LLMResponse(
-            content="Mock response",
-            tokens_used=10,
-            model="mock-model",
-            provider="mock"
+            content="Mock response", tokens_used=10, model="mock-model", provider="mock"
         )
 
     async def generate_embeddings(self, texts: list[str], **kwargs) -> list[EmbeddingResponse]:
@@ -41,16 +39,14 @@ class MockGraphRAGLLM(GraphRAGLLM):
                 tokens_used=5,
                 model="mock-embed",
                 provider="mock",
-                dimensions=3
-            ) for _ in texts
+                dimensions=3,
+            )
+            for _ in texts
         ]
 
     async def health_check(self) -> ProviderHealth:
         return ProviderHealth(
-            healthy=True,
-            provider="mock",
-            message="Mock provider healthy",
-            latency_ms=10.0
+            healthy=True, provider="mock", message="Mock provider healthy", latency_ms=10.0
         )
 
 
@@ -120,7 +116,7 @@ class TestLLMProviderFactory:
             llm_provider=LLMProvider.OLLAMA,
             ollama_base_url="http://localhost:11434",
             ollama_llm_model="gemma:4b",
-            ollama_embedding_model="nomic-embed-text"
+            ollama_embedding_model="nomic-embed-text",
         )
 
         provider = LLMProviderFactory.create_provider(settings)
@@ -140,7 +136,7 @@ class TestLLMProviderFactory:
             google_project_id="test_project",
             google_location="us-central1",
             gemini_model="gemini-2.5-flash",
-            gemini_embedding_model="text-embedding-004"
+            gemini_embedding_model="text-embedding-004",
         )
 
         provider = LLMProviderFactory.create_provider(settings)

@@ -10,7 +10,9 @@
       "Bash(poetry run ruff:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(poetry run mypy:*)",
+      "Bash(poetry run python -m mypy:*)"
     ],
     "deny": [],
     "ask": []
