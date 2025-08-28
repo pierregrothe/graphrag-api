@@ -8,7 +8,7 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from ..config import Settings
@@ -282,7 +282,7 @@ class IndexingManager:
         }
 
         completed_jobs = []
-        recent_cutoff = datetime.utcnow() - timedelta(hours=24)
+        recent_cutoff = datetime.now(UTC) - timedelta(hours=24)
         recent_jobs = 0
         recent_completions = 0
 
@@ -447,7 +447,7 @@ class IndexingManager:
 
     def _cleanup_old_jobs(self) -> None:
         """Remove old completed job records."""
-        cutoff_time = datetime.utcnow() - timedelta(hours=self.job_cleanup_hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=self.job_cleanup_hours)
 
         job_ids_to_remove = []
         for job_id, job in self._jobs.items():
@@ -490,7 +490,7 @@ class IndexingManager:
         """Save jobs index to disk."""
         data = {
             "version": "1.0",
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
             "jobs": [job.model_dump() for job in self._jobs.values()],
         }
 

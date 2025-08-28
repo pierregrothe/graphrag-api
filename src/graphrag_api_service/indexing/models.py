@@ -6,7 +6,7 @@
 """Data models for GraphRAG indexing operations."""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -81,7 +81,7 @@ class IndexingJob(BaseModel):
         default=IndexingJobStatus.QUEUED, description="Current job status"
     )
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Job creation timestamp"
+        default_factory=lambda: datetime.now(UTC), description="Job creation timestamp"
     )
     started_at: datetime | None = Field(None, description="Job start timestamp")
     completed_at: datetime | None = Field(None, description="Job completion timestamp")
@@ -103,24 +103,24 @@ class IndexingJob(BaseModel):
     def start_job(self) -> None:
         """Mark job as started."""
         self.status = IndexingJobStatus.RUNNING
-        self.started_at = datetime.utcnow()
+        self.started_at = datetime.now(UTC)
 
     def complete_job(self) -> None:
         """Mark job as completed."""
         self.status = IndexingJobStatus.COMPLETED
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(UTC)
         self.progress.overall_progress = 1.0
 
     def fail_job(self, error_message: str) -> None:
         """Mark job as failed with error message."""
         self.status = IndexingJobStatus.FAILED
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(UTC)
         self.error_message = error_message
 
     def cancel_job(self) -> None:
         """Mark job as cancelled."""
         self.status = IndexingJobStatus.CANCELLED
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(UTC)
 
     def can_retry(self) -> bool:
         """Check if job can be retried."""

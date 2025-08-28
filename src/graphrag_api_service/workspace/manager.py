@@ -8,7 +8,7 @@
 import json
 import shutil
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -69,7 +69,7 @@ class WorkspaceManager:
         """Save workspaces index to disk."""
         data = {
             "version": "1.0",
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
             "workspaces": [workspace.model_dump() for workspace in self._workspaces.values()],
         }
 
@@ -256,7 +256,7 @@ class WorkspaceManager:
             workspace.config.community_levels = request.community_levels
 
         # Update timestamp
-        workspace.updated_at = datetime.utcnow()
+        workspace.updated_at = datetime.now(UTC)
 
         # Regenerate configuration file if workspace exists
         if workspace.workspace_path and Path(workspace.workspace_path).exists():

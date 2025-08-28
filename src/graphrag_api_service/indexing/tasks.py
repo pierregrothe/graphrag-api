@@ -8,7 +8,7 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from ..config import Settings
@@ -129,14 +129,14 @@ class IndexingTask:
 
             # Update processing rate
             if i > 0 and job.started_at is not None:
-                elapsed = (datetime.utcnow() - job.started_at).total_seconds()
+                elapsed = (datetime.now(UTC) - job.started_at).total_seconds()
                 job.progress.processing_rate = job.progress.processed_files / elapsed
 
                 # Estimate completion time
                 remaining_files = total_files - job.progress.processed_files
                 if job.progress.processing_rate > 0:
                     eta_seconds = remaining_files / job.progress.processing_rate
-                    job.progress.estimated_completion = datetime.utcnow() + timedelta(
+                    job.progress.estimated_completion = datetime.now(UTC) + timedelta(
                         seconds=eta_seconds
                     )
 
@@ -268,7 +268,7 @@ class IndexingTask:
         # Create summary file
         summary = {
             "workspace_name": self.workspace.config.name,
-            "indexing_completed_at": datetime.utcnow().isoformat(),
+            "indexing_completed_at": datetime.now(UTC).isoformat(),
             "statistics": {
                 "files_processed": job.progress.processed_files,
                 "entities_extracted": job.progress.entities_extracted,

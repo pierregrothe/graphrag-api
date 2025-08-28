@@ -5,7 +5,7 @@
 
 """Data models for GraphRAG workspace management."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 
@@ -93,9 +93,9 @@ class Workspace(BaseModel):
     status: WorkspaceStatus = Field(
         default=WorkspaceStatus.CREATED, description="Current workspace status"
     )
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Creation timestamp")
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Last update timestamp"
+        default_factory=lambda: datetime.now(UTC), description="Last update timestamp"
     )
 
     # Processing statistics
@@ -174,7 +174,7 @@ class Workspace(BaseModel):
             error_message: Optional error message if status is ERROR
         """
         self.status = new_status
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(UTC)
 
         if new_status == WorkspaceStatus.ERROR and error_message:
             self.last_error = error_message
