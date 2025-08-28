@@ -205,7 +205,7 @@ stateDiagram-v2
 
     state "Ollama Provider (✅ Implemented)" as OllamaProvider {
         [*] --> InitOllama: Initialize Ollama Client
-        InitOllama --> TestConnection: Check localhost:11434
+        InitOllama --> TestConnection: Check Ollama Server
         TestConnection --> OllamaHealthy: Connection Success
         TestConnection --> OllamaUnhealthy: Connection Failed
         OllamaHealthy --> [*]: Provider Ready
@@ -214,10 +214,10 @@ stateDiagram-v2
 
     state "Gemini Provider (✅ Implemented)" as GeminiProvider {
         [*] --> InitGemini: Initialize Gemini Client
-        InitGemini --> ValidateAuth: Check API Key/ADC
+        InitGemini --> ValidateAuth: Check API Key or ADC
         ValidateAuth --> TestModels: Verify Model Access
         TestModels --> GeminiHealthy: Authentication Success
-        TestModels --> GeminiUnhealthy: Auth/Access Failed
+        TestModels --> GeminiUnhealthy: Auth Access Failed
         GeminiHealthy --> [*]: Provider Ready
         GeminiUnhealthy --> [*]: Provider Unavailable
     }
@@ -227,9 +227,9 @@ stateDiagram-v2
 
     state "API Service (✅ Implemented)" as APIService {
         [*] --> ServingRequests: Ready for HTTP Requests
-        ServingRequests --> HealthCheck: GET /health
-        ServingRequests --> InfoRequest: GET /info
-        ServingRequests --> StatusRequest: GET /graphrag/status
+        ServingRequests --> HealthCheck: GET health
+        ServingRequests --> InfoRequest: GET info
+        ServingRequests --> StatusRequest: GET graphrag status
         ServingRequests --> PlaceholderRequest: GraphRAG Endpoints
 
         HealthCheck --> ServingRequests: OK Response
