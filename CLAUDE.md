@@ -4,7 +4,7 @@
 
 ### Project Overview
 
-GraphRAG API Service - A FastAPI-based API for Microsoft's GraphRAG library providing graph-based retrieval-augmented generation capabilities.
+GraphRAG API Service - A FastAPI-based API for Microsoft's GraphRAG library with multi-provider LLM support (Ollama + Google Gemini), providing flexible graph-based retrieval-augmented generation capabilities for both local and cloud deployments.
 
 ### Development Environment
 
@@ -63,19 +63,39 @@ tests/                       # Test suite
 
 Environment variables (via `.env` file):
 
-- `GRAPHRAG_DATA_PATH`: Path to GraphRAG data directory
-- `GRAPHRAG_CONFIG_PATH`: Path to GraphRAG configuration file
+**Core Application:**
+
+- `GRAPHRAG_LLM_PROVIDER`: ollama|google_gemini (provider selection)
 - `DEBUG`: Debug mode (true/false)
 - `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
 - `PORT`: Server port (default: 8000)
 
+**GraphRAG Settings:**
+
+- `GRAPHRAG_DATA_PATH`: Path to GraphRAG data directory
+- `GRAPHRAG_CONFIG_PATH`: Path to GraphRAG configuration file
+
+**Ollama Configuration (Local):**
+
+- `OLLAMA_BASE_URL`: Ollama server URL (default: <http://localhost:11434>)
+- `OLLAMA_LLM_MODEL`: LLM model name (default: gemma:4b)
+- `OLLAMA_EMBEDDING_MODEL`: Embedding model (default: nomic-embed-text)
+
+**Google Gemini Configuration (Cloud):**
+
+- `GOOGLE_API_KEY`: Google Cloud API key for Gemini
+- `GOOGLE_PROJECT_ID`: Google Cloud project ID
+- `GEMINI_MODEL`: Gemini model version (default: gemini-2.5-flash)
+
 ### Development Notes
 
-- **Current Status**: Core endpoints implemented with placeholder functionality
-- **Next Steps**: Integrate actual Microsoft GraphRAG library functionality
+- **Current Status**: Multi-provider architecture designed, updating documentation
+- **Architecture**: Dual LLM provider support (Ollama local + Google Gemini cloud)
+- **Next Steps**: Implement configuration extension and provider abstraction layer
 - **Code Standards**: All code must pass Black formatting and Ruff linting
-- **Testing**: Maintain 100% test pass rate before committing
+- **Testing**: Maintain 100% test pass rate before committing, test each provider independently
 - **Git**: Use semantic commit messages, main branch for development
+- **Implementation**: Small incremental steps with validation at each phase
 
 ### Common Issues & Solutions
 
