@@ -12,7 +12,10 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(poetry run mypy:*)",
-      "Bash(poetry run python -m mypy:*)"
+      "Bash(poetry run python -m mypy:*)",
+      "Bash(npm run fix:md:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run check:md:*)"
     ],
     "deny": [],
     "ask": []

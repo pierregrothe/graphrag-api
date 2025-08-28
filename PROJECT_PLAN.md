@@ -2,7 +2,8 @@
 
 ## Project Overview
 
-Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi-provider LLM support (local Ollama + Google Cloud Gemini).
+Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi-provider LLM support
+(local Ollama + Google Cloud Gemini).
 
 ## Architecture Decisions
 
@@ -89,7 +90,7 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 
 - [x] Implement OllamaGraphRAGLLM class with full AsyncClient integration
 - [x] Direct API integration without proxy layers
-- [x] Gemma3:4b model configuration and support  
+- [x] Gemma3:4b model configuration and support
 - [x] Local embeddings with nomic-embed-text model
 - [x] Connection validation and comprehensive health checks
 - [x] Model availability validation (checks for required models)
@@ -99,7 +100,7 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 
 #### Step 2.3: Google Gemini Integration ✅ **COMPLETED 2025-08-28**
 
-- [x] Implement GeminiGraphRAGLLM class with generativeai library integration  
+- [x] Implement GeminiGraphRAGLLM class with generativeai library integration
 - [x] Google Generative AI API integration with async support
 - [x] Authentication handling with API key configuration
 - [x] Model selection (gemini-2.5-flash/pro) with configurable models

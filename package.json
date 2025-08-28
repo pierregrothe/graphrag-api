@@ -1,0 +1,32 @@
+{
+  "name": "graphrag",
+  "version": "1.0.0",
+  "description": "A FastAPI-based API service for Microsoft GraphRAG with multi-provider LLM support.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "lint:md": "markdownlint *.md",
+    "lint:md:fix": "markdownlint *.md --fix",
+    "format:md": "prettier --write *.md",
+    "check:md": "npm run lint:md && prettier --check *.md",
+    "fix:md": "npm run format:md && npm run lint:md:fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pierregrothe/graphrag-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pierregrothe/graphrag-api/issues"
+  },
+  "homepage": "https://github.com/pierregrothe/graphrag-api#readme",
+  "devDependencies": {
+    "markdownlint-cli": "^0.45.0",
+    "prettier": "^3.6.2"
+  }
+}
