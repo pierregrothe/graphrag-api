@@ -49,7 +49,7 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
             # Standard Gemini API requires API key
             if not self.api_key:
                 raise ValueError("Google API key is required for Gemini provider without Vertex AI")
-            genai.configure(api_key=self.api_key)
+            genai.configure(api_key=self.api_key)  # type: ignore[attr-defined]
 
         # Initialize the model (configuration handled in generate methods)
         self._default_safety_settings = {
@@ -91,7 +91,7 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
             )
 
             # Create a new model instance with updated config
-            model = genai.GenerativeModel(
+            model = genai.GenerativeModel(  # type: ignore[attr-defined]
                 model_name=self.llm_model,
                 generation_config=generation_config,
                 safety_settings=self._default_safety_settings,
@@ -182,7 +182,7 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                 batch_embeddings = []
                 for text in batch:
                     # Use the embedding model
-                    result = genai.embed_content(
+                    result = genai.embed_content(  # type: ignore[attr-defined]
                         model=f"models/{self.embedding_model}",
                         content=text,
                         task_type="retrieval_document",
@@ -221,7 +221,7 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
             start_time = time.time()
 
             # Test connection with a simple generation call
-            test_model = genai.GenerativeModel(
+            test_model = genai.GenerativeModel(  # type: ignore[attr-defined]
                 model_name=self.llm_model,
                 generation_config=GenerationConfig(
                     temperature=0.1,
@@ -256,7 +256,7 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
 
             # Test embedding model availability
             try:
-                embed_result = genai.embed_content(
+                embed_result = genai.embed_content(  # type: ignore[attr-defined]
                     model=f"models/{self.embedding_model}",
                     content="test",
                     task_type="retrieval_document",
