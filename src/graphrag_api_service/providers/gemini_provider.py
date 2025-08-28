@@ -10,8 +10,7 @@ import time
 from typing import Any
 
 import google.generativeai as genai
-from google.generativeai import GenerationConfig
-from google.generativeai.types import HarmBlockThreshold, HarmCategory
+from google.generativeai.types import GenerationConfig, HarmBlockThreshold, HarmCategory
 
 from .base import EmbeddingResponse, GraphRAGLLM, LLMResponse, ProviderHealth
 

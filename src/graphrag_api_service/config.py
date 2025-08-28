@@ -7,8 +7,8 @@
 
 from enum import Enum
 
-from pydantic import ConfigDict, Field, field_validator, model_validator
-from pydantic_settings import BaseSettings
+from pydantic import Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class LLMProvider(str, Enum):
@@ -92,7 +92,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
@@ -105,13 +105,13 @@ class Settings(BaseSettings):
             # Project ID is always required for Google Gemini
             if not self.google_project_id:
                 raise ValueError("google_project_id is required when using google_gemini provider")
-            
+
             # API key is only required when not using Vertex AI
             if not self.google_cloud_use_vertex_ai and not self.google_api_key:
                 raise ValueError(
                     "google_api_key is required when using google_gemini provider without Vertex AI"
                 )
-        
+
         return self
 
     def is_ollama_provider(self) -> bool:

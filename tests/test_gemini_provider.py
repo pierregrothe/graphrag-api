@@ -23,24 +23,25 @@ class TestGeminiGraphRAGLLM:
             "project_id": "test_project",
             "location": "us-central1",
             "llm_model": "gemini-2.5-flash",
-            "embedding_model": "text-embedding-004"
+            "embedding_model": "text-embedding-004",
         }
 
     def test_initialization_success(self):
         """Test successful provider initialization."""
-        with patch('google.generativeai.configure') as mock_configure:
-            with patch('google.generativeai.GenerativeModel') as mock_model:
-                provider = GeminiGraphRAGLLM(self.config)
+        with patch("google.generativeai.configure") as mock_configure:
+            provider = GeminiGraphRAGLLM(self.config)
 
-                assert provider.api_key == "test_api_key"
-                assert provider.project_id == "test_project"
-                assert provider.location == "us-central1"
-                assert provider.llm_model == "gemini-2.5-flash"
-                assert provider.embedding_model == "text-embedding-004"
-                assert provider.provider_name == "google_gemini"
+            assert provider.api_key == "test_api_key"
+            assert provider.project_id == "test_project"
+            assert provider.location == "us-central1"
+            assert provider.llm_model == "gemini-2.5-flash"
+            assert provider.embedding_model == "text-embedding-004"
+            assert provider.provider_name == "google_gemini"
+            assert provider.use_vertex_ai is False
+            assert provider.vertex_ai_endpoint is None
+            assert provider.vertex_ai_location == "us-central1"
 
-                mock_configure.assert_called_once_with(api_key="test_api_key")
-                mock_model.assert_called_once()
+            mock_configure.assert_called_once_with(api_key="test_api_key")
 
     def test_initialization_missing_api_key(self):
         """Test initialization failure with missing API key."""
@@ -60,13 +61,10 @@ class TestGeminiGraphRAGLLM:
 
     def test_initialization_with_defaults(self):
         """Test provider initialization with default values."""
-        config = {
-            "api_key": "test_key",
-            "project_id": "test_project"
-        }
+        config = {"api_key": "test_key", "project_id": "test_project"}
 
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(config)
 
                 assert provider.location == "us-central1"
@@ -75,8 +73,8 @@ class TestGeminiGraphRAGLLM:
 
     def test_get_provider_name(self):
         """Test provider name method."""
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
                 assert provider._get_provider_name() == "google_gemini"
 
@@ -90,8 +88,8 @@ class TestGeminiGraphRAGLLM:
         mock_response.candidates[0].safety_ratings = []
         mock_response.prompt_feedback = None
 
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel') as mock_model_class:
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel") as mock_model_class:
                 mock_model = MagicMock()
                 mock_model.generate_content_async = AsyncMock(return_value=mock_response)
                 mock_model.safety_settings = {}
@@ -100,7 +98,7 @@ class TestGeminiGraphRAGLLM:
                 provider = GeminiGraphRAGLLM(self.config)
 
                 # Mock the model creation in generate_text
-                with patch('google.generativeai.GenerativeModel', return_value=mock_model):
+                with patch("google.generativeai.GenerativeModel", return_value=mock_model):
                     result = await provider.generate_text("Test prompt")
 
                     assert isinstance(result, LLMResponse)
@@ -121,8 +119,8 @@ class TestGeminiGraphRAGLLM:
         mock_response.candidates[0].safety_ratings = []
         mock_response.prompt_feedback = None
 
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel') as mock_model_class:
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel") as mock_model_class:
                 mock_model = MagicMock()
                 mock_model.generate_content_async = AsyncMock(return_value=mock_response)
                 mock_model.safety_settings = {}
@@ -131,10 +129,7 @@ class TestGeminiGraphRAGLLM:
                 provider = GeminiGraphRAGLLM(self.config)
 
                 result = await provider.generate_text(
-                    "Custom prompt",
-                    max_tokens=1000,
-                    temperature=0.7,
-                    top_k=40
+                    "Custom prompt", max_tokens=1000, temperature=0.7, top_k=40
                 )
 
                 assert result.content == "Custom response"
@@ -144,13 +139,15 @@ class TestGeminiGraphRAGLLM:
     @pytest.mark.asyncio
     async def test_generate_text_failure(self):
         """Test text generation failure handling."""
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch('google.generativeai.GenerativeModel') as mock_model_class:
+                with patch("google.generativeai.GenerativeModel") as mock_model_class:
                     mock_model = MagicMock()
-                    mock_model.generate_content_async = AsyncMock(side_effect=Exception("API Error"))
+                    mock_model.generate_content_async = AsyncMock(
+                        side_effect=Exception("API Error")
+                    )
                     mock_model.safety_settings = {}
                     mock_model_class.return_value = mock_model
 
@@ -161,16 +158,15 @@ class TestGeminiGraphRAGLLM:
     async def test_generate_embeddings_success(self):
         """Test successful embedding generation."""
         texts = ["First text", "Second text"]
-        mock_embeddings = [
-            {"embedding": [0.1, 0.2, 0.3]},
-            {"embedding": [0.4, 0.5, 0.6]}
-        ]
+        mock_embeddings = [{"embedding": [0.1, 0.2, 0.3]}, {"embedding": [0.4, 0.5, 0.6]}]
 
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch('google.generativeai.embed_content', side_effect=mock_embeddings) as mock_embed:
+                with patch(
+                    "google.generativeai.embed_content", side_effect=mock_embeddings
+                ) as mock_embed:
                     results = await provider.generate_embeddings(texts)
 
                     assert len(results) == 2
@@ -189,12 +185,12 @@ class TestGeminiGraphRAGLLM:
                     mock_embed.assert_any_call(
                         model="models/text-embedding-004",
                         content="First text",
-                        task_type="retrieval_document"
+                        task_type="retrieval_document",
                     )
                     mock_embed.assert_any_call(
                         model="models/text-embedding-004",
                         content="Second text",
-                        task_type="retrieval_document"
+                        task_type="retrieval_document",
                     )
 
     @pytest.mark.asyncio
@@ -203,12 +199,14 @@ class TestGeminiGraphRAGLLM:
         texts = ["Text 1", "Text 2", "Text 3", "Text 4", "Text 5"]
         mock_embedding = {"embedding": [0.1, 0.2, 0.3]}
 
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch('google.generativeai.embed_content', return_value=mock_embedding) as mock_embed:
-                    with patch('asyncio.sleep') as mock_sleep:
+                with patch(
+                    "google.generativeai.embed_content", return_value=mock_embedding
+                ) as mock_embed:
+                    with patch("asyncio.sleep") as mock_sleep:
                         results = await provider.generate_embeddings(texts, batch_size=2)
 
                         assert len(results) == 5
@@ -219,12 +217,16 @@ class TestGeminiGraphRAGLLM:
     @pytest.mark.asyncio
     async def test_generate_embeddings_failure(self):
         """Test embedding generation failure handling."""
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch('google.generativeai.embed_content', side_effect=Exception("Embedding failed")):
-                    with pytest.raises(Exception, match="Gemini embedding generation failed: Embedding failed"):
+                with patch(
+                    "google.generativeai.embed_content", side_effect=Exception("Embedding failed")
+                ):
+                    with pytest.raises(
+                        Exception, match="Gemini embedding generation failed: Embedding failed"
+                    ):
                         await provider.generate_embeddings(["Test text"])
 
     @pytest.mark.asyncio
@@ -235,17 +237,17 @@ class TestGeminiGraphRAGLLM:
 
         mock_embed_result = {"embedding": [0.1, 0.2, 0.3]}
 
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch('google.generativeai.GenerativeModel') as mock_model_class:
+                with patch("google.generativeai.GenerativeModel") as mock_model_class:
                     mock_model = MagicMock()
                     mock_model.generate_content_async = AsyncMock(return_value=mock_response)
                     mock_model_class.return_value = mock_model
 
-                    with patch('google.generativeai.embed_content', return_value=mock_embed_result):
-                        with patch('time.time', side_effect=[0.0, 0.1]):
+                    with patch("google.generativeai.embed_content", return_value=mock_embed_result):
+                        with patch("time.time", side_effect=[0.0, 0.1]):
                             result = await provider.health_check()
 
                             assert isinstance(result, ProviderHealth)
@@ -262,16 +264,16 @@ class TestGeminiGraphRAGLLM:
         mock_response = MagicMock()
         mock_response.text = None
 
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch('google.generativeai.GenerativeModel') as mock_model_class:
+                with patch("google.generativeai.GenerativeModel") as mock_model_class:
                     mock_model = MagicMock()
                     mock_model.generate_content_async = AsyncMock(return_value=mock_response)
                     mock_model_class.return_value = mock_model
 
-                    with patch('time.time', side_effect=[0.0, 0.05]):
+                    with patch("time.time", side_effect=[0.0, 0.05]):
                         result = await provider.health_check()
 
                         assert result.healthy is False
@@ -282,13 +284,15 @@ class TestGeminiGraphRAGLLM:
     @pytest.mark.asyncio
     async def test_health_check_connection_failure(self):
         """Test health check with connection failure."""
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch('google.generativeai.GenerativeModel') as mock_model_class:
+                with patch("google.generativeai.GenerativeModel") as mock_model_class:
                     mock_model = MagicMock()
-                    mock_model.generate_content_async = AsyncMock(side_effect=Exception("Connection failed"))
+                    mock_model.generate_content_async = AsyncMock(
+                        side_effect=Exception("Connection failed")
+                    )
                     mock_model_class.return_value = mock_model
 
                     result = await provider.health_check()
@@ -302,15 +306,13 @@ class TestGeminiGraphRAGLLM:
     @pytest.mark.asyncio
     async def test_validate_connection_success(self):
         """Test successful connection validation."""
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch.object(provider, 'health_check', new_callable=AsyncMock) as mock_health:
+                with patch.object(provider, "health_check", new_callable=AsyncMock) as mock_health:
                     mock_health.return_value = ProviderHealth(
-                        healthy=True,
-                        provider="google_gemini",
-                        message="Healthy"
+                        healthy=True, provider="google_gemini", message="Healthy"
                     )
 
                     is_valid = await provider.validate_connection()
@@ -320,15 +322,13 @@ class TestGeminiGraphRAGLLM:
     @pytest.mark.asyncio
     async def test_validate_connection_failure(self):
         """Test failed connection validation."""
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
-                with patch.object(provider, 'health_check', new_callable=AsyncMock) as mock_health:
+                with patch.object(provider, "health_check", new_callable=AsyncMock) as mock_health:
                     mock_health.return_value = ProviderHealth(
-                        healthy=False,
-                        provider="google_gemini",
-                        message="Unhealthy"
+                        healthy=False, provider="google_gemini", message="Unhealthy"
                     )
 
                     is_valid = await provider.validate_connection()
@@ -337,8 +337,8 @@ class TestGeminiGraphRAGLLM:
 
     def test_get_configuration_info(self):
         """Test configuration info retrieval."""
-        with patch('google.generativeai.configure'):
-            with patch('google.generativeai.GenerativeModel'):
+        with patch("google.generativeai.configure"):
+            with patch("google.generativeai.GenerativeModel"):
                 provider = GeminiGraphRAGLLM(self.config)
 
                 info = provider.get_configuration_info()
