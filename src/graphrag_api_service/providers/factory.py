@@ -63,7 +63,7 @@ class LLMProviderFactory:
             ) from e
 
     @classmethod
-    def _build_provider_config(cls, settings: Settings) -> dict[str, str | None]:
+    def _build_provider_config(cls, settings: Settings) -> dict[str, str | bool | None]:
         """Build provider-specific configuration from settings.
 
         Args:
