@@ -45,12 +45,17 @@ poetry add --group dev <package-name>
 src/graphrag_api_service/    # Main application package
 ├── main.py                  # FastAPI application with GraphRAG endpoints
 ├── config.py                # Pydantic settings configuration
-└── logging_config.py        # Logging setup
+├── logging_config.py        # Logging setup
+└── providers/              # LLM provider abstraction layer
+    ├── __init__.py         # Provider package exports
+    ├── base.py             # GraphRAGLLM abstract base class
+    └── factory.py          # LLMProviderFactory for dynamic provider creation
 
 tests/                       # Test suite
 ├── test_main.py            # API endpoint tests
 ├── test_config.py          # Configuration tests
-└── test_logging_config.py  # Logging tests
+├── test_logging_config.py  # Logging tests
+└── test_providers_base.py  # Provider abstraction layer tests
 ```
 
 ### API Endpoints
@@ -89,9 +94,9 @@ Environment variables (via `.env` file):
 
 ### Development Notes
 
-* **Current Status**: Multi-provider configuration implemented and tested
-* **Architecture**: Dual LLM provider support (Ollama local + Google Gemini cloud)
-* **Next Steps**: Add multi-provider dependencies to pyproject.toml
+* **Current Status**: Provider abstraction layer implemented with factory pattern
+* **Architecture**: Unified GraphRAGLLM interface with dual provider support (Ollama + Google Gemini)
+* **Next Steps**: Implement concrete Ollama and Google Gemini provider classes
 * **Code Standards**: All code must pass Black formatting and Ruff linting (see coding standards below)
 * **Testing**: Maintain 100% test pass rate before committing, test each provider independently
 * **Git**: Use semantic commit messages, main branch for development

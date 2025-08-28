@@ -31,7 +31,8 @@ graph TD
 
 * **FastAPI Backend**: High-performance async web framework with automatic OpenAPI documentation
 * **GraphRAG Integration**: Complete Microsoft GraphRAG implementation for graph-based RAG
-* **Multi-Provider Architecture**: Flexible LLM provider switching for different deployment needs
+* **Multi-Provider Architecture**: Unified abstraction layer with factory pattern for LLM provider switching
+* **Provider Abstraction**: Abstract base classes for consistent interface across all providers
 
 ### LLM Provider Support
 
