@@ -6,15 +6,24 @@ This project aims to create a FastAPI-based API for the `microsoft/graphrag` lib
 
 ## Key Decisions
 
-* **Dependency Management:** We will use Poetry for dependency management and environment setup, as recommended by the `microsoft/graphrag` documentation.
-* **Project Structure:** The project will follow a standard Python project structure, with the source code located in a `src` directory.
-* **Version Control:** The project is hosted on GitHub at [https://github.com/pierregrothe/graphrag-api](https://github.com/pierregrothe/graphrag-api).
-* **Documentation:** The `README.md` file will be the main source of documentation and will include Mermaid diagrams to illustrate the architecture. This `GEMINI.md` file will be updated with key decisions made during the development process.
+*   **Dependency Management:** We are using a `pyproject.toml` file to manage dependencies, which are installed in a virtual environment.
+*   **Python Version:** The project uses Python 3.12.
+*   **Project Structure:** The project follows a standard Python project structure, with the source code located in a `src` directory.
+*   **Version Control:** The project is hosted on GitHub at [https://github.com/pierregrothe/graphrag-api](https://github.com/pierregrothe/graphrag-api).
+*   **Documentation:** The `README.md` file will be the main source of documentation and will include Mermaid diagrams to illustrate the architecture. This `GEMINI.md` file will be updated with key decisions made during the development process.
 
 ## Building and Running
 
-**TODO:** Add instructions on how to build, run, and test the project.
+1.  **Activate the virtual environment:**
+    ```bash
+    .\.venv\Scripts\activate
+    ```
+2.  **Run the FastAPI application:**
+    ```bash
+    uvicorn graphrag_api.main:app --reload
+    ```
 
 ## Development Conventions
 
-**TODO:** Add any coding styles, testing practices, or contribution guidelines.
+*   **Virtual Environment:** All dependencies are installed and managed within the `.venv` virtual environment.
+*   **Coding Style:** We will follow the PEP 8 style guide for Python code.
