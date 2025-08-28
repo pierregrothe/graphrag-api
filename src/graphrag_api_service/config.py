@@ -7,7 +7,7 @@
 
 from enum import Enum
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -54,7 +54,7 @@ class Settings(BaseSettings):
         description="Ollama embedding model name",
     )
 
-    # Google Gemini Configuration (Cloud)
+    # Google Gemini Configuration (Cloud & Vertex AI)
     google_api_key: str | None = Field(
         default=None,
         description="Google Cloud API key for Gemini",
@@ -66,6 +66,18 @@ class Settings(BaseSettings):
     google_location: str = Field(
         default="us-central1",
         description="Google Cloud location",
+    )
+    google_cloud_use_vertex_ai: bool = Field(
+        default=False,
+        description="Use Vertex AI endpoints instead of standard Gemini API",
+    )
+    vertex_ai_endpoint: str | None = Field(
+        default=None,
+        description="Custom Vertex AI endpoint URL (optional)",
+    )
+    vertex_ai_location: str = Field(
+        default="us-central1",
+        description="Vertex AI location for regional endpoints",
     )
     gemini_model: str = Field(
         default="gemini-2.5-flash",
@@ -86,21 +98,21 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    @field_validator("google_api_key")
-    @classmethod
-    def validate_google_api_key(cls, v, info):
-        """Validate Google API key when using Google Gemini provider."""
-        if info.data.get("llm_provider") == LLMProvider.GOOGLE_GEMINI and not v:
-            raise ValueError("google_api_key is required when using google_gemini provider")
-        return v
-
-    @field_validator("google_project_id")
-    @classmethod
-    def validate_google_project_id(cls, v, info):
-        """Validate Google project ID when using Google Gemini provider."""
-        if info.data.get("llm_provider") == LLMProvider.GOOGLE_GEMINI and not v:
-            raise ValueError("google_project_id is required when using google_gemini provider")
-        return v
+    @model_validator(mode="after")
+    def validate_google_configuration(self) -> "Settings":
+        """Validate Google Gemini configuration requirements."""
+        if self.llm_provider == LLMProvider.GOOGLE_GEMINI:
+            # Project ID is always required for Google Gemini
+            if not self.google_project_id:
+                raise ValueError("google_project_id is required when using google_gemini provider")
+            
+            # API key is only required when not using Vertex AI
+            if not self.google_cloud_use_vertex_ai and not self.google_api_key:
+                raise ValueError(
+                    "google_api_key is required when using google_gemini provider without Vertex AI"
+                )
+        
+        return self
 
     def is_ollama_provider(self) -> bool:
         """Check if Ollama provider is configured."""
@@ -110,7 +122,11 @@ class Settings(BaseSettings):
         """Check if Google Gemini provider is configured."""
         return self.llm_provider == LLMProvider.GOOGLE_GEMINI
 
-    def get_provider_info(self) -> dict[str, str | None]:
+    def is_vertex_ai_enabled(self) -> bool:
+        """Check if Vertex AI is enabled for Google Gemini provider."""
+        return self.is_google_gemini_provider() and self.google_cloud_use_vertex_ai
+
+    def get_provider_info(self) -> dict[str, str | None | bool]:
         """Get current provider configuration info."""
         if self.is_ollama_provider():
             return {
@@ -124,6 +140,9 @@ class Settings(BaseSettings):
                 "provider": "google_gemini",
                 "project_id": self.google_project_id,
                 "location": self.google_location,
+                "use_vertex_ai": self.google_cloud_use_vertex_ai,
+                "vertex_ai_endpoint": self.vertex_ai_endpoint,
+                "vertex_ai_location": self.vertex_ai_location,
                 "llm_model": self.gemini_model,
                 "embedding_model": self.gemini_embedding_model,
             }

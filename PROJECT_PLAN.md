@@ -110,6 +110,17 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 - [x] Register provider in factory with automatic startup integration
 - [x] Token estimation and detailed response metadata
 
+#### Step 2.4: Vertex AI Enhancement ✅ **COMPLETED 2025-08-28**
+
+- [x] Add Vertex AI environment variables (GOOGLE_CLOUD_USE_VERTEX_AI, VERTEX_AI_ENDPOINT, VERTEX_AI_LOCATION)
+- [x] Update configuration validation for Vertex AI vs standard Google Cloud API
+- [x] Modify Gemini provider to support both authentication methods (API key vs ADC)
+- [x] Add comprehensive tests for Vertex AI configuration scenarios (2 new tests)
+- [x] Update factory configuration builder for Vertex AI parameters
+- [x] Update all health check metadata to include Vertex AI information
+- [x] Apply Black and Ruff formatting to all provider and config files
+- [x] Update README.md with Vertex AI configuration examples
+
 ### Phase 3: GraphRAG Core Implementation 📋
 
 **Status**: Planned  

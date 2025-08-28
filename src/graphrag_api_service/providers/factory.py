@@ -21,7 +21,9 @@ class LLMProviderFactory:
     _providers: dict[LLMProvider, type[GraphRAGLLM]] = {}
 
     @classmethod
-    def register_provider(cls, provider_type: LLMProvider, provider_class: type[GraphRAGLLM]) -> None:
+    def register_provider(
+        cls, provider_type: LLMProvider, provider_class: type[GraphRAGLLM]
+    ) -> None:
         """Register a provider class for a specific provider type.
 
         Args:
@@ -81,6 +83,9 @@ class LLMProviderFactory:
                 "api_key": settings.google_api_key,
                 "project_id": settings.google_project_id,
                 "location": settings.google_location,
+                "use_vertex_ai": settings.google_cloud_use_vertex_ai,
+                "vertex_ai_endpoint": settings.vertex_ai_endpoint,
+                "vertex_ai_location": settings.vertex_ai_location,
                 "llm_model": settings.gemini_model,
                 "embedding_model": settings.gemini_embedding_model,
             }

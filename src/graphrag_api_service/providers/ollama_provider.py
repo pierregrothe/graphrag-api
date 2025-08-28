@@ -43,11 +43,7 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
         return "ollama"
 
     async def generate_text(
-        self,
-        prompt: str,
-        max_tokens: int = 1500,
-        temperature: float = 0.1,
-        **kwargs: Any
+        self, prompt: str, max_tokens: int = 1500, temperature: float = 0.1, **kwargs: Any
     ) -> LLMResponse:
         """Generate text response using Ollama LLM.
 
@@ -65,18 +61,11 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
         """
         try:
             # Prepare generation options
-            options = {
-                "temperature": temperature,
-                "num_predict": max_tokens,
-                **kwargs
-            }
+            options = {"temperature": temperature, "num_predict": max_tokens, **kwargs}
 
             # Make the API call
             response = await self.client.generate(
-                model=self.llm_model,
-                prompt=prompt,
-                options=options,
-                stream=False
+                model=self.llm_model, prompt=prompt, options=options, stream=False
             )
 
             # Extract response data
@@ -92,17 +81,13 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
                     "eval_duration": response.get("eval_duration", 0),
                     "prompt_eval_duration": response.get("prompt_eval_duration", 0),
                     "total_duration": response.get("total_duration", 0),
-                }
+                },
             )
 
         except Exception as e:
             raise Exception(f"Ollama text generation failed: {str(e)}") from e
 
-    async def generate_embeddings(
-        self,
-        texts: list[str],
-        **kwargs: Any
-    ) -> list[EmbeddingResponse]:
+    async def generate_embeddings(self, texts: list[str], **kwargs: Any) -> list[EmbeddingResponse]:
         """Generate embeddings using Ollama embedding model.
 
         Args:
@@ -120,20 +105,20 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
 
             for text in texts:
                 response = await self.client.embeddings(
-                    model=self.embedding_model,
-                    prompt=text,
-                    **kwargs
+                    model=self.embedding_model, prompt=text, **kwargs
                 )
 
                 embedding_vector = response.get("embedding", [])
 
-                embeddings.append(EmbeddingResponse(
-                    embeddings=embedding_vector,
-                    tokens_used=len(text.split()),  # Rough estimate
-                    model=self.embedding_model,
-                    provider=self.provider_name,
-                    dimensions=len(embedding_vector)
-                ))
+                embeddings.append(
+                    EmbeddingResponse(
+                        embeddings=embedding_vector,
+                        tokens_used=len(text.split()),  # Rough estimate
+                        model=self.embedding_model,
+                        provider=self.provider_name,
+                        dimensions=len(embedding_vector),
+                    )
+                )
 
             return embeddings
 
@@ -177,7 +162,7 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
                         "required_embedding": self.embedding_model,
                         "llm_available": llm_available,
                         "embed_available": embed_available,
-                    }
+                    },
                 )
 
             return ProviderHealth(
@@ -190,7 +175,7 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
                     "llm_model": self.llm_model,
                     "embedding_model": self.embedding_model,
                     "base_url": self.base_url,
-                }
+                },
             )
 
         except Exception as e:
@@ -202,5 +187,5 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
                 model_info={
                     "base_url": self.base_url,
                     "error": str(e),
-                }
+                },
             )

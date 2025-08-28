@@ -33,31 +33,32 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
         self.api_key = config.get("api_key")
         self.project_id = config.get("project_id")
         self.location = config.get("location", "us-central1")
+        self.use_vertex_ai = config.get("use_vertex_ai", False)
+        self.vertex_ai_endpoint = config.get("vertex_ai_endpoint")
+        self.vertex_ai_location = config.get("vertex_ai_location", "us-central1")
         self.llm_model = config.get("llm_model", "gemini-2.5-flash")
         self.embedding_model = config.get("embedding_model", "text-embedding-004")
 
-        if not self.api_key:
-            raise ValueError("Google API key is required for Gemini provider")
         if not self.project_id:
             raise ValueError("Google project ID is required for Gemini provider")
 
-        # Configure the generative AI client
-        genai.configure(api_key=self.api_key)
+        if self.use_vertex_ai:
+            # Vertex AI authentication relies on Application Default Credentials (ADC)
+            # or service account key file, no API key needed
+            pass
+        else:
+            # Standard Gemini API requires API key
+            if not self.api_key:
+                raise ValueError("Google API key is required for Gemini provider without Vertex AI")
+            genai.configure(api_key=self.api_key)
 
-        # Initialize the model
-        self.model = genai.GenerativeModel(
-            model_name=self.llm_model,
-            generation_config=GenerationConfig(
-                temperature=0.1,
-                max_output_tokens=1500,
-            ),
-            safety_settings={
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            }
-        )
+        # Initialize the model (configuration handled in generate methods)
+        self._default_safety_settings = {
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        }
 
     def _get_provider_name(self) -> str:
         """Get the provider name identifier.
@@ -68,11 +69,7 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
         return "google_gemini"
 
     async def generate_text(
-        self,
-        prompt: str,
-        max_tokens: int = 1500,
-        temperature: float = 0.1,
-        **kwargs: Any
+        self, prompt: str, max_tokens: int = 1500, temperature: float = 0.1, **kwargs: Any
     ) -> LLMResponse:
         """Generate text response using Gemini LLM.
 
@@ -91,16 +88,14 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
         try:
             # Update generation config for this request
             generation_config = GenerationConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-                **kwargs
+                temperature=temperature, max_output_tokens=max_tokens, **kwargs
             )
 
             # Create a new model instance with updated config
             model = genai.GenerativeModel(
                 model_name=self.llm_model,
                 generation_config=generation_config,
-                safety_settings=self.model.safety_settings
+                safety_settings=self._default_safety_settings,
             )
 
             # Generate content asynchronously
@@ -118,35 +113,51 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                 model=self.llm_model,
                 provider=self.provider_name,
                 metadata={
-                    "finish_reason": response.candidates[0].finish_reason.name if response.candidates else "UNKNOWN",
-                    "safety_ratings": [
-                        {
-                            "category": rating.category.name,
-                            "probability": rating.probability.name
-                        }
-                        for rating in response.candidates[0].safety_ratings
-                    ] if response.candidates else [],
-                    "prompt_feedback": {
-                        "block_reason": response.prompt_feedback.block_reason.name if response.prompt_feedback.block_reason else None,
-                        "safety_ratings": [
+                    "finish_reason": (
+                        response.candidates[0].finish_reason.name
+                        if response.candidates
+                        else "UNKNOWN"
+                    ),
+                    "safety_ratings": (
+                        [
                             {
                                 "category": rating.category.name,
-                                "probability": rating.probability.name
+                                "probability": rating.probability.name,
                             }
-                            for rating in response.prompt_feedback.safety_ratings
-                        ] if response.prompt_feedback.safety_ratings else []
-                    } if response.prompt_feedback else {}
-                }
+                            for rating in response.candidates[0].safety_ratings
+                        ]
+                        if response.candidates
+                        else []
+                    ),
+                    "prompt_feedback": (
+                        {
+                            "block_reason": (
+                                response.prompt_feedback.block_reason.name
+                                if response.prompt_feedback.block_reason
+                                else None
+                            ),
+                            "safety_ratings": (
+                                [
+                                    {
+                                        "category": rating.category.name,
+                                        "probability": rating.probability.name,
+                                    }
+                                    for rating in response.prompt_feedback.safety_ratings
+                                ]
+                                if response.prompt_feedback.safety_ratings
+                                else []
+                            ),
+                        }
+                        if response.prompt_feedback
+                        else {}
+                    ),
+                },
             )
 
         except Exception as e:
             raise Exception(f"Gemini text generation failed: {str(e)}") from e
 
-    async def generate_embeddings(
-        self,
-        texts: list[str],
-        **kwargs: Any
-    ) -> list[EmbeddingResponse]:
+    async def generate_embeddings(self, texts: list[str], **kwargs: Any) -> list[EmbeddingResponse]:
         """Generate embeddings using Gemini embedding model.
 
         Args:
@@ -166,7 +177,7 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
             batch_size = kwargs.get("batch_size", 10)
 
             for i in range(0, len(texts), batch_size):
-                batch = texts[i:i + batch_size]
+                batch = texts[i : i + batch_size]
 
                 # Generate embeddings for batch
                 batch_embeddings = []
@@ -175,18 +186,20 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                     result = genai.embed_content(
                         model=f"models/{self.embedding_model}",
                         content=text,
-                        task_type="retrieval_document"
+                        task_type="retrieval_document",
                     )
 
                     embedding_vector = result["embedding"]
 
-                    batch_embeddings.append(EmbeddingResponse(
-                        embeddings=embedding_vector,
-                        tokens_used=len(text.split()),  # Rough estimate
-                        model=self.embedding_model,
-                        provider=self.provider_name,
-                        dimensions=len(embedding_vector)
-                    ))
+                    batch_embeddings.append(
+                        EmbeddingResponse(
+                            embeddings=embedding_vector,
+                            tokens_used=len(text.split()),  # Rough estimate
+                            model=self.embedding_model,
+                            provider=self.provider_name,
+                            dimensions=len(embedding_vector),
+                        )
+                    )
 
                 embeddings.extend(batch_embeddings)
 
@@ -214,7 +227,8 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                 generation_config=GenerationConfig(
                     temperature=0.1,
                     max_output_tokens=10,
-                )
+                ),
+                safety_settings=self._default_safety_settings,
             )
 
             response = await test_model.generate_content_async("Hello")
@@ -234,8 +248,11 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                         "llm_model": self.llm_model,
                         "embedding_model": self.embedding_model,
                         "location": self.location,
-                        "response_received": False
-                    }
+                        "use_vertex_ai": self.use_vertex_ai,
+                        "vertex_ai_endpoint": self.vertex_ai_endpoint,
+                        "vertex_ai_location": self.vertex_ai_location,
+                        "response_received": False,
+                    },
                 )
 
             # Test embedding model availability
@@ -243,7 +260,7 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                 embed_result = genai.embed_content(
                     model=f"models/{self.embedding_model}",
                     content="test",
-                    task_type="retrieval_document"
+                    task_type="retrieval_document",
                 )
                 embedding_available = bool(embed_result.get("embedding"))
             except Exception:
@@ -260,10 +277,13 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                     "llm_model": self.llm_model,
                     "embedding_model": self.embedding_model,
                     "location": self.location,
+                    "use_vertex_ai": self.use_vertex_ai,
+                    "vertex_ai_endpoint": self.vertex_ai_endpoint,
+                    "vertex_ai_location": self.vertex_ai_location,
                     "llm_available": True,
                     "embedding_available": embedding_available,
-                    "response_length": len(response.text) if response.text else 0
-                }
+                    "response_length": len(response.text) if response.text else 0,
+                },
             )
 
         except Exception as e:
@@ -278,6 +298,9 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                     "llm_model": self.llm_model,
                     "embedding_model": self.embedding_model,
                     "location": self.location,
+                    "use_vertex_ai": self.use_vertex_ai,
+                    "vertex_ai_endpoint": self.vertex_ai_endpoint,
+                    "vertex_ai_location": self.vertex_ai_location,
                     "error": str(e),
-                }
+                },
             )

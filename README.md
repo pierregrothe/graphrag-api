@@ -46,7 +46,8 @@ graph TD
   * Latest Gemini models (2.5-flash, 2.5-pro)
   * Enterprise-grade reliability and scaling  
   * Advanced multimodal capabilities
-  * Integrated with Vertex AI platform
+  * Support for both Google Cloud API and Vertex AI endpoints
+  * Flexible authentication (API keys or Application Default Credentials)
 
 ### GraphRAG Operations
 
@@ -103,10 +104,15 @@ graph TD
    **For Google Gemini (Cloud):**
 
    ```bash
-   # Set environment variables
+   # Standard Google Cloud API (requires API key)
    export GRAPHRAG_LLM_PROVIDER=google_gemini
    export GOOGLE_API_KEY=your_api_key
    export GOOGLE_PROJECT_ID=your_project_id
+   
+   # Optional: Use Vertex AI endpoints (no API key needed if using ADC)
+   export GOOGLE_CLOUD_USE_VERTEX_AI=true
+   export VERTEX_AI_LOCATION=us-central1
+   export VERTEX_AI_ENDPOINT=https://custom-vertex.googleapis.com  # Optional custom endpoint
    ```
 
 4. **Run the application:**

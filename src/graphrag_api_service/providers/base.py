@@ -68,11 +68,7 @@ class GraphRAGLLM(ABC):
 
     @abstractmethod
     async def generate_text(
-        self,
-        prompt: str,
-        max_tokens: int = 1500,
-        temperature: float = 0.1,
-        **kwargs: Any
+        self, prompt: str, max_tokens: int = 1500, temperature: float = 0.1, **kwargs: Any
     ) -> LLMResponse:
         """Generate text response from the LLM.
 
@@ -90,11 +86,7 @@ class GraphRAGLLM(ABC):
         """
 
     @abstractmethod
-    async def generate_embeddings(
-        self,
-        texts: list[str],
-        **kwargs: Any
-    ) -> list[EmbeddingResponse]:
+    async def generate_embeddings(self, texts: list[str], **kwargs: Any) -> list[EmbeddingResponse]:
         """Generate embeddings for input texts.
 
         Args:
@@ -136,6 +128,8 @@ class GraphRAGLLM(ABC):
         """
         return {
             "provider": self.provider_name,
-            "config": {k: "***" if "key" in k.lower() or "token" in k.lower()
-                      else v for k, v in self.config.items()}
+            "config": {
+                k: "***" if "key" in k.lower() or "token" in k.lower() else v
+                for k, v in self.config.items()
+            },
         }
