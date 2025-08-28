@@ -91,10 +91,11 @@ Before proceeding to next development phase:
 * All tests pass (100% success rate)
 * Code formatting passes (Black)
 * Linting passes (Ruff)
+* Static type checking passes (mypy)
 * Documentation updated (including PROJECT_PLAN.md)
 * Manual validation completed
 
-### Coding Standards to Prevent Linting Issues
+### Coding Standards to Prevent Quality Issues
 
 **Import Organization (Ruff I001):**
 
@@ -127,3 +128,16 @@ from src.graphrag_api_service.config import Settings
 * Bugbear (B) - common Python gotchas
 * Comprehensions (C4) - list/dict comprehension improvements
 * Pyupgrade (UP) - modern Python syntax
+
+**mypy Type Checking:**
+
+* Validates return type annotations match actual return values
+* Detects Pydantic configuration issues (ConfigDict vs SettingsConfigDict)
+* Identifies unused type ignore comments
+* Ensures type consistency across function signatures
+* Prevents runtime type errors through static analysis
+
+**Quality Check Command:**
+```bash
+poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run mypy src/graphrag_api_service --show-error-codes
+```

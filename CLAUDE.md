@@ -12,7 +12,7 @@ GraphRAG API Service - A FastAPI-based API for Microsoft's GraphRAG library with
 * **Package Manager**: Poetry
 * **Framework**: FastAPI with Uvicorn ASGI server
 * **Testing**: pytest framework
-* **Code Quality**: Black (formatter) + Ruff (linter)
+* **Code Quality**: Black (formatter) + Ruff (linter) + mypy (type checker)
 
 ### Key Commands
 
@@ -114,7 +114,20 @@ Environment variables (via `.env` file):
 * **Implementation**: Small incremental steps with validation at each phase
 * **Documentation**: Always update PROJECT_PLAN.md when completing tasks or steps
 
-### Coding Standards to Prevent Linting Issues
+### Development Quality Standards
+
+**Code Quality Pipeline:**
+1. **Black**: Auto-format code style and structure
+2. **Ruff**: Lint for bugs, style issues, and code improvements  
+3. **mypy**: Static type checking for runtime error prevention
+4. **pytest**: Comprehensive test coverage validation
+
+**Quick Quality Check:**
+```bash
+poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run mypy src/graphrag_api_service --show-error-codes
+```
+
+### Coding Standards to Prevent Issues
 
 **Import Organization (Ruff I001):**
 
@@ -148,11 +161,22 @@ from src.graphrag_api_service.config import Settings
 * Comprehensions (C4)
 * Pyupgrade (UP)
 
+**mypy Configuration Applied:**
+
+* Static type checking for Python 3.12
+* Return type validation
+* Pydantic model configuration validation
+* External library type stub management
+* Unused type ignore detection
+
 ### Common Issues & Solutions
 
 * **Test Failures**: Run `poetry run pytest tests/ -v` to identify issues
 * **Formatting Issues**: Run `poetry run black src/ tests/` to auto-format
 * **Linting Issues**: Run `poetry run ruff check --fix src/ tests/` to auto-fix
+* **Type Errors**: Run `poetry run mypy src/graphrag_api_service --show-error-codes` to detect type issues
+* **Pydantic Config Issues**: Use `SettingsConfigDict` for `BaseSettings` classes, not `ConfigDict`
+* **Return Type Mismatches**: Ensure function return types match actual returned values
 * **Dependency Issues**: Run `poetry install` to sync dependencies
 
 ### Important Files
