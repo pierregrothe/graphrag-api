@@ -136,6 +136,16 @@ Environment variables (via `.env` file):
 poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run mypy src/graphrag_api_service --show-error-codes && npm run check:md
 ```
 
+**Mermaid Diagram Validation:**
+
+Since there are no reliable Python tools for Mermaid validation, use GitHub as the validation platform:
+
+1. **Local Development**: Ensure Mermaid syntax follows standard patterns (avoid new @{ shape: } syntax)
+2. **Commit & Push**: Push changes to GitHub repository
+3. **GitHub Validation**: Check diagram rendering at [README.md](https://github.com/pierregrothe/graphrag-api/blob/main/README.md)
+4. **Visual Verification**: Confirm all diagrams render correctly without parse errors
+5. **Compatibility**: Use universally supported shapes: `()`, `{}`, `[]`, `(())`, `[()]`, `{{}}`, `[//]`, `[\\]`
+
 ### Coding Standards to Prevent Issues
 
 #### CRITICAL: NO EMOJIS IN CODE

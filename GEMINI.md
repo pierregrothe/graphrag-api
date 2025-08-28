@@ -172,3 +172,16 @@ npm run check:md
 # Combined quality verification
 poetry run black src/ tests/ && poetry run ruff check src/ tests/ && poetry run mypy src/graphrag_api_service --show-error-codes && npm run check:md
 ```
+
+**Mermaid Diagram Validation Workflow:**
+
+No Python tools exist for reliable Mermaid validation. Use GitHub as the validation platform:
+
+1. **Development**: Use standard Mermaid syntax (avoid bleeding-edge features)
+2. **Local Check**: Ensure markdown passes `npm run check:md`
+3. **Commit & Push**: Push to GitHub repository for rendering validation
+4. **GitHub Check**: Verify diagrams at [README.md](https://github.com/pierregrothe/graphrag-api/blob/main/README.md)
+5. **Visual Confirmation**: All diagrams render without parse errors or missing shapes
+6. **Shape Compatibility**: Stick to universal shapes: `()`, `{}`, `[]`, `(())`, `[()]`, `{{}}`, `[//]`, `[\\]`
+
+This workflow ensures Mermaid diagrams work across all platforms and renderers.
