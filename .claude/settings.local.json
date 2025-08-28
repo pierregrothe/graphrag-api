@@ -8,7 +8,9 @@
       "Bash(poetry run pytest:*)",
       "Bash(poetry run black:*)",
       "Bash(poetry run ruff:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

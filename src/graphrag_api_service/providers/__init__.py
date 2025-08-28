@@ -7,5 +7,7 @@
 
 from .base import GraphRAGLLM
 from .factory import LLMProviderFactory
+from .ollama_provider import OllamaGraphRAGLLM
+from .registry import get_registered_providers, register_providers
 
-__all__ = ["GraphRAGLLM", "LLMProviderFactory"]
+__all__ = ["GraphRAGLLM", "LLMProviderFactory", "OllamaGraphRAGLLM", "register_providers", "get_registered_providers"]

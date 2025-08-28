@@ -49,13 +49,16 @@ src/graphrag_api_service/    # Main application package
 └── providers/              # LLM provider abstraction layer
     ├── __init__.py         # Provider package exports
     ├── base.py             # GraphRAGLLM abstract base class
-    └── factory.py          # LLMProviderFactory for dynamic provider creation
+    ├── factory.py          # LLMProviderFactory for dynamic provider creation
+    ├── ollama_provider.py  # Ollama local LLM provider implementation
+    └── registry.py         # Provider registration for automatic startup
 
 tests/                       # Test suite
 ├── test_main.py            # API endpoint tests
 ├── test_config.py          # Configuration tests
 ├── test_logging_config.py  # Logging tests
-└── test_providers_base.py  # Provider abstraction layer tests
+├── test_providers_base.py  # Provider abstraction layer tests
+└── test_ollama_provider.py # Ollama provider implementation tests
 ```
 
 ### API Endpoints
@@ -94,9 +97,9 @@ Environment variables (via `.env` file):
 
 ### Development Notes
 
-* **Current Status**: Provider abstraction layer implemented with factory pattern
-* **Architecture**: Unified GraphRAGLLM interface with dual provider support (Ollama + Google Gemini)
-* **Next Steps**: Implement concrete Ollama and Google Gemini provider classes
+* **Current Status**: Ollama provider fully implemented with comprehensive testing
+* **Architecture**: Unified GraphRAGLLM interface with Ollama provider operational (Google Gemini pending)
+* **Next Steps**: Implement Google Gemini provider class to complete dual provider support
 * **Code Standards**: All code must pass Black formatting and Ruff linting (see coding standards below)
 * **Testing**: Maintain 100% test pass rate before committing, test each provider independently
 * **Git**: Use semantic commit messages, main branch for development

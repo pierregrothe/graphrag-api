@@ -17,6 +17,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import settings
 from .logging_config import get_logger, setup_logging
+from .providers import register_providers
 
 # Setup logging
 setup_logging()
@@ -27,6 +28,11 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
+
+    # Register LLM providers
+    register_providers()
+    logger.info("LLM providers registered successfully")
+
     yield
     logger.info("Shutting down application")
 
