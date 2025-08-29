@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # Documentation Platform
+  docs-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: graphrag-docs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - ALGOLIA_APP_ID=${ALGOLIA_APP_ID:-}
+      - ALGOLIA_API_KEY=${ALGOLIA_API_KEY:-}
+      - ALGOLIA_INDEX_NAME=${ALGOLIA_INDEX_NAME:-graphrag-api-docs}
+    volumes:
+      - ./static:/app/static:ro
+      - ./docs:/app/docs:ro
+      - ./api:/app/api:ro
+      - ./guides:/app/guides:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docs.rule=Host(`docs.graphrag.com`)"
+      - "traefik.http.routers.docs.tls=true"
+      - "traefik.http.routers.docs.tls.certresolver=letsencrypt"
+      - "traefik.http.services.docs.loadbalancer.server.port=3000"
+
+  # Development server (for local development)
+  docs-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: graphrag-docs-dev
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - FAST_REFRESH=true
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.docusaurus
+    command: npm start
+    profiles:
+      - dev
+    restart: unless-stopped
+
+  # API Documentation Generator (runs periodically)
+  docs-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.generator
+    container_name: graphrag-docs-generator
+    environment:
+      - GRAPHRAG_API_URL=${GRAPHRAG_API_URL:-http://graphrag-api:8000}
+      - OPENAPI_SPEC_PATH=/app/specs/openapi.yaml
+      - OUTPUT_DIR=/app/generated
+    volumes:
+      - ../docs/api:/app/specs:ro
+      - ./api:/app/generated
+    depends_on:
+      - graphrag-api
+    profiles:
+      - generator
+    restart: "no"
+
+  # GraphRAG API (for documentation generation and testing)
+  graphrag-api:
+    image: graphrag-api:latest
+    container_name: graphrag-api-for-docs
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=documentation
+      - DEBUG=false
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/graphrag_docs
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    profiles:
+      - with-api
+    restart: unless-stopped
+
+  # PostgreSQL for API testing
+  postgres:
+    image: postgres:15-alpine
+    container_name: graphrag-docs-postgres
+    environment:
+      - POSTGRES_DB=graphrag_docs
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    profiles:
+      - with-api
+    restart: unless-stopped
+
+  # Redis for API caching
+  redis:
+    image: redis:7-alpine
+    container_name: graphrag-docs-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    profiles:
+      - with-api
+    restart: unless-stopped
+
+  # Nginx reverse proxy (for production)
+  nginx:
+    image: nginx:alpine
+    container_name: graphrag-docs-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - docs-platform
+    profiles:
+      - production
+    restart: unless-stopped
+
+  # Algolia DocSearch Scraper (for search indexing)
+  docsearch-scraper:
+    image: algolia/docsearch-scraper
+    container_name: graphrag-docs-scraper
+    environment:
+      - APPLICATION_ID=${ALGOLIA_APP_ID}
+      - API_KEY=${ALGOLIA_ADMIN_API_KEY}
+      - CONFIG_FILE_PATH=/app/docsearch-config.json
+    volumes:
+      - ./docsearch-config.json:/app/docsearch-config.json:ro
+    profiles:
+      - search-indexing
+    restart: "no"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  default:
+    name: graphrag-docs-network
+    driver: bridge

@@ -17,6 +17,20 @@ from src.graphrag_api_service.config import Settings
 from src.graphrag_api_service.main import app
 
 
+# Global fixture to disable rate limiting for all tests
+@pytest.fixture(autouse=True)
+def disable_rate_limiting():
+    """Automatically disable rate limiting for all tests."""
+    with patch.dict(os.environ, {
+        "TESTING": "true",
+        "RATE_LIMITING_ENABLED": "false"
+    }):
+        # Also patch the security middleware to ensure rate limiting is disabled
+        from src.graphrag_api_service.security.middleware import reset_security_middleware
+        reset_security_middleware()
+        yield
+
+
 # Configuration Fixtures
 @pytest.fixture
 def clean_env() -> Generator[None, None, None]:
@@ -173,19 +187,47 @@ def vertex_ai_config() -> dict[str, Any]:
 @pytest.fixture
 def test_client() -> TestClient:
     """Fixture providing FastAPI test client with data paths configured."""
+    from src.graphrag_api_service.security.middleware import reset_security_middleware, get_security_middleware
+
     with patch.dict(
-        os.environ, {"GRAPHRAG_DATA_PATH": "/test/data", "GRAPHRAG_CONFIG_PATH": "/test/config"}
+        os.environ, {
+            "GRAPHRAG_DATA_PATH": "/test/data",
+            "GRAPHRAG_CONFIG_PATH": "/test/config",
+            "TESTING": "true",  # Disable rate limiting for tests
+            "RATE_LIMITING_ENABLED": "false"
+        }
     ):
+        # Reset security middleware to pick up new environment variables
+        reset_security_middleware()
+
+        # Verify that rate limiting is disabled
+        middleware = get_security_middleware()
+        assert middleware.rate_limiter is None, "Rate limiter should be disabled for tests"
+
         return TestClient(app)
 
 
 @pytest.fixture
 def authenticated_client() -> TestClient:
     """Fixture providing authenticated FastAPI test client (future use)."""
+    from src.graphrag_api_service.security.middleware import reset_security_middleware, get_security_middleware
+
     # Placeholder for when authentication is implemented
     with patch.dict(
-        os.environ, {"GRAPHRAG_DATA_PATH": "/test/data", "GRAPHRAG_CONFIG_PATH": "/test/config"}
+        os.environ, {
+            "GRAPHRAG_DATA_PATH": "/test/data",
+            "GRAPHRAG_CONFIG_PATH": "/test/config",
+            "TESTING": "true",  # Disable rate limiting for tests
+            "RATE_LIMITING_ENABLED": "false"
+        }
     ):
+        # Reset security middleware to pick up new environment variables
+        reset_security_middleware()
+
+        # Verify that rate limiting is disabled
+        middleware = get_security_middleware()
+        assert middleware.rate_limiter is None, "Rate limiter should be disabled for tests"
+
         client = TestClient(app)
         # Future: Add authentication headers
         return client

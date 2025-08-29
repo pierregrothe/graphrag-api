@@ -8,6 +8,7 @@
 import asyncio
 import json
 import pytest
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.graphrag_api_service.graphql.optimization import (
@@ -267,7 +268,7 @@ class TestJWTAuthentication:
             email="test@example.com",
             roles=["user"],
             permissions=["read:entities"],
-            expires_at=datetime.utcnow()
+            expires_at=datetime.now(timezone.utc)
         )
         
         # Create access token

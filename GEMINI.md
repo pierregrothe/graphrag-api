@@ -15,13 +15,13 @@ architecture focusing on flexibility and deployment options.
 **Providers**:
 
 - **Ollama (Local)**: Gemma3:4b model for privacy-focused, cost-effective local deployments
-    - Direct integration without proxy layers
-    - Local embeddings with nomic-embed-text
-    - Complete data privacy and no external API costs
+- Direct integration without proxy layers
+- Local embeddings with nomic-embed-text
+- Complete data privacy and no external API costs
 - **Google Cloud Gemini**: gemini-2.5-flash/pro for cloud-based, high-performance deployments
-    - Latest Gemini models with multimodal capabilities
-    - Enterprise-grade reliability and scaling
-    - Integrated with Vertex AI platform
+- Latest Gemini models with multimodal capabilities
+- Enterprise-grade reliability and scaling
+- Integrated with Vertex AI platform
 
 **Implementation Strategy**: Small incremental steps with comprehensive testing and validation at each phase.
 
@@ -39,25 +39,25 @@ architecture focusing on flexibility and deployment options.
 ### Configuration
 
 ```bash
-src/graphrag_api_service/    # Main application package
-├── main.py                  # FastAPI application with GraphRAG endpoints
-├── config.py                # Pydantic settings configuration
-├── logging_config.py        # Logging setup
-└── providers/              # LLM provider abstraction layer
-    ├── __init__.py         # Provider package exports
-    ├── base.py             # GraphRAGLLM abstract base class
-    ├── factory.py          # LLMProviderFactory for dynamic provider creation
-    ├── ollama_provider.py  # Ollama local LLM provider implementation
-    ├── gemini_provider.py  # Google Gemini cloud LLM provider implementation
-    └── registry.py         # Provider registration for automatic startup
+src/graphrag_api_service/ # Main application package
+main.py # FastAPI application with GraphRAG endpoints
+config.py # Pydantic settings configuration
+logging_config.py # Logging setup
+providers/ # LLM provider abstraction layer
+__init__.py # Provider package exports
+base.py # GraphRAGLLM abstract base class
+factory.py # LLMProviderFactory for dynamic provider creation
+ollama_provider.py # Ollama local LLM provider implementation
+gemini_provider.py # Google Gemini cloud LLM provider implementation
+registry.py # Provider registration for automatic startup
 
-tests/                       # Test suite
-├── test_main.py            # API endpoint tests
-├── test_config.py          # Configuration tests
-├── test_logging_config.py  # Logging tests
-├── test_providers_base.py  # Provider abstraction layer tests
-├── test_ollama_provider.py # Ollama provider implementation tests
-└── test_gemini_provider.py # Google Gemini provider implementation tests
+tests/ # Test suite
+test_main.py # API endpoint tests
+test_config.py # Configuration tests
+test_logging_config.py # Logging tests
+test_providers_base.py # Provider abstraction layer tests
+test_ollama_provider.py # Ollama provider implementation tests
+test_gemini_provider.py # Google Gemini provider implementation tests
 ```
 
 - **Code Quality:** Black formatter + Ruff linter with 100% test coverage requirement

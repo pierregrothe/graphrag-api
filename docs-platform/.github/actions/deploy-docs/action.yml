@@ -1,0 +1,146 @@
+name: 'Deploy Documentation Platform'
+description: 'Deploy GraphRAG API documentation platform to specified environment'
+author: 'Pierre Grothé'
+
+inputs:
+  environment:
+    description: 'Target environment (staging/production)'
+    required: true
+  image-tag:
+    description: 'Docker image tag to deploy'
+    required: true
+  deploy-key:
+    description: 'SSH private key for deployment'
+    required: true
+  host:
+    description: 'Target host for deployment'
+    required: true
+  username:
+    description: 'SSH username for deployment'
+    required: true
+  port:
+    description: 'SSH port for deployment'
+    required: false
+    default: '22'
+
+outputs:
+  deployment-url:
+    description: 'URL of the deployed documentation'
+    value: ${{ steps.deploy.outputs.url }}
+  deployment-status:
+    description: 'Status of the deployment'
+    value: ${{ steps.deploy.outputs.status }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup SSH
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ inputs.deploy-key }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -p ${{ inputs.port }} ${{ inputs.host }} >> ~/.ssh/known_hosts
+
+    - name: Create deployment directory
+      shell: bash
+      run: |
+        ssh -i ~/.ssh/deploy_key -p ${{ inputs.port }} ${{ inputs.username }}@${{ inputs.host }} \
+          "mkdir -p /opt/graphrag-docs/${{ inputs.environment }}"
+
+    - name: Copy deployment files
+      shell: bash
+      run: |
+        # Copy docker-compose file
+        scp -i ~/.ssh/deploy_key -P ${{ inputs.port }} \
+          docs-platform/docker-compose.yml \
+          ${{ inputs.username }}@${{ inputs.host }}:/opt/graphrag-docs/${{ inputs.environment }}/
+
+        # Copy nginx configuration
+        scp -i ~/.ssh/deploy_key -P ${{ inputs.port }} \
+          docs-platform/nginx.conf \
+          ${{ inputs.username }}@${{ inputs.host }}:/opt/graphrag-docs/${{ inputs.environment }}/
+
+        # Copy environment-specific configuration
+        scp -i ~/.ssh/deploy_key -P ${{ inputs.port }} \
+          docs-platform/.env.${{ inputs.environment }} \
+          ${{ inputs.username }}@${{ inputs.host }}:/opt/graphrag-docs/${{ inputs.environment }}/.env
+
+    - name: Deploy application
+      id: deploy
+      shell: bash
+      run: |
+        # Set deployment variables
+        if [ "${{ inputs.environment }}" = "production" ]; then
+          DOMAIN="docs.graphrag.com"
+          COMPOSE_PROFILE="production"
+        else
+          DOMAIN="docs-staging.graphrag.com"
+          COMPOSE_PROFILE="staging"
+        fi
+
+        # Deploy via SSH
+        ssh -i ~/.ssh/deploy_key -p ${{ inputs.port }} ${{ inputs.username }}@${{ inputs.host }} << EOF
+          cd /opt/graphrag-docs/${{ inputs.environment }}
+          
+          # Set environment variables
+          export DOCKER_IMAGE_TAG="${{ inputs.image-tag }}"
+          export DOMAIN="$DOMAIN"
+          export COMPOSE_PROFILES="$COMPOSE_PROFILE"
+          
+          # Pull latest image
+          docker pull ${{ inputs.image-tag }}
+          
+          # Stop existing containers
+          docker-compose down --remove-orphans
+          
+          # Start new containers
+          docker-compose --profile $COMPOSE_PROFILE up -d
+          
+          # Wait for health check
+          echo "Waiting for application to be healthy..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+              echo "Application is healthy"
+              break
+            fi
+            if [ \$i -eq 30 ]; then
+              echo "Application failed to become healthy"
+              exit 1
+            fi
+            sleep 10
+          done
+          
+          # Clean up old images
+          docker image prune -f
+        EOF
+
+        # Set outputs
+        echo "url=https://$DOMAIN" >> $GITHUB_OUTPUT
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Verify deployment
+      shell: bash
+      run: |
+        if [ "${{ inputs.environment }}" = "production" ]; then
+          URL="https://docs.graphrag.com"
+        else
+          URL="https://docs-staging.graphrag.com"
+        fi
+
+        # Wait for DNS propagation and SSL
+        sleep 30
+
+        # Test main pages
+        curl -f "$URL" || exit 1
+        curl -f "$URL/api" || exit 1
+        curl -f "$URL/playground" || exit 1
+        curl -f "$URL/docs/getting-started" || exit 1
+
+        echo "✅ Deployment verification successful"
+
+    - name: Cleanup SSH
+      if: always()
+      shell: bash
+      run: |
+        rm -f ~/.ssh/deploy_key

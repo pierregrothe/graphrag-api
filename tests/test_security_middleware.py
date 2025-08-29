@@ -281,8 +281,8 @@ class TestSecurityMiddleware:
         assert ip == "192.168.1.2"
 
         # Test with client.host fallback
-        mock_request.headers.get.return_value = None
-        
+        mock_request.headers.get.side_effect = lambda key: None
+
         ip = security_middleware.get_client_ip(mock_request)
         assert ip == "127.0.0.1"
 
@@ -303,37 +303,60 @@ class TestSecurityMiddleware:
         """Test successful request processing."""
         mock_request = MagicMock()
         mock_request.method = "GET"
-        mock_request.headers.get.side_effect = lambda key: {
+        mock_request.headers.get.side_effect = lambda key, default="": {
             "content-length": "100",
             "user-agent": "test-agent"
-        }.get(key)
+        }.get(key, default)
         mock_request.headers.keys.return_value = []
         mock_request.client.host = "127.0.0.1"
-        
+
         # Should not raise an exception
         await security_middleware.process_request(mock_request)
 
     @pytest.mark.asyncio
     async def test_request_processing_rate_limit(self, security_middleware):
         """Test request processing with rate limiting."""
-        mock_request = MagicMock()
-        mock_request.method = "GET"
-        mock_request.headers.get.side_effect = lambda key: {
-            "content-length": "100",
-            "user-agent": "test-agent"
-        }.get(key)
-        mock_request.headers.keys.return_value = []
-        mock_request.client.host = "127.0.0.1"
-        
-        # Fill up the rate limit
-        for _ in range(10):
-            await security_middleware.process_request(mock_request)
-        
-        # Next request should be rate limited
-        with pytest.raises(HTTPException) as exc_info:
-            await security_middleware.process_request(mock_request)
-        
-        assert exc_info.value.status_code == 429
+        # Create a security middleware with rate limiting forced on
+        from src.graphrag_api_service.security.middleware import SecurityMiddleware, RateLimiter, SecurityConfig
+        from unittest.mock import patch
+        import os
+
+        # Create a config with rate limiting enabled
+        config = SecurityConfig()
+        config.rate_limiting_enabled = True
+        config.requests_per_minute = 10
+        config.burst_limit = 10
+
+        # Create middleware and manually set the rate limiter to bypass environment checks
+        rate_limited_middleware = SecurityMiddleware(config)
+        rate_limited_middleware.rate_limiter = RateLimiter(
+            config.requests_per_minute,
+            config.burst_limit
+        )
+
+        # Mock the environment check in process_request to always allow rate limiting
+        with patch.dict(os.environ, {
+            "TESTING": "false",
+            "RATE_LIMITING_ENABLED": "true"
+        }):
+            mock_request = MagicMock()
+            mock_request.method = "GET"
+            mock_request.headers.get.side_effect = lambda key, default="": {
+                "content-length": "100",
+                "user-agent": "test-agent"
+            }.get(key, default)
+            mock_request.headers.keys.return_value = []
+            mock_request.client.host = "127.0.0.1"
+
+            # Fill up the rate limit
+            for _ in range(10):
+                await rate_limited_middleware.process_request(mock_request)
+
+            # Next request should be rate limited
+            with pytest.raises(HTTPException) as exc_info:
+                await rate_limited_middleware.process_request(mock_request)
+
+            assert exc_info.value.status_code == 429
 
     def test_cors_config_creation(self, security_middleware):
         """Test CORS configuration creation."""

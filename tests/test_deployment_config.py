@@ -17,42 +17,58 @@ from src.graphrag_api_service.deployment.config import (
     SecurityConfig,
     PerformanceConfig,
 )
+from pydantic_settings import SettingsConfigDict
 
 
 class TestDeploymentSettings:
     """Test cases for deployment settings."""
 
+    @patch.dict(os.environ, {}, clear=True)
     def test_default_settings(self):
         """Test default deployment settings."""
-        settings = DeploymentSettings()
-        
+        # Create a settings class that doesn't load from .env file
+        class TestDeploymentSettings(DeploymentSettings):
+            model_config = SettingsConfigDict(
+                env_file=None,
+                env_file_encoding="utf-8",
+                case_sensitive=False,
+                extra="ignore"
+            )
+
+        settings = TestDeploymentSettings()
+
         assert settings.environment == "development"
         assert settings.debug is False
         assert settings.host == "0.0.0.0"
         assert settings.port == 8000
         assert settings.app_name == "GraphRAG API"
 
+    @patch.dict(os.environ, {}, clear=True)
     def test_environment_validation(self):
         """Test environment validation."""
         # Valid environments should work
         for env in ["development", "staging", "production"]:
-            settings = DeploymentSettings(environment=env)
-            assert settings.environment == env
+            with patch.dict(os.environ, {"ENVIRONMENT": env}, clear=True):
+                settings = DeploymentSettings()
+                assert settings.environment == env
 
         # Invalid environment should raise error
         with pytest.raises(ValueError):
-            DeploymentSettings(environment="invalid")
+            with patch.dict(os.environ, {"ENVIRONMENT": "invalid"}, clear=True):
+                DeploymentSettings()
 
+    @patch.dict(os.environ, {}, clear=True)
     def test_environment_detection_methods(self):
         """Test environment detection methods."""
-        dev_settings = DeploymentSettings(environment="development")
-        prod_settings = DeploymentSettings(environment="production")
-        
-        assert dev_settings.is_development() is True
-        assert dev_settings.is_production() is False
-        
-        assert prod_settings.is_development() is False
-        assert prod_settings.is_production() is True
+        with patch.dict(os.environ, {"ENVIRONMENT": "development"}, clear=True):
+            dev_settings = DeploymentSettings()
+            assert dev_settings.is_development() is True
+            assert dev_settings.is_production() is False
+
+        with patch.dict(os.environ, {"ENVIRONMENT": "production"}, clear=True):
+            prod_settings = DeploymentSettings()
+            assert prod_settings.is_development() is False
+            assert prod_settings.is_production() is True
 
     def test_database_url_generation(self):
         """Test database URL generation."""
@@ -139,39 +155,43 @@ class TestConfigManager:
         errors = config_manager.validate_production_config(settings)
         assert len(errors) == 0
 
+    @patch.dict(os.environ, {}, clear=True)
     def test_production_config_validation_failures(self, config_manager):
         """Test production configuration validation failures."""
-        settings = DeploymentSettings(
-            environment="production",
-            debug=True,  # Should be False in production
-        )
-        settings.security.secret_key = "your-secret-key-here"  # Default value
-        settings.security.cors_origins = ["*"]  # Too permissive
-        settings.performance.max_workers = 1  # Too few workers
-        settings.database.host = "localhost"  # Should not be localhost
-        settings.monitoring.metrics_enabled = False  # Should be enabled
-        
-        errors = config_manager.validate_production_config(settings)
-        assert len(errors) > 0
-        assert any("debug" in error.lower() for error in errors)
-        assert any("secret" in error.lower() for error in errors)
-        assert any("cors" in error.lower() for error in errors)
+        with patch.dict(os.environ, {
+            "ENVIRONMENT": "production",
+            "DEBUG": "true",
+            "SECRET_KEY": "your-secret-key-here"
+        }, clear=True):
+            settings = DeploymentSettings()
+            settings.security.cors_origins = ["*"]  # Too permissive
+            settings.performance.max_workers = 1  # Too few workers
+            settings.database.host = "localhost"  # Should not be localhost
+            settings.monitoring.metrics_enabled = False  # Should be enabled
 
+            errors = config_manager.validate_production_config(settings)
+            assert len(errors) > 0
+            assert any("debug" in error.lower() for error in errors)
+            assert any("secret" in error.lower() for error in errors)
+            assert any("cors" in error.lower() for error in errors)
+
+    @patch.dict(os.environ, {}, clear=True)
     def test_gunicorn_config_generation(self, config_manager):
         """Test Gunicorn configuration generation."""
-        settings = DeploymentSettings(
-            host="127.0.0.1",
-            port=8080,
-        )
-        settings.performance.max_workers = 4
-        settings.performance.worker_timeout = 300
-        
-        gunicorn_config = config_manager.get_gunicorn_config(settings)
-        
-        assert gunicorn_config["bind"] == "127.0.0.1:8080"
-        assert gunicorn_config["workers"] == 4
-        assert gunicorn_config["timeout"] == 300
-        assert gunicorn_config["worker_class"] == "uvicorn.workers.UvicornWorker"
+        with patch.dict(os.environ, {
+            "HOST": "127.0.0.1",
+            "PORT": "8080"
+        }, clear=True):
+            settings = DeploymentSettings()
+            settings.performance.max_workers = 4
+            settings.performance.worker_timeout = 300
+
+            gunicorn_config = config_manager.get_gunicorn_config(settings)
+
+            assert gunicorn_config["bind"] == "127.0.0.1:8080"
+            assert gunicorn_config["workers"] == 4
+            assert gunicorn_config["timeout"] == 300
+            assert gunicorn_config["worker_class"] == "uvicorn.workers.UvicornWorker"
 
     def test_docker_compose_generation(self, config_manager):
         """Test Docker Compose configuration generation."""

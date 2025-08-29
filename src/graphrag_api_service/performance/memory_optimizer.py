@@ -398,9 +398,9 @@ class MemoryOptimizer:
         memory_stats = self.monitor.get_memory_stats()
 
         return {
-            "memory_stats": memory_stats.dict(),
+            "memory_stats": memory_stats.model_dump(),
             "memory_pressure": self.monitor.check_memory_pressure(),
-            "config": self.config.dict(),
+            "config": self.config.model_dump(),
             "tracked_objects": len(self.monitor._tracked_objects),
         }
 

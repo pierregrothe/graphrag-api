@@ -6,7 +6,7 @@
 """JWT-based authentication system with role-based access control."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
 
 import jwt
@@ -96,7 +96,7 @@ class JWTManager:
         Returns:
             Encoded JWT token
         """
-        expire = datetime.utcnow() + timedelta(minutes=self.config.access_token_expire_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=self.config.access_token_expire_minutes)
         
         payload = {
             "sub": token_data.user_id,
@@ -106,7 +106,7 @@ class JWTManager:
             "permissions": token_data.permissions,
             "tenant_id": token_data.tenant_id,
             "exp": expire,
-            "iat": datetime.utcnow(),
+            "iat": datetime.now(timezone.utc),
             "iss": self.config.issuer,
             "aud": self.config.audience,
             "type": "access"
@@ -345,7 +345,7 @@ class AuthenticationService:
             roles=user["roles"],
             permissions=permissions,
             tenant_id=user.get("tenant_id"),
-            expires_at=datetime.utcnow() + timedelta(minutes=self.jwt_manager.config.access_token_expire_minutes)
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=self.jwt_manager.config.access_token_expire_minutes)
         )
     
     async def create_user(
@@ -378,7 +378,7 @@ class AuthenticationService:
             "password_hash": password_hash,
             "roles": roles,
             "tenant_id": tenant_id,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
             "is_active": True
         }
         

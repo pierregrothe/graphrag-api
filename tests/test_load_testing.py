@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.graphrag_api_service.performance.load_testing import (
     LoadTestConfig,
-    TestScenario,
+    LoadTestScenario,
     BenchmarkSuite,
     LoadTestResult,
 )
@@ -45,12 +45,12 @@ class TestLoadTestConfig:
         assert config.requests_per_user == 100
 
 
-class TestTestScenario:
+class TestLoadTestScenario:
     """Test cases for test scenarios."""
 
     def test_basic_scenario(self):
         """Test basic test scenario creation."""
-        scenario = TestScenario(
+        scenario = LoadTestScenario(
             name="test_scenario",
             method="GET",
             endpoint="/api/test",
@@ -67,7 +67,7 @@ class TestTestScenario:
     def test_post_scenario_with_payload(self):
         """Test POST scenario with payload."""
         payload = {"query": "test", "limit": 10}
-        scenario = TestScenario(
+        scenario = LoadTestScenario(
             name="post_test",
             method="POST",
             endpoint="/api/search",
@@ -109,7 +109,7 @@ class TestBenchmarkSuite:
         """Test adding custom scenarios."""
         initial_count = len(benchmark_suite.scenarios)
         
-        custom_scenario = TestScenario(
+        custom_scenario = LoadTestScenario(
             name="custom_test",
             method="GET",
             endpoint="/api/custom",
@@ -124,8 +124,8 @@ class TestBenchmarkSuite:
         """Test weighted scenario selection."""
         # Add scenarios with different weights
         benchmark_suite.scenarios = [
-            TestScenario(name="high_weight", method="GET", endpoint="/high", weight=0.8),
-            TestScenario(name="low_weight", method="GET", endpoint="/low", weight=0.2),
+            LoadTestScenario(name="high_weight", method="GET", endpoint="/high", weight=0.8),
+            LoadTestScenario(name="low_weight", method="GET", endpoint="/low", weight=0.2),
         ]
         
         # Select scenarios multiple times and check distribution
@@ -143,22 +143,28 @@ class TestBenchmarkSuite:
     @pytest.mark.asyncio
     async def test_request_execution_success(self, benchmark_suite):
         """Test successful request execution."""
-        scenario = TestScenario(
+        scenario = LoadTestScenario(
             name="test_scenario",
             method="GET",
             endpoint="/api/test",
         )
-        
+
         # Mock successful HTTP response
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.text = AsyncMock(return_value="success")
-        
+
+        # Create proper async context manager mock using MagicMock
+        from unittest.mock import MagicMock
+        mock_context_manager = MagicMock()
+        mock_context_manager.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context_manager.__aexit__ = AsyncMock(return_value=None)
+
         mock_session = AsyncMock()
-        mock_session.get.return_value.__aenter__.return_value = mock_response
-        
+        mock_session.get = MagicMock(return_value=mock_context_manager)
+
         result = await benchmark_suite._execute_request(mock_session, scenario, user_id=1)
-        
+
         assert result["scenario"] == "test_scenario"
         assert result["success"] is True
         assert result["status_code"] == 200
@@ -167,18 +173,23 @@ class TestBenchmarkSuite:
     @pytest.mark.asyncio
     async def test_request_execution_failure(self, benchmark_suite):
         """Test failed request execution."""
-        scenario = TestScenario(
+        scenario = LoadTestScenario(
             name="test_scenario",
             method="GET",
             endpoint="/api/test",
         )
-        
-        # Mock failed HTTP response
+
+        # Mock failed HTTP response - make the async context manager raise an exception
+        from unittest.mock import MagicMock
+        mock_context_manager = MagicMock()
+        mock_context_manager.__aenter__ = AsyncMock(side_effect=Exception("Connection error"))
+        mock_context_manager.__aexit__ = AsyncMock(return_value=None)
+
         mock_session = AsyncMock()
-        mock_session.get.side_effect = Exception("Connection error")
-        
+        mock_session.get = MagicMock(return_value=mock_context_manager)
+
         result = await benchmark_suite._execute_request(mock_session, scenario, user_id=1)
-        
+
         assert result["scenario"] == "test_scenario"
         assert result["success"] is False
         assert result["status_code"] == 0
@@ -259,9 +270,22 @@ class TestBenchmarkSuite:
         mock_response.status = 200
         mock_response.text = AsyncMock(return_value="success")
         
-        mock_session.get.return_value.__aenter__.return_value = mock_response
-        mock_session.request.return_value.__aenter__.return_value = mock_response
-        mock_session_class.return_value.__aenter__.return_value = mock_session
+        # Create proper async context manager mocks
+        mock_get_context = AsyncMock()
+        mock_get_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_get_context.__aexit__ = AsyncMock(return_value=None)
+
+        mock_request_context = AsyncMock()
+        mock_request_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_request_context.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session.get.return_value = mock_get_context
+        mock_session.request.return_value = mock_request_context
+
+        mock_session_context = AsyncMock()
+        mock_session_context.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_context.__aexit__ = AsyncMock(return_value=None)
+        mock_session_class.return_value = mock_session_context
         
         # Simulate a user with very short duration
         benchmark_suite.config.test_duration_seconds = 0.1
@@ -282,9 +306,22 @@ class TestBenchmarkSuite:
         mock_response.status = 200
         mock_response.text = AsyncMock(return_value="success")
         
-        mock_session.get.return_value.__aenter__.return_value = mock_response
-        mock_session.request.return_value.__aenter__.return_value = mock_response
-        mock_session_class.return_value.__aenter__.return_value = mock_session
+        # Create proper async context manager mocks
+        mock_get_context = AsyncMock()
+        mock_get_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_get_context.__aexit__ = AsyncMock(return_value=None)
+
+        mock_request_context = AsyncMock()
+        mock_request_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_request_context.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session.get.return_value = mock_get_context
+        mock_session.request.return_value = mock_request_context
+
+        mock_session_context = AsyncMock()
+        mock_session_context.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_context.__aexit__ = AsyncMock(return_value=None)
+        mock_session_class.return_value = mock_session_context
         
         # Run a very short load test
         benchmark_suite.config.concurrent_users = 1

@@ -347,7 +347,7 @@ class PerformanceMonitor:
                     stats["error_rate"] = stats["errors"] / stats["count"]
 
         return {
-            "current_metrics": current_metrics.dict(),
+            "current_metrics": current_metrics.model_dump(),
             "response_time_percentiles": percentiles,
             "endpoint_statistics": endpoint_stats,
             "total_requests": self._request_count,

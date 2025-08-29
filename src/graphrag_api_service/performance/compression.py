@@ -227,7 +227,7 @@ class PaginationHandler:
         import base64
 
         if isinstance(item, dict):
-            cursor_data = item.get("id", str(hash(str(item))))
+            cursor_data = str(item.get("id", hash(str(item))))
         else:
             cursor_data = str(hash(str(item)))
 

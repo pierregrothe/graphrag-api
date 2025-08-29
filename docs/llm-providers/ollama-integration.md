@@ -21,18 +21,18 @@ ollama --version
 1. Download installer from https://ollama.ai/download
 2. Run installer and follow setup wizard
 3. Verify installation in Command Prompt:
-   ```cmd
-   ollama --version
-   ```
+```cmd
+ollama --version
+```
 
 #### **Docker Installation**
 ```bash
 # Run Ollama in Docker
 docker run -d \
-  --name ollama \
-  -p 11434:11434 \
-  -v ollama:/root/.ollama \
-  ollama/ollama
+--name ollama \
+-p 11434:11434 \
+-v ollama:/root/.ollama \
+ollama/ollama
 
 # Verify container is running
 docker ps | grep ollama
@@ -43,11 +43,11 @@ docker ps | grep ollama
 #### **Text Generation Models**
 ```bash
 # Recommended models for GraphRAG
-ollama pull llama2              # 7B parameters, good balance
-ollama pull llama2:13b          # 13B parameters, better quality
-ollama pull codellama           # Code-optimized model
-ollama pull mistral             # Fast and efficient
-ollama pull gemma:7b            # Google's Gemma model
+ollama pull llama2 # 7B parameters, good balance
+ollama pull llama2:13b # 13B parameters, better quality
+ollama pull codellama # Code-optimized model
+ollama pull mistral # Fast and efficient
+ollama pull gemma:7b # Google's Gemma model
 
 # List installed models
 ollama list
@@ -56,8 +56,8 @@ ollama list
 #### **Embedding Models**
 ```bash
 # Essential for semantic search
-ollama pull nomic-embed-text    # Recommended for text embeddings
-ollama pull all-minilm          # Alternative embedding model
+ollama pull nomic-embed-text # Recommended for text embeddings
+ollama pull all-minilm # Alternative embedding model
 
 # Verify embedding model
 ollama run nomic-embed-text "test embedding"
@@ -219,57 +219,57 @@ import requests
 import json
 
 class OllamaClient:
-    def __init__(self, base_url="http://localhost:11434"):
-        self.base_url = base_url
-    
-    def generate_text(self, prompt, model="llama2"):
-        """Generate text using Ollama"""
-        response = requests.post(
-            f"{self.base_url}/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.7,
-                    "top_k": 40,
-                    "top_p": 0.9
-                }
-            }
-        )
-        return response.json()["response"]
-    
-    def get_embeddings(self, text, model="nomic-embed-text"):
-        """Get text embeddings"""
-        response = requests.post(
-            f"{self.base_url}/api/embeddings",
-            json={
-                "model": model,
-                "prompt": text
-            }
-        )
-        return response.json()["embedding"]
-    
-    def health_check(self):
-        """Check Ollama service health"""
-        try:
-            response = requests.get(f"{self.base_url}/api/tags")
-            return response.status_code == 200
-        except:
-            return False
+def __init__(self, base_url="http://localhost:11434"):
+self.base_url = base_url
+
+def generate_text(self, prompt, model="llama2"):
+"""Generate text using Ollama"""
+response = requests.post(
+f"{self.base_url}/api/generate",
+json={
+"model": model,
+"prompt": prompt,
+"stream": False,
+"options": {
+"temperature": 0.7,
+"top_k": 40,
+"top_p": 0.9
+}
+}
+)
+return response.json()["response"]
+
+def get_embeddings(self, text, model="nomic-embed-text"):
+"""Get text embeddings"""
+response = requests.post(
+f"{self.base_url}/api/embeddings",
+json={
+"model": model,
+"prompt": text
+}
+)
+return response.json()["embedding"]
+
+def health_check(self):
+"""Check Ollama service health"""
+try:
+response = requests.get(f"{self.base_url}/api/tags")
+return response.status_code == 200
+except:
+return False
 
 # Usage example
 client = OllamaClient()
 
 # Check if service is running
 if client.health_check():
-    # Generate text
-    result = client.generate_text("Explain machine learning in simple terms")
-    print(result)
-    
-    # Get embeddings
-    embedding = client.get_embeddings("machine learning")
-    print(f"Embedding dimension: {len(embedding)}")
+# Generate text
+result = client.generate_text("Explain machine learning in simple terms")
+print(result)
+
+# Get embeddings
+embedding = client.get_embeddings("machine learning")
+print(f"Embedding dimension: {len(embedding)}")
 ```
 
 ### **GraphRAG Integration**
@@ -279,24 +279,24 @@ from src.graphrag_api_service.providers.ollama_provider import OllamaProvider
 
 # Initialize provider
 provider = OllamaProvider(
-    base_url="http://localhost:11434",
-    model="llama2",
-    embedding_model="nomic-embed-text"
+base_url="http://localhost:11434",
+model="llama2",
+embedding_model="nomic-embed-text"
 )
 
 # Use in GraphRAG operations
 async def process_documents(documents):
-    """Process documents with Ollama"""
-    for doc in documents:
-        # Generate embeddings
-        embedding = await provider.get_embeddings(doc.content)
-        
-        # Extract entities and relationships
-        entities = await provider.extract_entities(doc.content)
-        relationships = await provider.extract_relationships(doc.content)
-        
-        # Store in knowledge graph
-        await store_in_graph(doc, embedding, entities, relationships)
+"""Process documents with Ollama"""
+for doc in documents:
+# Generate embeddings
+embedding = await provider.get_embeddings(doc.content)
+
+# Extract entities and relationships
+entities = await provider.extract_entities(doc.content)
+relationships = await provider.extract_relationships(doc.content)
+
+# Store in knowledge graph
+await store_in_graph(doc, embedding, entities, relationships)
 ```
 
 ## Monitoring & Troubleshooting
@@ -307,8 +307,8 @@ async def process_documents(documents):
 curl http://localhost:11434/api/tags
 
 # Monitor resource usage
-htop  # or top on macOS
-nvidia-smi  # for GPU monitoring
+htop # or top on macOS
+nvidia-smi # for GPU monitoring
 
 # Check model loading status
 ollama ps
@@ -321,34 +321,34 @@ import psutil
 import requests
 
 def monitor_ollama_performance():
-    """Monitor Ollama performance metrics"""
-    start_time = time.time()
-    
-    # Test text generation
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "llama2",
-            "prompt": "Test prompt",
-            "stream": False
-        }
-    )
-    
-    generation_time = time.time() - start_time
-    
-    # System metrics
-    cpu_usage = psutil.cpu_percent()
-    memory_usage = psutil.virtual_memory().percent
-    
-    print(f"Generation time: {generation_time:.2f}s")
-    print(f"CPU usage: {cpu_usage}%")
-    print(f"Memory usage: {memory_usage}%")
-    
-    return {
-        "generation_time": generation_time,
-        "cpu_usage": cpu_usage,
-        "memory_usage": memory_usage
-    }
+"""Monitor Ollama performance metrics"""
+start_time = time.time()
+
+# Test text generation
+response = requests.post(
+"http://localhost:11434/api/generate",
+json={
+"model": "llama2",
+"prompt": "Test prompt",
+"stream": False
+}
+)
+
+generation_time = time.time() - start_time
+
+# System metrics
+cpu_usage = psutil.cpu_percent()
+memory_usage = psutil.virtual_memory().percent
+
+print(f"Generation time: {generation_time:.2f}s")
+print(f"CPU usage: {cpu_usage}%")
+print(f"Memory usage: {memory_usage}%")
+
+return {
+"generation_time": generation_time,
+"cpu_usage": cpu_usage,
+"memory_usage": memory_usage
+}
 ```
 
 ### **Common Issues & Solutions**
@@ -361,7 +361,7 @@ ollama pull llama2
 
 # Issue: Insufficient memory
 # Solution: Use smaller model or increase RAM
-ollama pull llama2:7b  # instead of 13b
+ollama pull llama2:7b # instead of 13b
 ```
 
 #### **Connection Issues**
@@ -380,9 +380,9 @@ ollama serve
 ```bash
 # Issue: Slow generation
 # Solutions:
-export OLLAMA_NUM_GPU=1  # Enable GPU
-export OLLAMA_NUM_PARALLEL=4  # Increase parallelism
-export OLLAMA_NUM_CTX=2048  # Reduce context size
+export OLLAMA_NUM_GPU=1 # Enable GPU
+export OLLAMA_NUM_PARALLEL=4 # Increase parallelism
+export OLLAMA_NUM_CTX=2048 # Reduce context size
 ```
 
 ## Production Deployment
@@ -391,44 +391,44 @@ export OLLAMA_NUM_CTX=2048  # Reduce context size
 ```yaml
 version: '3.8'
 services:
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_NUM_PARALLEL=4
-      - OLLAMA_MAX_LOADED_MODELS=3
-      - OLLAMA_KEEP_ALIVE=10m
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+ollama:
+image: ollama/ollama:latest
+container_name: ollama
+ports:
+- "11434:11434"
+volumes:
+- ollama_data:/root/.ollama
+environment:
+- OLLAMA_NUM_PARALLEL=4
+- OLLAMA_MAX_LOADED_MODELS=3
+- OLLAMA_KEEP_ALIVE=10m
+deploy:
+resources:
+reservations:
+devices:
+- driver: nvidia
+count: 1
+capabilities: [gpu]
+restart: unless-stopped
+healthcheck:
+test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+interval: 30s
+timeout: 10s
+retries: 3
 
-  graphrag-api:
-    image: graphrag-api:latest
-    depends_on:
-      - ollama
-    environment:
-      - LLM_PROVIDER=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=llama2
-    ports:
-      - "8000:8000"
+graphrag-api:
+image: graphrag-api:latest
+depends_on:
+- ollama
+environment:
+- LLM_PROVIDER=ollama
+- OLLAMA_BASE_URL=http://ollama:11434
+- OLLAMA_MODEL=llama2
+ports:
+- "8000:8000"
 
 volumes:
-  ollama_data:
+ollama_data:
 ```
 
 ### **Kubernetes Deployment**
@@ -436,43 +436,43 @@ volumes:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ollama
+name: ollama
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ollama
-  template:
-    metadata:
-      labels:
-        app: ollama
-    spec:
-      containers:
-      - name: ollama
-        image: ollama/ollama:latest
-        ports:
-        - containerPort: 11434
-        env:
-        - name: OLLAMA_NUM_PARALLEL
-          value: "4"
-        - name: OLLAMA_MAX_LOADED_MODELS
-          value: "3"
-        resources:
-          requests:
-            memory: "8Gi"
-            cpu: "4"
-            nvidia.com/gpu: 1
-          limits:
-            memory: "16Gi"
-            cpu: "8"
-            nvidia.com/gpu: 1
-        volumeMounts:
-        - name: ollama-data
-          mountPath: /root/.ollama
-      volumes:
-      - name: ollama-data
-        persistentVolumeClaim:
-          claimName: ollama-pvc
+replicas: 1
+selector:
+matchLabels:
+app: ollama
+template:
+metadata:
+labels:
+app: ollama
+spec:
+containers:
+- name: ollama
+image: ollama/ollama:latest
+ports:
+- containerPort: 11434
+env:
+- name: OLLAMA_NUM_PARALLEL
+value: "4"
+- name: OLLAMA_MAX_LOADED_MODELS
+value: "3"
+resources:
+requests:
+memory: "8Gi"
+cpu: "4"
+nvidia.com/gpu: 1
+limits:
+memory: "16Gi"
+cpu: "8"
+nvidia.com/gpu: 1
+volumeMounts:
+- name: ollama-data
+mountPath: /root/.ollama
+volumes:
+- name: ollama-data
+persistentVolumeClaim:
+claimName: ollama-pvc
 ```
 
 ## Cost Analysis

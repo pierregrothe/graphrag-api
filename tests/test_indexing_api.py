@@ -5,6 +5,7 @@
 
 """Tests for GraphRAG indexing API endpoints."""
 
+import os
 import uuid
 from unittest.mock import patch
 
@@ -22,8 +23,20 @@ from src.graphrag_api_service.workspace.models import Workspace, WorkspaceConfig
 
 @pytest.fixture
 def client():
-    """Create test client."""
-    return TestClient(app)
+    """Create test client with rate limiting disabled."""
+    from src.graphrag_api_service.security.middleware import reset_security_middleware
+
+    with patch.dict(
+        os.environ, {
+            "GRAPHRAG_DATA_PATH": "/test/data",
+            "GRAPHRAG_CONFIG_PATH": "/test/config",
+            "TESTING": "true",  # Disable rate limiting for tests
+            "RATE_LIMITING_ENABLED": "false"
+        }
+    ):
+        # Reset security middleware to pick up new environment variables
+        reset_security_middleware()
+        return TestClient(app)
 
 
 @pytest.fixture

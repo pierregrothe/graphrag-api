@@ -10,51 +10,75 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
 
-class DatabaseConfig(BaseModel):
+class DatabaseConfig(BaseSettings):
     """Database configuration."""
 
     host: str = "localhost"
     port: int = 5432
     database: str = "graphrag"
     username: str = "graphrag_user"
-    password: str = Field("", env="DB_PASSWORD")
+    password: str = Field("", alias="DB_PASSWORD")
     pool_size: int = 10
     max_overflow: int = 20
     pool_timeout: int = 30
     ssl_mode: str = "prefer"
 
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+        populate_by_name=True  # Allow both field name and alias
+    )
 
-class RedisConfig(BaseModel):
+
+class RedisConfig(BaseSettings):
     """Redis configuration for caching."""
 
     host: str = "localhost"
     port: int = 6379
     database: int = 0
-    password: Optional[str] = Field(None, env="REDIS_PASSWORD")
+    password: Optional[str] = Field(None, alias="REDIS_PASSWORD")
     max_connections: int = 20
     socket_timeout: int = 5
     socket_connect_timeout: int = 5
 
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+        populate_by_name=True
+    )
 
-class SecurityConfig(BaseModel):
+
+class SecurityConfig(BaseSettings):
     """Security configuration."""
 
-    secret_key: str = Field("default-secret-key", env="SECRET_KEY")
+    secret_key: str = Field("default-secret-key", alias="SECRET_KEY")
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+        populate_by_name=True
+    )
     cors_origins: List[str] = ["*"]
     cors_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     rate_limit_per_minute: int = 100
     max_request_size_mb: int = 10
 
 
-class PerformanceConfig(BaseModel):
+class PerformanceConfig(BaseSettings):
     """Performance configuration."""
 
     max_workers: int = 4
@@ -63,18 +87,26 @@ class PerformanceConfig(BaseModel):
     max_requests: int = 1000
     max_requests_jitter: int = 100
     preload_app: bool = True
-    
+
     # Memory settings
     max_memory_usage_percent: float = 80.0
     cache_size_mb: int = 512
     chunk_size: int = 10000
-    
+
     # Connection pooling
     db_pool_size: int = 10
     db_max_overflow: int = 20
 
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+        populate_by_name=True
+    )
 
-class LoggingConfig(BaseModel):
+
+class LoggingConfig(BaseSettings):
     """Logging configuration."""
 
     level: str = "INFO"
@@ -84,8 +116,16 @@ class LoggingConfig(BaseModel):
     backup_count: int = 5
     json_format: bool = False
 
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+        populate_by_name=True
+    )
 
-class MonitoringConfig(BaseModel):
+
+class MonitoringConfig(BaseSettings):
     """Monitoring and observability configuration."""
 
     metrics_enabled: bool = True
@@ -93,22 +133,30 @@ class MonitoringConfig(BaseModel):
     health_check_interval: int = 30
     performance_monitoring: bool = True
     audit_logging: bool = True
-    
+
     # Alerting thresholds
     cpu_threshold: float = 80.0
     memory_threshold: float = 80.0
     response_time_threshold: float = 5.0
     error_rate_threshold: float = 0.05
 
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+        populate_by_name=True
+    )
+
 
 class DeploymentSettings(BaseSettings):
     """Main deployment settings with environment variable support."""
 
     # Environment
-    environment: str = Field("development", env="ENVIRONMENT")
-    debug: bool = Field(False, env="DEBUG")
-    host: str = Field("0.0.0.0", env="HOST")
-    port: int = Field(8000, env="PORT")
+    environment: str = Field("development", alias="ENVIRONMENT")
+    debug: bool = Field(False, alias="DEBUG")
+    host: str = Field("0.0.0.0", alias="HOST")
+    port: int = Field(8000, alias="PORT")
     
     # Application
     app_name: str = "GraphRAG API"
@@ -118,24 +166,44 @@ class DeploymentSettings(BaseSettings):
     redoc_url: str = "/redoc"
     
     # Data paths
-    data_path: str = Field("./data", env="DATA_PATH")
-    workspace_path: str = Field("./workspaces", env="WORKSPACE_PATH")
+    data_path: str = Field("./data", alias="DATA_PATH")
+    workspace_path: str = Field("./workspaces", alias="WORKSPACE_PATH")
     
     # Component configurations
-    database: DatabaseConfig = DatabaseConfig()
-    redis: RedisConfig = RedisConfig()
-    security: SecurityConfig = SecurityConfig()
-    performance: PerformanceConfig = PerformanceConfig()
-    logging: LoggingConfig = LoggingConfig()
-    monitoring: MonitoringConfig = MonitoringConfig()
+    database: DatabaseConfig = Field(default_factory=lambda: DatabaseConfig())
+    redis: RedisConfig = Field(default_factory=lambda: RedisConfig())
+    security: SecurityConfig = Field(default_factory=lambda: SecurityConfig())
+    performance: PerformanceConfig = Field(default_factory=lambda: PerformanceConfig())
+    logging: LoggingConfig = Field(default_factory=lambda: LoggingConfig())
+    monitoring: MonitoringConfig = Field(default_factory=lambda: MonitoringConfig())
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
-        extra = "ignore"  # Ignore extra environment variables
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"  # Ignore extra environment variables
+    )
 
-    @validator("environment")
+    def __init__(self, **kwargs):
+        """Initialize with environment variable support for nested configs."""
+        # Create nested configs with current environment variables
+        if 'database' not in kwargs:
+            kwargs['database'] = DatabaseConfig()
+        if 'redis' not in kwargs:
+            kwargs['redis'] = RedisConfig()
+        if 'security' not in kwargs:
+            kwargs['security'] = SecurityConfig()
+        if 'performance' not in kwargs:
+            kwargs['performance'] = PerformanceConfig()
+        if 'logging' not in kwargs:
+            kwargs['logging'] = LoggingConfig()
+        if 'monitoring' not in kwargs:
+            kwargs['monitoring'] = MonitoringConfig()
+
+        super().__init__(**kwargs)
+
+    @field_validator("environment")
+    @classmethod
     def validate_environment(cls, v):
         """Validate environment value."""
         allowed_environments = ["development", "staging", "production"]
@@ -143,7 +211,8 @@ class DeploymentSettings(BaseSettings):
             raise ValueError(f"Environment must be one of: {allowed_environments}")
         return v
 
-    @validator("data_path", "workspace_path")
+    @field_validator("data_path", "workspace_path")
+    @classmethod
     def validate_paths(cls, v):
         """Validate and create paths if they don't exist."""
         path = Path(v)
@@ -191,8 +260,90 @@ class ConfigManager:
         """
         if self._settings is None:
             if self.config_file and os.path.exists(self.config_file):
-                # Load from file
-                self._settings = DeploymentSettings(_env_file=self.config_file)
+                # Load from file by temporarily setting the env_file in all Config classes
+                config_file_path = self.config_file  # Capture in local variable for closure
+
+                class DatabaseConfigWithFile(DatabaseConfig):
+                    model_config = SettingsConfigDict(
+                        env_file=config_file_path,
+                        env_file_encoding="utf-8",
+                        case_sensitive=False,
+                        extra="ignore",
+                        populate_by_name=True
+                    )
+
+                class RedisConfigWithFile(RedisConfig):
+                    model_config = SettingsConfigDict(
+                        env_file=config_file_path,
+                        env_file_encoding="utf-8",
+                        case_sensitive=False,
+                        extra="ignore",
+                        populate_by_name=True
+                    )
+
+                class SecurityConfigWithFile(SecurityConfig):
+                    model_config = SettingsConfigDict(
+                        env_file=config_file_path,
+                        env_file_encoding="utf-8",
+                        case_sensitive=False,
+                        extra="ignore",
+                        populate_by_name=True
+                    )
+
+                class PerformanceConfigWithFile(PerformanceConfig):
+                    model_config = SettingsConfigDict(
+                        env_file=config_file_path,
+                        env_file_encoding="utf-8",
+                        case_sensitive=False,
+                        extra="ignore",
+                        populate_by_name=True
+                    )
+
+                class LoggingConfigWithFile(LoggingConfig):
+                    model_config = SettingsConfigDict(
+                        env_file=config_file_path,
+                        env_file_encoding="utf-8",
+                        case_sensitive=False,
+                        extra="ignore",
+                        populate_by_name=True
+                    )
+
+                class MonitoringConfigWithFile(MonitoringConfig):
+                    model_config = SettingsConfigDict(
+                        env_file=config_file_path,
+                        env_file_encoding="utf-8",
+                        case_sensitive=False,
+                        extra="ignore",
+                        populate_by_name=True
+                    )
+
+                class ConfigWithFile(DeploymentSettings):
+                    model_config = SettingsConfigDict(
+                        env_file=config_file_path,
+                        env_file_encoding="utf-8",
+                        case_sensitive=False,
+                        extra="ignore"
+                    )
+
+                    def __init__(self, **kwargs):
+                        """Initialize with file-based nested configs."""
+                        # Create nested configs with file-based configuration
+                        if 'database' not in kwargs:
+                            kwargs['database'] = DatabaseConfigWithFile()
+                        if 'redis' not in kwargs:
+                            kwargs['redis'] = RedisConfigWithFile()
+                        if 'security' not in kwargs:
+                            kwargs['security'] = SecurityConfigWithFile()
+                        if 'performance' not in kwargs:
+                            kwargs['performance'] = PerformanceConfigWithFile()
+                        if 'logging' not in kwargs:
+                            kwargs['logging'] = LoggingConfigWithFile()
+                        if 'monitoring' not in kwargs:
+                            kwargs['monitoring'] = MonitoringConfigWithFile()
+
+                        super().__init__(**kwargs)
+
+                self._settings = ConfigWithFile()
             else:
                 # Load from environment
                 self._settings = DeploymentSettings()

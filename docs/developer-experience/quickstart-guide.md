@@ -1,6 +1,6 @@
 # GraphRAG API Quickstart Guide
 
-## 🚀 Zero to GraphRAG in 30 Minutes
+## Zero to GraphRAG in 30 Minutes
 
 This guide will get you from zero to a fully functional GraphRAG API deployment in under 30 minutes, complete with sample data and working examples.
 
@@ -29,11 +29,11 @@ docker-compose ps
 
 ### **Expected Output**
 ```
-NAME                COMMAND                  SERVICE             STATUS
-graphrag-api        "python -m uvicorn s…"   graphrag-api        Up 2 minutes
-redis               "docker-entrypoint.s…"   redis               Up 2 minutes
-prometheus          "/bin/prometheus --c…"   prometheus          Up 2 minutes
-grafana             "/run.sh"                grafana             Up 2 minutes
+NAME COMMAND SERVICE STATUS
+graphrag-api "python -m uvicorn s…" graphrag-api Up 2 minutes
+redis "docker-entrypoint.s…" redis Up 2 minutes
+prometheus "/bin/prometheus --c…" prometheus Up 2 minutes
+grafana "/run.sh" grafana Up 2 minutes
 ```
 
 ### **Health Check**
@@ -51,11 +51,11 @@ curl http://localhost:8000/health
 ```bash
 # Login to get authentication token
 curl -X POST "http://localhost:8000/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "admin",
-    "password": "admin123"
-  }'
+-H "Content-Type: application/json" \
+-d '{
+"username": "admin",
+"password": "admin123"
+}'
 
 # Save the access_token from response
 export JWT_TOKEN="your_access_token_here"
@@ -65,7 +65,7 @@ export JWT_TOKEN="your_access_token_here"
 ```bash
 # Test authenticated endpoint
 curl -X GET "http://localhost:8000/api/entities" \
-  -H "Authorization: Bearer $JWT_TOKEN"
+-H "Authorization: Bearer $JWT_TOKEN"
 
 # Should return empty entities list initially
 # {"entities":[],"total_count":0,"has_next_page":false}
@@ -77,12 +77,12 @@ curl -X GET "http://localhost:8000/api/entities" \
 ```bash
 # Create workspace for sample data
 curl -X POST "http://localhost:8000/api/workspaces" \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "quickstart-demo",
-    "description": "Quickstart demonstration workspace"
-  }'
+-H "Authorization: Bearer $JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"name": "quickstart-demo",
+"description": "Quickstart demonstration workspace"
+}'
 
 # Save workspace_id from response
 export WORKSPACE_ID="your_workspace_id_here"
@@ -95,7 +95,7 @@ mkdir -p data/sample
 
 # Create sample documents
 cat > data/sample/ai_overview.txt << 'EOF'
-Artificial Intelligence (AI) is a branch of computer science that aims to create intelligent machines. 
+Artificial Intelligence (AI) is a branch of computer science that aims to create intelligent machines.
 Machine Learning is a subset of AI that enables computers to learn without being explicitly programmed.
 Deep Learning is a subset of Machine Learning that uses neural networks with multiple layers.
 Natural Language Processing (NLP) allows computers to understand and process human language.
@@ -123,17 +123,17 @@ EOF
 ```bash
 # Start indexing the sample documents
 curl -X POST "http://localhost:8000/api/indexing/start" \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "workspace_id": "'$WORKSPACE_ID'",
-    "data_path": "./data/sample",
-    "config": {
-      "chunk_size": 500,
-      "overlap": 100,
-      "enable_community_detection": true
-    }
-  }'
+-H "Authorization: Bearer $JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"workspace_id": "'$WORKSPACE_ID'",
+"data_path": "./data/sample",
+"config": {
+"chunk_size": 500,
+"overlap": 100,
+"enable_community_detection": true
+}
+}'
 
 # Save job_id from response
 export JOB_ID="your_job_id_here"
@@ -143,7 +143,7 @@ export JOB_ID="your_job_id_here"
 ```bash
 # Check indexing status (repeat until completed)
 curl -X GET "http://localhost:8000/api/indexing/status/$JOB_ID" \
-  -H "Authorization: Bearer $JWT_TOKEN"
+-H "Authorization: Bearer $JWT_TOKEN"
 
 # Wait for status: "completed"
 ```
@@ -154,50 +154,50 @@ curl -X GET "http://localhost:8000/api/indexing/status/$JOB_ID" \
 ```bash
 # Get all entities
 curl -X GET "http://localhost:8000/api/entities?limit=20" \
-  -H "Authorization: Bearer $JWT_TOKEN"
+-H "Authorization: Bearer $JWT_TOKEN"
 
 # Get entities by type
 curl -X GET "http://localhost:8000/api/entities?type=TECHNOLOGY&limit=10" \
-  -H "Authorization: Bearer $JWT_TOKEN"
+-H "Authorization: Bearer $JWT_TOKEN"
 ```
 
 ### **Explore Relationships**
 ```bash
 # Get all relationships
 curl -X GET "http://localhost:8000/api/relationships?limit=20" \
-  -H "Authorization: Bearer $JWT_TOKEN"
+-H "Authorization: Bearer $JWT_TOKEN"
 
 # Get relationships for specific entity
 curl -X GET "http://localhost:8000/api/relationships?source=artificial_intelligence" \
-  -H "Authorization: Bearer $JWT_TOKEN"
+-H "Authorization: Bearer $JWT_TOKEN"
 ```
 
 ### **Semantic Search**
 ```bash
 # Search for AI-related content
 curl -X POST "http://localhost:8000/api/graph/query" \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "machine learning algorithms",
-    "limit": 5
-  }'
+-H "Authorization: Bearer $JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"query": "machine learning algorithms",
+"limit": 5
+}'
 
 # Search for companies
 curl -X POST "http://localhost:8000/api/graph/query" \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "technology companies AI",
-    "limit": 5
-  }'
+-H "Authorization: Bearer $JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"query": "technology companies AI",
+"limit": 5
+}'
 ```
 
 ### **Community Detection**
 ```bash
 # Get detected communities
 curl -X GET "http://localhost:8000/api/communities" \
-  -H "Authorization: Bearer $JWT_TOKEN"
+-H "Authorization: Bearer $JWT_TOKEN"
 ```
 
 ## Step 5: GraphQL Exploration (5 minutes)
@@ -205,82 +205,82 @@ curl -X GET "http://localhost:8000/api/communities" \
 ### **Open GraphQL Playground**
 1. Open browser to: http://localhost:8000/graphql
 2. Add authentication header:
-   ```json
-   {
-     "Authorization": "Bearer YOUR_JWT_TOKEN"
-   }
-   ```
+```json
+{
+"Authorization": "Bearer YOUR_JWT_TOKEN"
+}
+```
 
 ### **Try Sample Queries**
 
 #### **Basic Entity Query**
 ```graphql
 query GetEntities {
-  entities(first: 10) {
-    edges {
-      node {
-        id
-        title
-        type
-        description
-        degree
-      }
-    }
-    totalCount
-  }
+entities(first: 10) {
+edges {
+node {
+id
+title
+type
+description
+degree
+}
+}
+totalCount
+}
 }
 ```
 
 #### **Entity with Relationships**
 ```graphql
 query EntityWithRelationships($entityId: String!) {
-  entity(id: $entityId) {
-    id
-    title
-    type
-    description
-    relationships {
-      id
-      source
-      target
-      type
-      weight
-    }
-  }
+entity(id: $entityId) {
+id
+title
+type
+description
+relationships {
+id
+source
+target
+type
+weight
+}
+}
 }
 ```
 
 #### **Semantic Search**
 ```graphql
 query SemanticSearch($query: String!) {
-  search(query: $query, limit: 5) {
-    entities {
-      id
-      title
-      type
-      description
-    }
-    relationships {
-      id
-      source
-      target
-      type
-    }
-    score
-  }
+search(query: $query, limit: 5) {
+entities {
+id
+title
+type
+description
+}
+relationships {
+id
+source
+target
+type
+}
+score
+}
 }
 ```
 
 #### **Community Analysis**
 ```graphql
 query Communities {
-  communities(first: 5) {
-    id
-    title
-    level
-    entityIds
-    relationshipIds
-  }
+communities(first: 5) {
+id
+title
+level
+entityIds
+relationshipIds
+}
 }
 ```
 
@@ -293,35 +293,35 @@ const ws = new WebSocket('ws://localhost:8000/graphql', 'graphql-ws');
 
 // Initialize connection
 ws.send(JSON.stringify({
-  type: 'connection_init',
-  payload: {
-    Authorization: 'Bearer YOUR_JWT_TOKEN'
-  }
+type: 'connection_init',
+payload: {
+Authorization: 'Bearer YOUR_JWT_TOKEN'
+}
 }));
 
 // Subscribe to entity updates
 ws.send(JSON.stringify({
-  id: '1',
-  type: 'start',
-  payload: {
-    query: `
-      subscription {
-        entityUpdates {
-          id
-          title
-          action
-        }
-      }
-    `
-  }
+id: '1',
+type: 'start',
+payload: {
+query: `
+subscription {
+entityUpdates {
+id
+title
+action
+}
+}
+`
+}
 }));
 
 // Handle real-time updates
 ws.onmessage = function(event) {
-  const message = JSON.parse(event.data);
-  if (message.type === 'data') {
-    console.log('Entity update:', message.payload.data.entityUpdates);
-  }
+const message = JSON.parse(event.data);
+if (message.type === 'data') {
+console.log('Entity update:', message.payload.data.entityUpdates);
+}
 };
 ```
 
@@ -329,21 +329,21 @@ ws.onmessage = function(event) {
 ```javascript
 // Subscribe to performance metrics
 ws.send(JSON.stringify({
-  id: '2',
-  type: 'start',
-  payload: {
-    query: `
-      subscription {
-        performanceUpdates {
-          timestamp
-          cpuUsagePercent
-          memoryUsageMb
-          requestsPerSecond
-          cacheHitRate
-        }
-      }
-    `
-  }
+id: '2',
+type: 'start',
+payload: {
+query: `
+subscription {
+performanceUpdates {
+timestamp
+cpuUsagePercent
+memoryUsageMb
+requestsPerSecond
+cacheHitRate
+}
+}
+`
+}
 }));
 ```
 
@@ -372,18 +372,18 @@ curl http://localhost:8000/health/detailed
 ```bash
 # Create API key for programmatic access
 curl -X POST "http://localhost:8000/auth/api-keys" \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "quickstart-api-key",
-    "permissions": ["read:entities", "read:relationships"],
-    "rate_limit": 1000
-  }'
+-H "Authorization: Bearer $JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"name": "quickstart-api-key",
+"permissions": ["read:entities", "read:relationships"],
+"rate_limit": 1000
+}'
 
 # Use API key instead of JWT
 export API_KEY="your_api_key_here"
 curl -X GET "http://localhost:8000/api/entities" \
-  -H "X-API-Key: $API_KEY"
+-H "X-API-Key: $API_KEY"
 ```
 
 ### **2. Postman Collection**
@@ -399,42 +399,42 @@ curl -X GET "http://localhost:8000/api/entities" \
 import requests
 
 def process_custom_documents(documents):
-    for doc in documents:
-        # Custom preprocessing
-        processed_content = preprocess_document(doc)
-        
-        # Upload to GraphRAG
-        response = requests.post(
-            "http://localhost:8000/api/documents/upload",
-            headers={"Authorization": f"Bearer {jwt_token}"},
-            json={
-                "workspace_id": workspace_id,
-                "content": processed_content,
-                "metadata": doc.metadata
-            }
-        )
+for doc in documents:
+# Custom preprocessing
+processed_content = preprocess_document(doc)
+
+# Upload to GraphRAG
+response = requests.post(
+"http://localhost:8000/api/documents/upload",
+headers={"Authorization": f"Bearer {jwt_token}"},
+json={
+"workspace_id": workspace_id,
+"content": processed_content,
+"metadata": doc.metadata
+}
+)
 ```
 
 ### **4. Advanced Graph Analysis**
 ```bash
 # Centrality analysis
 curl -X POST "http://localhost:8000/api/graph/centrality" \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "algorithm": "betweenness",
-    "limit": 20
-  }'
+-H "Authorization: Bearer $JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"algorithm": "betweenness",
+"limit": 20
+}'
 
 # Multi-hop queries
 curl -X POST "http://localhost:8000/api/graph/multi-hop" \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "start_entity": "artificial_intelligence",
-    "hops": 3,
-    "relation_types": ["RELATED_TO", "PART_OF"]
-  }'
+-H "Authorization: Bearer $JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"start_entity": "artificial_intelligence",
+"hops": 3,
+"relation_types": ["RELATED_TO", "PART_OF"]
+}'
 ```
 
 ## Troubleshooting
@@ -460,8 +460,8 @@ docker-compose up -d
 ```bash
 # Verify login credentials
 curl -X POST "http://localhost:8000/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "admin123"}' -v
+-H "Content-Type: application/json" \
+-d '{"username": "admin", "password": "admin123"}' -v
 
 # Check token format
 echo $JWT_TOKEN | cut -d'.' -f2 | base64 -d
@@ -471,7 +471,7 @@ echo $JWT_TOKEN | cut -d'.' -f2 | base64 -d
 ```bash
 # Check indexing logs
 curl -X GET "http://localhost:8000/api/indexing/logs/$JOB_ID" \
-  -H "Authorization: Bearer $JWT_TOKEN"
+-H "Authorization: Bearer $JWT_TOKEN"
 
 # Verify data path
 ls -la data/sample/
@@ -497,16 +497,16 @@ docker exec -it graphrag-redis redis-cli ping
 
 ## Success Checklist
 
-- [ ] ✅ Services running (docker-compose ps)
-- [ ] ✅ API responding (curl health check)
-- [ ] ✅ Authentication working (JWT token obtained)
-- [ ] ✅ Sample data indexed (entities and relationships created)
-- [ ] ✅ Semantic search working (relevant results returned)
-- [ ] ✅ GraphQL queries working (playground accessible)
-- [ ] ✅ Monitoring accessible (Grafana dashboard)
-- [ ] ✅ Real-time subscriptions working (WebSocket connection)
+- [ ] Services running (docker-compose ps)
+- [ ] API responding (curl health check)
+- [ ] Authentication working (JWT token obtained)
+- [ ] Sample data indexed (entities and relationships created)
+- [ ] Semantic search working (relevant results returned)
+- [ ] GraphQL queries working (playground accessible)
+- [ ] Monitoring accessible (Grafana dashboard)
+- [ ] Real-time subscriptions working (WebSocket connection)
 
-**🎉 Congratulations! You now have a fully functional GraphRAG API with sample data and working examples.**
+** Congratulations! You now have a fully functional GraphRAG API with sample data and working examples.**
 
 ## What's Next?
 
@@ -518,4 +518,4 @@ docker exec -it graphrag-redis redis-cli ping
 6. **Monitor Performance**: Set up alerts and optimization
 7. **Join Community**: Contribute and get support
 
-**Ready to build intelligent knowledge graphs? Start exploring!** 🚀
+**Ready to build intelligent knowledge graphs? Start exploring!**

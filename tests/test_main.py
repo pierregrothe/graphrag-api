@@ -106,11 +106,10 @@ class TestAPIDocumentation:
 class TestGraphRAGEndpoints:
     """Test GraphRAG-specific endpoints using fixtures."""
 
-    def test_graphrag_query_endpoint_without_data_path(self, graphrag_query_request: dict):
+    def test_graphrag_query_endpoint_without_data_path(self, test_client: TestClient, graphrag_query_request: dict):
         """Test GraphRAG query endpoint returns 503 when GraphRAG integration not available."""
-        # Create client without GraphRAG integration configured to test the validation
-        client = TestClient(app)
-        response = client.post("/api/query", json=graphrag_query_request)
+        # Use test_client which has rate limiting disabled
+        response = test_client.post("/api/query", json=graphrag_query_request)
         assert response.status_code == 503
         data = response.json()
         assert "error" in data

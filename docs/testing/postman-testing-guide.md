@@ -9,60 +9,60 @@ This guide provides comprehensive instructions for testing the GraphRAG API usin
 ### 1. Import Collection and Environment
 
 1. **Import Collection**:
-   - Open Postman
-   - Click "Import" → "Upload Files"
-   - Select `postman/GraphRAG-API-Collection.json`
+- Open Postman
+- Click "Import" → "Upload Files"
+- Select `postman/GraphRAG-API-Collection.json`
 
 2. **Import Environment**:
-   - Import `postman/environments/Local-Development.postman_environment.json` for local testing
-   - Import `postman/environments/Production.postman_environment.json` for production testing
+- Import `postman/environments/Local-Development.postman_environment.json` for local testing
+- Import `postman/environments/Production.postman_environment.json` for production testing
 
 3. **Select Environment**:
-   - Click the environment dropdown (top right)
-   - Select "GraphRAG API - Local Development"
+- Click the environment dropdown (top right)
+- Select "GraphRAG API - Local Development"
 
 ### 2. Initial Setup
 
 1. **Start Local Server**:
-   ```bash
-   cd /path/to/graphrag
-   docker-compose up -d
-   # OR
-   python -m uvicorn src.graphrag_api_service.main:app --reload
-   ```
+```bash
+cd /path/to/graphrag
+docker-compose up -d
+# OR
+python -m uvicorn src.graphrag_api_service.main:app --reload
+```
 
 2. **Verify Health**:
-   - Run "Health & System" → "Basic Health Check"
-   - Should return `{"status": "healthy"}`
+- Run "Health & System" → "Basic Health Check"
+- Should return `{"status": "healthy"}`
 
 ## Authentication Setup
 
 ### JWT Token Authentication
 
 1. **Login to Get JWT Token**:
-   - Go to "Authentication" → "Login (JWT)"
-   - Update environment variables if needed:
-     - `username`: Your username (default: "admin")
-     - `password`: Your password (default: "admin123")
-   - Run the request
-   - JWT token will be automatically stored in environment
+- Go to "Authentication" → "Login (JWT)"
+- Update environment variables if needed:
+- `username`: Your username (default: "admin")
+- `password`: Your password (default: "admin123")
+- Run the request
+- JWT token will be automatically stored in environment
 
 2. **Verify Token**:
-   - Run any request in "Entities" folder
-   - Should work without additional setup
+- Run any request in "Entities" folder
+- Should work without additional setup
 
 ### API Key Authentication
 
 1. **Create API Key**:
-   - Ensure you're logged in with JWT token
-   - Go to "Authentication" → "Create API Key"
-   - Run the request
-   - API key will be automatically stored in environment
+- Ensure you're logged in with JWT token
+- Go to "Authentication" → "Create API Key"
+- Run the request
+- API key will be automatically stored in environment
 
 2. **Test API Key**:
-   - Go to "API Key Authentication" folder
-   - Run "Get Entities (API Key)"
-   - Should work without JWT token
+- Go to "API Key Authentication" folder
+- Run "Get Entities (API Key)"
+- Should work without JWT token
 
 ## Testing Scenarios
 
@@ -179,25 +179,25 @@ Expected Results:
 ```
 Test Query:
 query ComplexQuery {
-  entities(first: 10) {
-    edges {
-      node {
-        id
-        title
-        type
-        relationships {
-          id
-          type
-          weight
-        }
-      }
-    }
-  }
-  communities(first: 5) {
-    id
-    title
-    entityIds
-  }
+entities(first: 10) {
+edges {
+node {
+id
+title
+type
+relationships {
+id
+type
+weight
+}
+}
+}
+}
+communities(first: 5) {
+id
+title
+entityIds
+}
 }
 
 Expected Results:
@@ -332,11 +332,11 @@ Expected Results:
 
 ```json
 {
-  "base_url": "http://localhost:8000",
-  "username": "admin",
-  "password": "admin123",
-  "entity_limit": "20",
-  "search_query": "artificial intelligence"
+"base_url": "http://localhost:8000",
+"username": "admin",
+"password": "admin123",
+"entity_limit": "20",
+"search_query": "artificial intelligence"
 }
 ```
 
@@ -344,11 +344,11 @@ Expected Results:
 
 ```json
 {
-  "base_url": "https://staging-api.graphrag.example.com",
-  "username": "staging_user",
-  "password": "staging_password",
-  "entity_limit": "10",
-  "search_query": "machine learning"
+"base_url": "https://staging-api.graphrag.example.com",
+"username": "staging_user",
+"password": "staging_password",
+"entity_limit": "10",
+"search_query": "machine learning"
 }
 ```
 
@@ -356,11 +356,11 @@ Expected Results:
 
 ```json
 {
-  "base_url": "https://api.graphrag.example.com",
-  "username": "",
-  "password": "",
-  "entity_limit": "5",
-  "search_query": "innovation"
+"base_url": "https://api.graphrag.example.com",
+"username": "",
+"password": "",
+"entity_limit": "5",
+"search_query": "innovation"
 }
 ```
 
@@ -371,19 +371,19 @@ Expected Results:
 ### Collection Runner
 
 1. **Setup Runner**:
-   - Click "Runner" in Postman
-   - Select "GraphRAG API - Complete Collection"
-   - Choose environment
+- Click "Runner" in Postman
+- Select "GraphRAG API - Complete Collection"
+- Choose environment
 
 2. **Configure Run**:
-   - Iterations: 1-10 (depending on test type)
-   - Delay: 100ms between requests
-   - Data file: Optional CSV for data-driven tests
+- Iterations: 1-10 (depending on test type)
+- Delay: 100ms between requests
+- Data file: Optional CSV for data-driven tests
 
 3. **Monitor Results**:
-   - Pass/fail rates
-   - Response times
-   - Error patterns
+- Pass/fail rates
+- Response times
+- Error patterns
 
 ### Newman CLI
 
@@ -393,15 +393,15 @@ npm install -g newman
 
 # Run collection
 newman run postman/GraphRAG-API-Collection.json \
-  -e postman/environments/Local-Development.postman_environment.json \
-  --reporters cli,html \
-  --reporter-html-export results.html
+-e postman/environments/Local-Development.postman_environment.json \
+--reporters cli,html \
+--reporter-html-export results.html
 
 # Run with data file
 newman run postman/GraphRAG-API-Collection.json \
-  -e postman/environments/Local-Development.postman_environment.json \
-  -d test-data.csv \
-  --iteration-count 10
+-e postman/environments/Local-Development.postman_environment.json \
+-d test-data.csv \
+--iteration-count 10
 ```
 
 ## Sample Data Sets
@@ -471,19 +471,19 @@ Solutions:
 ### Debug Tips
 
 1. **Enable Console Logging**:
-   - Open Postman Console (View → Show Postman Console)
-   - Monitor request/response details
-   - Check pre-request and test script logs
+- Open Postman Console (View → Show Postman Console)
+- Monitor request/response details
+- Check pre-request and test script logs
 
 2. **Use Test Scripts**:
-   - Add console.log statements
-   - Validate response structure
-   - Store values for debugging
+- Add console.log statements
+- Validate response structure
+- Store values for debugging
 
 3. **Monitor Network**:
-   - Use browser dev tools for GraphQL playground
-   - Check actual HTTP requests
-   - Verify headers and payloads
+- Use browser dev tools for GraphQL playground
+- Check actual HTTP requests
+- Verify headers and payloads
 
 ## Best Practices
 

@@ -381,7 +381,7 @@ class CacheManager:
             if self._metrics.total_requests > 0:
                 self._metrics.hit_rate = self._metrics.cache_hits / self._metrics.total_requests
 
-            return self._metrics.copy()
+            return self._metrics.model_copy()
 
     async def get_status(self) -> Dict[str, Any]:
         """Get cache status information.

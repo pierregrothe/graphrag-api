@@ -1,0 +1,45 @@
+# Development Dockerfile for GraphRAG API Documentation Platform
+FROM node:18-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    curl \
+    bash \
+    python3 \
+    make \
+    g++
+
+# Set working directory
+WORKDIR /app
+
+# Install global dependencies
+RUN npm install -g nodemon concurrently
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p api guides docs static
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV FAST_REFRESH=true
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000 || exit 1
+
+# Start development server
+CMD ["npm", "run", "dev"]

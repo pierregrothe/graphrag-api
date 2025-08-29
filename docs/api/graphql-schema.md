@@ -4,7 +4,7 @@
 
 The GraphRAG API provides a comprehensive GraphQL interface with real-time subscriptions, offering 100% feature parity with the REST API. The GraphQL endpoint supports queries, mutations, and subscriptions for all knowledge graph operations.
 
-**Endpoint**: `/graphql`  
+**Endpoint**: `/graphql`
 **WebSocket Subscriptions**: `ws://localhost:8000/graphql` (or `wss://` for production)
 
 ## Authentication
@@ -26,38 +26,38 @@ X-API-Key: <api_key>
 #### Entity
 ```graphql
 type Entity {
-  id: String!
-  title: String!
-  type: String!
-  description: String
-  degree: Int!
-  communityIds: [String!]!
-  textUnitIds: [String!]!
-  relationships: [Relationship!]
+id: String!
+title: String!
+type: String!
+description: String
+degree: Int!
+communityIds: [String!]!
+textUnitIds: [String!]!
+relationships: [Relationship!]
 }
 ```
 
 #### Relationship
 ```graphql
 type Relationship {
-  id: String!
-  source: String!
-  target: String!
-  type: String!
-  description: String
-  weight: Float!
-  textUnitIds: [String!]!
+id: String!
+source: String!
+target: String!
+type: String!
+description: String
+weight: Float!
+textUnitIds: [String!]!
 }
 ```
 
 #### Community
 ```graphql
 type Community {
-  id: String!
-  level: Int!
-  title: String!
-  entityIds: [String!]!
-  relationshipIds: [String!]!
+id: String!
+level: Int!
+title: String!
+entityIds: [String!]!
+relationshipIds: [String!]!
 }
 ```
 
@@ -68,44 +68,44 @@ type Community {
 ```graphql
 # Get all entities with pagination
 query GetEntities($first: Int, $after: String) {
-  entities(first: $first, after: $after) {
-    edges {
-      node {
-        id
-        title
-        type
-        description
-        degree
-      }
-      cursor
-    }
-    pageInfo {
-      hasNextPage
-      hasPreviousPage
-      startCursor
-      endCursor
-    }
-    totalCount
-  }
+entities(first: $first, after: $after) {
+edges {
+node {
+id
+title
+type
+description
+degree
+}
+cursor
+}
+pageInfo {
+hasNextPage
+hasPreviousPage
+startCursor
+endCursor
+}
+totalCount
+}
 }
 ```
 
 ```graphql
 # Get specific entity with relationships
 query GetEntityWithRelationships($id: String!) {
-  entity(id: $id) {
-    id
-    title
-    type
-    description
-    relationships {
-      id
-      source
-      target
-      type
-      weight
-    }
-  }
+entity(id: $id) {
+id
+title
+type
+description
+relationships {
+id
+source
+target
+type
+weight
+}
+}
 }
 ```
 
@@ -114,34 +114,34 @@ query GetEntityWithRelationships($id: String!) {
 ```graphql
 # Semantic search with embeddings
 query SemanticSearch($query: String!, $limit: Int = 10) {
-  search(query: $query, limit: $limit) {
-    entities {
-      id
-      title
-      type
-      description
-    }
-    relationships {
-      id
-      source
-      target
-      type
-    }
-    score
-  }
+search(query: $query, limit: $limit) {
+entities {
+id
+title
+type
+description
+}
+relationships {
+id
+source
+target
+type
+}
+score
+}
 }
 ```
 
 ```graphql
 # Community detection
 query GetCommunities($level: Int) {
-  communities(level: $level) {
-    id
-    level
-    title
-    entityIds
-    relationshipIds
-  }
+communities(level: $level) {
+id
+level
+title
+entityIds
+relationshipIds
+}
 }
 ```
 
@@ -150,29 +150,29 @@ query GetCommunities($level: Int) {
 ```graphql
 # System health and status
 query SystemStatus {
-  systemHealth {
-    status
-    uptime
-    version
-    activeWorkspaces
-    totalEntities
-    totalRelationships
-  }
+systemHealth {
+status
+uptime
+version
+activeWorkspaces
+totalEntities
+totalRelationships
+}
 }
 ```
 
 ```graphql
 # Performance metrics
 query PerformanceMetrics {
-  performanceMetrics {
-    timestamp
-    cpuUsagePercent
-    memoryUsageMb
-    activeConnections
-    requestsPerSecond
-    averageResponseTime
-    cacheHitRate
-  }
+performanceMetrics {
+timestamp
+cpuUsagePercent
+memoryUsageMb
+activeConnections
+requestsPerSecond
+averageResponseTime
+cacheHitRate
+}
 }
 ```
 
@@ -183,13 +183,13 @@ query PerformanceMetrics {
 ```graphql
 # Create new workspace
 mutation CreateWorkspace($name: String!, $description: String) {
-  createWorkspace(name: $name, description: $description) {
-    id
-    name
-    description
-    status
-    createdAt
-  }
+createWorkspace(name: $name, description: $description) {
+id
+name
+description
+status
+createdAt
+}
 }
 ```
 
@@ -198,11 +198,11 @@ mutation CreateWorkspace($name: String!, $description: String) {
 ```graphql
 # Start indexing job
 mutation StartIndexing($workspaceId: String!, $dataPath: String!) {
-  startIndexing(workspaceId: $workspaceId, dataPath: $dataPath) {
-    jobId
-    status
-    startedAt
-  }
+startIndexing(workspaceId: $workspaceId, dataPath: $dataPath) {
+jobId
+status
+startedAt
+}
 }
 ```
 
@@ -211,10 +211,10 @@ mutation StartIndexing($workspaceId: String!, $dataPath: String!) {
 ```graphql
 # Clear cache
 mutation ClearCache($namespace: String) {
-  clearCache(namespace: $namespace) {
-    success
-    clearedEntries
-  }
+clearCache(namespace: $namespace) {
+success
+clearedEntries
+}
 }
 ```
 
@@ -225,43 +225,43 @@ mutation ClearCache($namespace: String) {
 ```graphql
 # Subscribe to indexing updates
 subscription IndexingUpdates {
-  indexingUpdates {
-    workspaceId
-    status
-    progress
-    message
-    error
-    startedAt
-    completedAt
-  }
+indexingUpdates {
+workspaceId
+status
+progress
+message
+error
+startedAt
+completedAt
+}
 }
 ```
 
 ```graphql
 # Subscribe to entity updates
 subscription EntityUpdates($workspaceId: String) {
-  entityUpdates(workspaceId: $workspaceId) {
-    id
-    title
-    type
-    description
-    action # CREATED, UPDATED, DELETED
-  }
+entityUpdates(workspaceId: $workspaceId) {
+id
+title
+type
+description
+action # CREATED, UPDATED, DELETED
+}
 }
 ```
 
 ```graphql
 # Subscribe to system performance
 subscription PerformanceUpdates {
-  performanceUpdates {
-    timestamp
-    cpuUsagePercent
-    memoryUsageMb
-    activeConnections
-    requestsPerSecond
-    averageResponseTime
-    cacheHitRate
-  }
+performanceUpdates {
+timestamp
+cpuUsagePercent
+memoryUsageMb
+activeConnections
+requestsPerSecond
+averageResponseTime
+cacheHitRate
+}
 }
 ```
 
@@ -272,28 +272,28 @@ subscription PerformanceUpdates {
 **Query:**
 ```graphql
 query SearchEntities($name: String, $type: String, $first: Int) {
-  entities(name: $name, type: $type, first: $first) {
-    edges {
-      node {
-        id
-        title
-        type
-        description
-        degree
-        communityIds
-      }
-    }
-    totalCount
-  }
+entities(name: $name, type: $type, first: $first) {
+edges {
+node {
+id
+title
+type
+description
+degree
+communityIds
+}
+}
+totalCount
+}
 }
 ```
 
 **Variables:**
 ```json
 {
-  "name": "artificial intelligence",
-  "type": "CONCEPT",
-  "first": 20
+"name": "artificial intelligence",
+"type": "CONCEPT",
+"first": 20
 }
 ```
 
@@ -302,34 +302,34 @@ query SearchEntities($name: String, $type: String, $first: Int) {
 **Query:**
 ```graphql
 query MultiHopTraversal($startEntity: String!, $hops: Int!, $relationTypes: [String!]) {
-  multiHopQuery(
-    startEntity: $startEntity
-    hops: $hops
-    relationTypes: $relationTypes
-  ) {
-    paths {
-      entities {
-        id
-        title
-        type
-      }
-      relationships {
-        id
-        type
-        weight
-      }
-    }
-    totalPaths
-  }
+multiHopQuery(
+startEntity: $startEntity
+hops: $hops
+relationTypes: $relationTypes
+) {
+paths {
+entities {
+id
+title
+type
+}
+relationships {
+id
+type
+weight
+}
+}
+totalPaths
+}
 }
 ```
 
 **Variables:**
 ```json
 {
-  "startEntity": "entity_123",
-  "hops": 3,
-  "relationTypes": ["RELATED_TO", "PART_OF"]
+"startEntity": "entity_123",
+"hops": 3,
+"relationTypes": ["RELATED_TO", "PART_OF"]
 }
 ```
 
@@ -338,23 +338,23 @@ query MultiHopTraversal($startEntity: String!, $hops: Int!, $relationTypes: [Str
 **Query:**
 ```graphql
 query CentralityAnalysis($algorithm: CentralityAlgorithm!, $limit: Int) {
-  centralityAnalysis(algorithm: $algorithm, limit: $limit) {
-    entities {
-      id
-      title
-      centralityScore
-    }
-    algorithm
-    executionTime
-  }
+centralityAnalysis(algorithm: $algorithm, limit: $limit) {
+entities {
+id
+title
+centralityScore
+}
+algorithm
+executionTime
+}
 }
 ```
 
 **Variables:**
 ```json
 {
-  "algorithm": "BETWEENNESS",
-  "limit": 50
+"algorithm": "BETWEENNESS",
+"limit": 50
 }
 ```
 
@@ -364,18 +364,18 @@ GraphQL errors follow the standard GraphQL error format:
 
 ```json
 {
-  "errors": [
-    {
-      "message": "Entity not found",
-      "locations": [{"line": 2, "column": 3}],
-      "path": ["entity"],
-      "extensions": {
-        "code": "ENTITY_NOT_FOUND",
-        "entityId": "invalid_id"
-      }
-    }
-  ],
-  "data": null
+"errors": [
+{
+"message": "Entity not found",
+"locations": [{"line": 2, "column": 3}],
+"path": ["entity"],
+"extensions": {
+"code": "ENTITY_NOT_FOUND",
+"entityId": "invalid_id"
+}
+}
+],
+"data": null
 }
 ```
 
@@ -397,14 +397,14 @@ GraphQL automatically optimizes database queries based on requested fields:
 ```graphql
 # Only fetches id and title - optimized query
 query OptimizedQuery {
-  entities(first: 100) {
-    edges {
-      node {
-        id
-        title
-      }
-    }
-  }
+entities(first: 100) {
+edges {
+node {
+id
+title
+}
+}
+}
 }
 ```
 
@@ -414,19 +414,19 @@ Queries are automatically analyzed for complexity. Maximum complexity: 1000 poin
 ```graphql
 # High complexity query - use with caution
 query ComplexQuery {
-  entities(first: 1000) {
-    edges {
-      node {
-        id
-        title
-        relationships {
-          id
-          target
-          source
-        }
-      }
-    }
-  }
+entities(first: 1000) {
+edges {
+node {
+id
+title
+relationships {
+id
+target
+source
+}
+}
+}
+}
 }
 ```
 
@@ -447,10 +447,10 @@ const ws = new WebSocket('ws://localhost:8000/graphql', 'graphql-ws');
 
 // Send connection init
 ws.send(JSON.stringify({
-  type: 'connection_init',
-  payload: {
-    Authorization: 'Bearer <jwt_token>'
-  }
+type: 'connection_init',
+payload: {
+Authorization: 'Bearer <jwt_token>'
+}
 }));
 ```
 
@@ -459,19 +459,19 @@ ws.send(JSON.stringify({
 ```javascript
 // Subscribe to entity updates
 ws.send(JSON.stringify({
-  id: '1',
-  type: 'start',
-  payload: {
-    query: `
-      subscription {
-        entityUpdates {
-          id
-          title
-          action
-        }
-      }
-    `
-  }
+id: '1',
+type: 'start',
+payload: {
+query: `
+subscription {
+entityUpdates {
+id
+title
+action
+}
+}
+`
+}
 }));
 ```
 
@@ -493,35 +493,35 @@ The playground provides:
 ### 1. Use Fragments for Reusable Fields
 ```graphql
 fragment EntityBasic on Entity {
-  id
-  title
-  type
-  description
+id
+title
+type
+description
 }
 
 query GetEntities {
-  entities(first: 10) {
-    edges {
-      node {
-        ...EntityBasic
-        degree
-      }
-    }
-  }
+entities(first: 10) {
+edges {
+node {
+...EntityBasic
+degree
+}
+}
+}
 }
 ```
 
 ### 2. Implement Proper Error Handling
 ```javascript
 const result = await client.query({
-  query: GET_ENTITIES,
-  errorPolicy: 'all'
+query: GET_ENTITIES,
+errorPolicy: 'all'
 });
 
 if (result.errors) {
-  result.errors.forEach(error => {
-    console.error('GraphQL Error:', error.message);
-  });
+result.errors.forEach(error => {
+console.error('GraphQL Error:', error.message);
+});
 }
 ```
 
@@ -529,18 +529,18 @@ if (result.errors) {
 ```graphql
 # Good - using variables
 query GetEntity($id: String!) {
-  entity(id: $id) {
-    id
-    title
-  }
+entity(id: $id) {
+id
+title
+}
 }
 
 # Avoid - string interpolation
 # query GetEntity {
-#   entity(id: "hardcoded_id") {
-#     id
-#     title
-#   }
+# entity(id: "hardcoded_id") {
+# id
+# title
+# }
 # }
 ```
 
@@ -548,10 +548,10 @@ query GetEntity($id: String!) {
 ```graphql
 # Subscribe only to necessary updates
 subscription OptimizedUpdates($workspaceId: String!) {
-  entityUpdates(workspaceId: $workspaceId) {
-    id
-    action
-    # Only fetch essential fields
-  }
+entityUpdates(workspaceId: $workspaceId) {
+id
+action
+# Only fetch essential fields
+}
 }
 ```

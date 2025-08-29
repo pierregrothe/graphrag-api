@@ -57,32 +57,32 @@ poetry add --group dev <package-name>
 ### Project Structure
 
 ```bash
-src/graphrag_api_service/    # Main application package
-├── main.py                  # FastAPI application with GraphRAG endpoints
-├── config.py                # Pydantic settings configuration
-├── logging_config.py        # Logging setup
-└── providers/              # LLM provider abstraction layer
-    ├── __init__.py         # Provider package exports
-    ├── base.py             # GraphRAGLLM abstract base class
-    ├── factory.py          # LLMProviderFactory for dynamic provider creation
-    ├── ollama_provider.py  # Ollama local LLM provider implementation
-    ├── gemini_provider.py  # Google Gemini cloud LLM provider implementation
-    └── registry.py         # Provider registration for automatic startup
+src/graphrag_api_service/ # Main application package
+main.py # FastAPI application with GraphRAG endpoints
+config.py # Pydantic settings configuration
+logging_config.py # Logging setup
+providers/ # LLM provider abstraction layer
+__init__.py # Provider package exports
+base.py # GraphRAGLLM abstract base class
+factory.py # LLMProviderFactory for dynamic provider creation
+ollama_provider.py # Ollama local LLM provider implementation
+gemini_provider.py # Google Gemini cloud LLM provider implementation
+registry.py # Provider registration for automatic startup
 
-tests/                       # Test suite
-├── conftest.py              # Pytest fixtures and configuration
-├── test_main.py             # API endpoint tests
-├── test_config.py           # Configuration tests
-├── test_logging_config.py   # Logging tests
-├── test_providers_base.py   # Provider abstraction layer tests
-├── test_provider.py         # Unified provider validation tests (unit + integration)
-└── test_workspace.py        # Workspace management tests (15 comprehensive tests)
+tests/ # Test suite
+conftest.py # Pytest fixtures and configuration
+test_main.py # API endpoint tests
+test_config.py # Configuration tests
+test_logging_config.py # Logging tests
+test_providers_base.py # Provider abstraction layer tests
+test_provider.py # Unified provider validation tests (unit + integration)
+test_workspace.py # Workspace management tests (15 comprehensive tests)
 
 src/graphrag_api_service/
-├── workspace/               # Workspace management module
-    ├── __init__.py         # Module exports
-    ├── models.py           # Workspace data models (Workspace, WorkspaceConfig, etc.)
-    └── manager.py          # WorkspaceManager implementation
+workspace/ # Workspace management module
+__init__.py # Module exports
+models.py # Workspace data models (Workspace, WorkspaceConfig, etc.)
+manager.py # WorkspaceManager implementation
 ```
 
 ### API Endpoints
@@ -126,32 +126,32 @@ Environment variables (via `.env` file):
 
 1. **Provider Validation Tests**: Comprehensive pytest-based provider testing
 
-    ```bash
-    poetry run pytest tests/test_provider.py -v  # Provider validation
-    poetry run pytest tests/test_provider.py -m integration -v  # LLM connectivity tests
-    ```
+```bash
+poetry run pytest tests/test_provider.py -v # Provider validation
+poetry run pytest tests/test_provider.py -m integration -v # LLM connectivity tests
+```
 
-    - Validates configuration completeness
-    - Tests implementation patterns (no LLM access required)
-    - Validates LLM connectivity (health, text generation, embeddings)
-    - Uses proper pytest fixtures and integration markers
+- Validates configuration completeness
+- Tests implementation patterns (no LLM access required)
+- Validates LLM connectivity (health, text generation, embeddings)
+- Uses proper pytest fixtures and integration markers
 
 2. **Complete Unit Test Suite**: Full pytest coverage
 
-    ```bash
-    poetry run pytest tests/ -v  # All tests
-    poetry run pytest -m integration -v  # Integration tests only
-    ```
+```bash
+poetry run pytest tests/ -v # All tests
+poetry run pytest -m integration -v # Integration tests only
+```
 
 **Provider Setup Requirements:**
 
 - **Ollama**: Requires Ollama server running at `http://localhost:11434` with models:
-    - `gemma3:4b` (LLM model)
-    - `nomic-embed-text` (embedding model)
+- `gemma3:4b` (LLM model)
+- `nomic-embed-text` (embedding model)
 
 - **Gemini**: Requires environment variables in .env:
-    - `GOOGLE_API_KEY`: Google Cloud API key
-    - `GOOGLE_PROJECT_ID`: Google Cloud project ID
+- `GOOGLE_API_KEY`: Google Cloud API key
+- `GOOGLE_PROJECT_ID`: Google Cloud project ID
 
 **Testing Features:**
 
@@ -178,11 +178,11 @@ Environment variables (via `.env` file):
 # Create workspace
 POST /api/workspaces
 {
-  "name": "project-name",
-  "description": "Project description",
-  "data_path": "/path/to/source/data",
-  "chunk_size": 1200,  # optional
-  "max_entities": 1000  # optional
+"name": "project-name",
+"description": "Project description",
+"data_path": "/path/to/source/data",
+"chunk_size": 1200, # optional
+"max_entities": 1000 # optional
 }
 
 # List all workspaces

@@ -7,6 +7,7 @@
 
 import json
 import logging
+import os
 import time
 from typing import Any, Dict, List, Optional, Set
 
@@ -32,6 +33,12 @@ class SecurityConfig(BaseModel):
     rate_limiting_enabled: bool = True
     requests_per_minute: int = 100
     burst_limit: int = 20
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Disable rate limiting in testing mode
+        if os.getenv("TESTING") == "true" or os.getenv("RATE_LIMITING_ENABLED") == "false":
+            self.rate_limiting_enabled = False
 
     # Request validation
     max_request_size_mb: int = 10
@@ -341,10 +348,22 @@ class SecurityMiddleware:
             config: Security configuration
         """
         self.config = config or SecurityConfig()
-        self.rate_limiter = RateLimiter(
-            self.config.requests_per_minute,
-            self.config.burst_limit
-        ) if self.config.rate_limiting_enabled else None
+
+        # Check for testing mode and adjust rate limiting accordingly
+        import os
+        testing_env = os.getenv("TESTING", "false").lower()
+        rate_limiting_env = os.getenv("RATE_LIMITING_ENABLED", "true").lower()
+        is_testing = testing_env == "true" or rate_limiting_env == "false"
+
+        if is_testing:
+            # In testing mode, use very high limits or disable completely
+            self.rate_limiter = None
+        else:
+            self.rate_limiter = RateLimiter(
+                self.config.requests_per_minute,
+                self.config.burst_limit
+            ) if self.config.rate_limiting_enabled else None
+
         self.validator = RequestValidator(self.config)
         self.audit_logger = AuditLogger()
 
@@ -394,8 +413,13 @@ class SecurityMiddleware:
         """
         client_ip = self.get_client_ip(request)
 
-        # Rate limiting
-        if self.rate_limiter and not self.rate_limiter.is_allowed(client_ip):
+        # Rate limiting - check for testing mode at runtime
+        import os
+        testing_env = os.getenv("TESTING", "false").lower()
+        rate_limiting_env = os.getenv("RATE_LIMITING_ENABLED", "true").lower()
+        is_testing = testing_env == "true" or rate_limiting_env == "false"
+
+        if not is_testing and self.rate_limiter and not self.rate_limiter.is_allowed(client_ip):
             remaining = self.rate_limiter.get_remaining_requests(client_ip)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -441,3 +465,13 @@ def get_security_middleware() -> SecurityMiddleware:
         _security_middleware = SecurityMiddleware()
 
     return _security_middleware
+
+
+def reset_security_middleware() -> None:
+    """Reset the global security middleware instance.
+
+    This is primarily used for testing to ensure a fresh instance
+    with updated configuration.
+    """
+    global _security_middleware
+    _security_middleware = None

@@ -5,7 +5,9 @@
 
 """Cross-API integration tests to validate REST and GraphQL parity."""
 
+import os
 import pytest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.graphrag_api_service.main import app
@@ -16,8 +18,20 @@ class TestAPIParity:
 
     @pytest.fixture
     def client(self):
-        """Create test client."""
-        return TestClient(app)
+        """Create test client with rate limiting disabled."""
+        from src.graphrag_api_service.security.middleware import reset_security_middleware
+
+        with patch.dict(
+            os.environ, {
+                "GRAPHRAG_DATA_PATH": "/test/data",
+                "GRAPHRAG_CONFIG_PATH": "/test/config",
+                "TESTING": "true",  # Disable rate limiting for tests
+                "RATE_LIMITING_ENABLED": "false"
+            }
+        ):
+            # Reset security middleware to pick up new environment variables
+            reset_security_middleware()
+            return TestClient(app)
 
     def test_health_check_parity(self, client):
         """Test that health checks return consistent information."""

@@ -96,11 +96,11 @@ Cost Factors:
 
 | Capability | Ollama | Google Cloud | OpenAI |
 |------------|--------|--------------|--------|
-| **Code Generation** | ✅ (CodeLlama) | ✅ (Codey) | ✅ (GPT-4) |
-| **Multimodal (Vision)** | ❌ | ✅ (Gemini Pro Vision) | ✅ (GPT-4V) |
-| **Function Calling** | ❌ | ✅ | ✅ |
-| **Fine-tuning** | ✅ | ✅ | ✅ |
-| **Custom Models** | ✅ | ✅ | ❌ |
+| **Code Generation** | (CodeLlama) | (Codey) | (GPT-4) |
+| **Multimodal (Vision)** | | (Gemini Pro Vision) | (GPT-4V) |
+| **Function Calling** | | | |
+| **Fine-tuning** | | | |
+| **Custom Models** | | | |
 
 ### **Privacy & Security**
 
@@ -111,18 +111,18 @@ Cost Factors:
 | **Data Location** | Local only | Google servers | OpenAI servers |
 | **Data Retention** | User controlled | Configurable | 30 days default |
 | **Training Data Usage** | No | Opt-out available | Opt-out available |
-| **GDPR Compliance** | User responsibility | ✅ | ✅ |
-| **HIPAA Compliance** | User responsibility | ✅ (BAA required) | ✅ (BAA required) |
+| **GDPR Compliance** | User responsibility | | |
+| **HIPAA Compliance** | User responsibility | (BAA required) | (BAA required) |
 
 #### **Security Features**
 
 | Feature | Ollama | Google Cloud | OpenAI |
 |---------|--------|--------------|--------|
-| **Encryption in Transit** | User configured | ✅ TLS 1.3 | ✅ TLS 1.3 |
-| **Encryption at Rest** | User configured | ✅ AES-256 | ✅ AES-256 |
-| **Access Controls** | User configured | ✅ IAM | ✅ API keys |
-| **Audit Logging** | User configured | ✅ Cloud Audit Logs | ✅ Usage logs |
-| **VPC/Network Isolation** | User configured | ✅ VPC Service Controls | ❌ |
+| **Encryption in Transit** | User configured | TLS 1.3 | TLS 1.3 |
+| **Encryption at Rest** | User configured | AES-256 | AES-256 |
+| **Access Controls** | User configured | IAM | API keys |
+| **Audit Logging** | User configured | Cloud Audit Logs | Usage logs |
+| **VPC/Network Isolation** | User configured | VPC Service Controls | |
 
 ### **Operational Considerations**
 
@@ -162,30 +162,30 @@ Cost Factors:
 | Tool | Ollama | Google Cloud | OpenAI |
 |------|--------|--------------|--------|
 | **Web Interface** | Basic | Vertex AI Studio | Playground |
-| **CLI Tools** | ✅ | ✅ gcloud | ✅ |
-| **Monitoring Dashboard** | Custom | ✅ Cloud Console | ✅ Usage dashboard |
-| **Testing Tools** | Basic | ✅ Model Garden | ✅ Playground |
+| **CLI Tools** | | gcloud | |
+| **Monitoring Dashboard** | Custom | Cloud Console | Usage dashboard |
+| **Testing Tools** | Basic | Model Garden | Playground |
 
 ## Use Case Recommendations
 
 ### **Choose Ollama When:**
 
-✅ **Privacy is Critical**
+**Privacy is Critical**
 - Healthcare, legal, or financial data
 - Regulatory compliance requirements
 - Complete data sovereignty needed
 
-✅ **Offline Operation Required**
+**Offline Operation Required**
 - Air-gapped environments
 - Remote locations with poor connectivity
 - Military or government applications
 
-✅ **Cost Predictability Important**
+**Cost Predictability Important**
 - High-volume, consistent usage
 - Budget constraints on variable costs
 - Long-term cost optimization
 
-✅ **Custom Model Requirements**
+**Custom Model Requirements**
 - Need to fine-tune models extensively
 - Proprietary model development
 - Research and experimentation
@@ -201,22 +201,22 @@ Cost Factors:
 
 ### **Choose Google Cloud AI When:**
 
-✅ **Enterprise Scale Required**
+**Enterprise Scale Required**
 - High-volume production workloads
 - Global user base
 - Enterprise SLA requirements
 
-✅ **Advanced AI Capabilities Needed**
+**Advanced AI Capabilities Needed**
 - Multimodal applications (text + vision)
 - Complex reasoning tasks
 - Latest AI model access
 
-✅ **Google Ecosystem Integration**
+**Google Ecosystem Integration**
 - Existing Google Cloud infrastructure
 - BigQuery data integration
 - Google Workspace integration
 
-✅ **Managed Service Preferred**
+**Managed Service Preferred**
 - Limited ML/AI expertise
 - Focus on application development
 - Automatic scaling requirements
@@ -232,22 +232,22 @@ Cost Factors:
 
 ### **Choose OpenAI When:**
 
-✅ **Cutting-edge AI Required**
+**Cutting-edge AI Required**
 - Latest model capabilities
 - Advanced reasoning tasks
 - Creative applications
 
-✅ **Rapid Prototyping**
+**Rapid Prototyping**
 - Quick proof-of-concepts
 - Startup environments
 - Innovation projects
 
-✅ **Simplicity Preferred**
+**Simplicity Preferred**
 - Minimal setup requirements
 - Standard use cases
 - Developer-friendly APIs
 
-✅ **Community Ecosystem**
+**Community Ecosystem**
 - Large community support
 - Extensive third-party tools
 - Rich ecosystem of integrations
@@ -268,20 +268,20 @@ Cost Factors:
 ```python
 # Migration checklist
 migration_steps = [
-    "1. Assess current usage patterns and costs",
-    "2. Calculate hardware requirements",
-    "3. Set up Ollama infrastructure",
-    "4. Test model performance and quality",
-    "5. Implement gradual traffic migration",
-    "6. Monitor performance and adjust",
-    "7. Complete migration and optimize"
+"1. Assess current usage patterns and costs",
+"2. Calculate hardware requirements",
+"3. Set up Ollama infrastructure",
+"4. Test model performance and quality",
+"5. Implement gradual traffic migration",
+"6. Monitor performance and adjust",
+"7. Complete migration and optimize"
 ]
 
 # Cost-benefit analysis
 def calculate_migration_roi(current_monthly_cost, hardware_cost, migration_time):
-    break_even_months = hardware_cost / current_monthly_cost
-    total_savings_year_1 = (current_monthly_cost * 12) - hardware_cost
-    return break_even_months, total_savings_year_1
+break_even_months = hardware_cost / current_monthly_cost
+total_savings_year_1 = (current_monthly_cost * 12) - hardware_cost
+return break_even_months, total_savings_year_1
 ```
 
 ### **From Ollama to Cloud (Scale/Reliability)**
@@ -289,24 +289,24 @@ def calculate_migration_roi(current_monthly_cost, hardware_cost, migration_time)
 ```python
 # Scaling triggers
 scaling_indicators = {
-    "performance": "Response times > 5 seconds",
-    "availability": "Uptime < 99%",
-    "maintenance": "High operational overhead",
-    "growth": "Traffic exceeding capacity",
-    "features": "Need for advanced capabilities"
+"performance": "Response times > 5 seconds",
+"availability": "Uptime < 99%",
+"maintenance": "High operational overhead",
+"growth": "Traffic exceeding capacity",
+"features": "Need for advanced capabilities"
 }
 
 # Migration approach
 def cloud_migration_strategy():
-    return [
-        "Set up cloud provider accounts",
-        "Implement hybrid deployment",
-        "Test cloud performance",
-        "Gradually shift traffic",
-        "Monitor costs and performance",
-        "Optimize cloud configuration",
-        "Decommission local infrastructure"
-    ]
+return [
+"Set up cloud provider accounts",
+"Implement hybrid deployment",
+"Test cloud performance",
+"Gradually shift traffic",
+"Monitor costs and performance",
+"Optimize cloud configuration",
+"Decommission local infrastructure"
+]
 ```
 
 ### **Multi-Provider Strategy**
@@ -314,20 +314,20 @@ def cloud_migration_strategy():
 ```python
 # Provider selection logic
 def select_provider(request_type, data_sensitivity, performance_requirement):
-    if data_sensitivity == "high":
-        return "ollama"
-    elif performance_requirement == "critical":
-        return "google_cloud"
-    elif request_type == "creative":
-        return "openai"
-    else:
-        return "google_cloud"  # Default for balanced needs
+if data_sensitivity == "high":
+return "ollama"
+elif performance_requirement == "critical":
+return "google_cloud"
+elif request_type == "creative":
+return "openai"
+else:
+return "google_cloud" # Default for balanced needs
 
 # Load balancing strategy
 provider_weights = {
-    "ollama": 0.3,      # Sensitive data
-    "google_cloud": 0.5, # General purpose
-    "openai": 0.2       # Creative tasks
+"ollama": 0.3, # Sensitive data
+"google_cloud": 0.5, # General purpose
+"openai": 0.2 # Creative tasks
 }
 ```
 
@@ -338,36 +338,36 @@ provider_weights = {
 ```python
 # Customize weights based on your priorities
 evaluation_criteria = {
-    "cost": 0.25,           # 25% weight
-    "performance": 0.20,    # 20% weight
-    "privacy": 0.15,        # 15% weight
-    "scalability": 0.15,    # 15% weight
-    "reliability": 0.10,    # 10% weight
-    "ease_of_use": 0.10,    # 10% weight
-    "features": 0.05        # 5% weight
+"cost": 0.25, # 25% weight
+"performance": 0.20, # 20% weight
+"privacy": 0.15, # 15% weight
+"scalability": 0.15, # 15% weight
+"reliability": 0.10, # 10% weight
+"ease_of_use": 0.10, # 10% weight
+"features": 0.05 # 5% weight
 }
 
 # Provider scores (1-10 scale)
 provider_scores = {
-    "ollama": {
-        "cost": 9, "performance": 6, "privacy": 10,
-        "scalability": 4, "reliability": 6, "ease_of_use": 5, "features": 6
-    },
-    "google_cloud": {
-        "cost": 6, "performance": 9, "privacy": 7,
-        "scalability": 10, "reliability": 9, "ease_of_use": 8, "features": 9
-    },
-    "openai": {
-        "cost": 7, "performance": 8, "privacy": 5,
-        "scalability": 9, "reliability": 8, "ease_of_use": 10, "features": 8
-    }
+"ollama": {
+"cost": 9, "performance": 6, "privacy": 10,
+"scalability": 4, "reliability": 6, "ease_of_use": 5, "features": 6
+},
+"google_cloud": {
+"cost": 6, "performance": 9, "privacy": 7,
+"scalability": 10, "reliability": 9, "ease_of_use": 8, "features": 9
+},
+"openai": {
+"cost": 7, "performance": 8, "privacy": 5,
+"scalability": 9, "reliability": 8, "ease_of_use": 10, "features": 8
+}
 }
 
 def calculate_weighted_score(provider):
-    total_score = 0
-    for criteria, weight in evaluation_criteria.items():
-        total_score += provider_scores[provider][criteria] * weight
-    return total_score
+total_score = 0
+for criteria, weight in evaluation_criteria.items():
+total_score += provider_scores[provider][criteria] * weight
+return total_score
 
 # Results:
 # Ollama: 7.15

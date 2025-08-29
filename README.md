@@ -7,47 +7,50 @@
 
 **Enterprise-grade GraphRAG (Graph Retrieval-Augmented Generation) API providing comprehensive knowledge graph operations, semantic search, and real-time analytics with advanced monitoring and security.**
 
-## 🎯 Project Status: **PRODUCTION READY** ✅
+## Project Status: **PRODUCTION READY**
 
 **Phase 11 Completed** - All 11 planned phases successfully implemented with enterprise-grade features:
 
-- ✅ **Complete GraphQL Implementation** with real-time subscriptions
-- ✅ **Advanced Monitoring Stack** (Prometheus, OpenTelemetry, Grafana)
-- ✅ **Enterprise Authentication** (JWT + API keys with RBAC)
-- ✅ **Production Optimization** (Redis caching, performance tuning)
-- ✅ **Comprehensive Testing** (300+ tests with 100% pass rate)
+- **Complete GraphQL Implementation** with real-time subscriptions
+- **Advanced Monitoring Stack** (Prometheus, OpenTelemetry, Grafana)
+- **Enterprise Authentication** (JWT + API keys with RBAC)
+- **Production Optimization** (Redis caching, performance tuning)
+- **Comprehensive Testing** (300+ tests with 100% pass rate)
 
-## 🚀 Key Features
+## Key Features
 
 ### **Core Capabilities**
-- **🔄 Dual API Interface**: Complete REST and GraphQL APIs with 100% feature parity
-- **🧠 Knowledge Graph Operations**: Advanced entity/relationship management with graph algorithms
-- **🔍 Semantic Search**: Vector-based search with embedding support and similarity scoring
-- **📊 Real-time Analytics**: Community detection, centrality analysis, and anomaly detection
-- **⚡ Real-time Subscriptions**: WebSocket-based GraphQL subscriptions for live updates
+
+- **Dual API Interface**: Complete REST and GraphQL APIs with 100% feature parity
+- **Knowledge Graph Operations**: Advanced entity/relationship management with graph algorithms
+- **Semantic Search**: Vector-based search with embedding support and similarity scoring
+- **Real-time Analytics**: Community detection, centrality analysis, and anomaly detection
+- **Real-time Subscriptions**: WebSocket-based GraphQL subscriptions for live updates
 
 ### **Enterprise Features**
-- **🔐 Advanced Security**: JWT authentication, API key management, and role-based access control
-- **📈 Comprehensive Monitoring**: Prometheus metrics, OpenTelemetry tracing, and Grafana dashboards
-- **🚀 Production Ready**: Docker deployment, Redis caching, and horizontal scaling support
-- **🔧 Extensible Architecture**: Modular design supporting multiple LLM providers and data sources
-- **📋 Enterprise Documentation**: Complete API documentation matching industry standards
+
+- **Advanced Security**: JWT authentication, API key management, and role-based access control
+- **Comprehensive Monitoring**: Prometheus metrics, OpenTelemetry tracing, and Grafana dashboards
+- **Production Ready**: Docker deployment, Redis caching, and horizontal scaling support
+- **Extensible Architecture**: Modular design supporting multiple LLM providers and data sources
+- **Enterprise Documentation**: Complete API documentation matching industry standards
 
 ### **Performance & Scalability**
-- **⚡ 40-60% GraphQL optimization** through intelligent field selection
-- **🎯 85%+ cache hit rates** with Redis distributed caching
-- **📊 P95 < 300ms** response times for cached operations
-- **💾 30-40% memory reduction** through optimization strategies
-- **🔄 50-70% database load reduction** via query optimization
 
-## 📋 Prerequisites
+- **40-60% GraphQL optimization** through intelligent field selection
+- **85%+ cache hit rates** with Redis distributed caching
+- **P95 < 300ms** response times for cached operations
+- **30-40% memory reduction** through optimization strategies
+- **50-70% database load reduction** via query optimization
+
+## Prerequisites
 
 - **Python 3.11+** (3.12 recommended)
 - **Docker & Docker Compose** (for containerized deployment)
 - **Git** (for version control)
 - **Node.js 18+** (optional, for client SDK development)
 
-## 🛠️ Installation & Setup
+## Installation & Setup
 
 ### **Option 1: Docker Compose (Recommended)**
 
@@ -72,7 +75,7 @@ cd graphrag-api
 
 # Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate # Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -101,7 +104,7 @@ docker-compose -f docker-compose.prod.yml up -d
 # Setup monitoring alerts and backup procedures
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### **Essential Environment Variables**
 
@@ -167,7 +170,7 @@ JAEGER_ENDPOINT=http://localhost:14268/api/traces
 # =============================================================================
 # PERFORMANCE TUNING
 # =============================================================================
-MAX_REQUEST_SIZE=10485760  # 10MB
+MAX_REQUEST_SIZE=10485760 # 10MB
 REQUEST_TIMEOUT=30
 GRAPHQL_MAX_COMPLEXITY=1000
 CACHE_DEFAULT_TTL=3600
@@ -187,22 +190,22 @@ The complete stack includes:
 
 ```yaml
 services:
-  graphrag-api:      # Main API service
-  redis:             # Distributed caching
-  prometheus:        # Metrics collection
-  grafana:          # Monitoring dashboards
-  jaeger:           # Distributed tracing (optional)
-  nginx:            # Load balancer (production)
+graphrag-api: # Main API service
+redis: # Distributed caching
+prometheus: # Metrics collection
+grafana: # Monitoring dashboards
+jaeger: # Distributed tracing (optional)
+nginx: # Load balancer (production)
 ```
 
-## 📚 API Documentation & Usage
+## API Documentation & Usage
 
 ### **Interactive Documentation**
 
-- **🔗 REST API Docs**: http://localhost:8000/docs (Swagger UI)
-- **🔗 GraphQL Playground**: http://localhost:8000/graphql (Interactive queries)
-- **🔗 ReDoc**: http://localhost:8000/redoc (Alternative REST docs)
-- **🔗 OpenAPI Spec**: http://localhost:8000/openapi.json (Machine-readable)
+- **REST API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
+- **GraphQL Playground**: [http://localhost:8000/graphql](http://localhost:8000/graphql) (Interactive queries)
+- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc) (Alternative REST docs)
+- **OpenAPI Spec**: [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json) (Machine-readable)
 
 ### **Authentication Examples**
 
@@ -211,15 +214,15 @@ services:
 ```bash
 # Login to get JWT token
 curl -X POST "http://localhost:8000/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "admin",
-    "password": "your_password"
-  }'
+-H "Content-Type: application/json" \
+-d '{
+"username": "admin",
+"password": "your_password"
+}'
 
 # Use JWT token for API calls
 curl -X GET "http://localhost:8000/api/entities" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+-H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 #### **API Key Authentication**
@@ -227,17 +230,17 @@ curl -X GET "http://localhost:8000/api/entities" \
 ```bash
 # Create API key (requires JWT token)
 curl -X POST "http://localhost:8000/auth/api-keys" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Production API Key",
-    "permissions": ["read:entities", "read:relationships"],
-    "rate_limit": 1000
-  }'
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"name": "Production API Key",
+"permissions": ["read:entities", "read:relationships"],
+"rate_limit": 1000
+}'
 
 # Use API key for requests
 curl -X GET "http://localhost:8000/api/entities" \
-  -H "X-API-Key: grag_your_api_key_here"
+-H "X-API-Key: grag_your_api_key_here"
 ```
 
 ### **REST API Examples**
@@ -245,25 +248,25 @@ curl -X GET "http://localhost:8000/api/entities" \
 ```bash
 # Get entities with filtering
 curl -X GET "http://localhost:8000/api/entities?limit=20&type=CONCEPT" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+-H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Semantic search
 curl -X POST "http://localhost:8000/api/graph/query" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "query": "artificial intelligence and machine learning",
-    "limit": 10,
-    "include_embeddings": false
-  }'
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-d '{
+"query": "artificial intelligence and machine learning",
+"limit": 10,
+"include_embeddings": false
+}'
 
 # Get relationships
 curl -X GET "http://localhost:8000/api/relationships?source=entity_123" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+-H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Community detection
 curl -X GET "http://localhost:8000/api/communities?level=1" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+-H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### **GraphQL Examples**
@@ -271,76 +274,76 @@ curl -X GET "http://localhost:8000/api/communities?level=1" \
 ```graphql
 # Basic entity query with pagination
 query GetEntities($first: Int, $after: String) {
-  entities(first: $first, after: $after) {
-    edges {
-      node {
-        id
-        title
-        type
-        description
-        degree
-        communityIds
-      }
-      cursor
-    }
-    pageInfo {
-      hasNextPage
-      hasPreviousPage
-      startCursor
-      endCursor
-    }
-    totalCount
-  }
+entities(first: $first, after: $after) {
+edges {
+node {
+id
+title
+type
+description
+degree
+communityIds
+}
+cursor
+}
+pageInfo {
+hasNextPage
+hasPreviousPage
+startCursor
+endCursor
+}
+totalCount
+}
 }
 
 # Entity with relationships
 query GetEntityWithRelationships($id: String!) {
-  entity(id: $id) {
-    id
-    title
-    type
-    description
-    relationships {
-      id
-      source
-      target
-      type
-      weight
-    }
-  }
+entity(id: $id) {
+id
+title
+type
+description
+relationships {
+id
+source
+target
+type
+weight
+}
+}
 }
 
 # Semantic search
 query SemanticSearch($query: String!, $limit: Int) {
-  search(query: $query, limit: $limit) {
-    entities {
-      id
-      title
-      type
-      description
-    }
-    relationships {
-      id
-      source
-      target
-      type
-    }
-    score
-  }
+search(query: $query, limit: $limit) {
+entities {
+id
+title
+type
+description
+}
+relationships {
+id
+source
+target
+type
+}
+score
+}
 }
 
 # Real-time subscription
 subscription EntityUpdates($workspaceId: String) {
-  entityUpdates(workspaceId: $workspaceId) {
-    id
-    title
-    type
-    action  # CREATED, UPDATED, DELETED
-  }
+entityUpdates(workspaceId: $workspaceId) {
+id
+title
+type
+action # CREATED, UPDATED, DELETED
+}
 }
 ```
 
-## 🧪 Testing
+## Testing
 
 ### **Run Tests**
 
@@ -373,24 +376,24 @@ npm install -g newman
 
 # Run collection with Newman
 newman run postman/GraphRAG-API-Collection.json \
-  -e postman/environments/Local-Development.postman_environment.json \
-  --iteration-count 10
+-e postman/environments/Local-Development.postman_environment.json \
+--iteration-count 10
 
 # Performance testing with multiple iterations
 newman run postman/GraphRAG-API-Collection.json \
-  -e postman/environments/Production.postman_environment.json \
-  --iteration-count 100 \
-  --delay-request 100
+-e postman/environments/Production.postman_environment.json \
+--iteration-count 100 \
+--delay-request 100
 ```
 
-## 📊 Monitoring & Observability
+## Monitoring & Observability
 
 ### **Monitoring Stack**
 
-- **🔗 Prometheus**: http://localhost:9090 (Metrics collection)
-- **🔗 Grafana**: http://localhost:3000 (Dashboards - admin/admin)
-- **🔗 Jaeger**: http://localhost:16686 (Distributed tracing)
-- **🔗 API Metrics**: http://localhost:8000/metrics (Prometheus format)
+- **Prometheus**: [http://localhost:9090](http://localhost:9090) (Metrics collection)
+- **Grafana**: [http://localhost:3000](http://localhost:3000) (Dashboards - admin/admin)
+- **Jaeger**: [http://localhost:16686](http://localhost:16686) (Distributed tracing)
+- **API Metrics**: [http://localhost:8000/metrics](http://localhost:8000/metrics) (Prometheus format)
 
 ### **Health Checks**
 
@@ -416,70 +419,70 @@ curl http://localhost:8000/metrics/cache
 - **System Metrics**: CPU, memory, connection pool usage
 - **Security Metrics**: Authentication attempts, rate limiting
 
-## 🏗️ Architecture & Technology Stack
+## Architecture & Technology Stack
 
 ### **Technology Stack**
 
-- **🐍 Backend**: FastAPI, Python 3.11+, Pydantic
-- **🗄️ Database**: PostgreSQL with pgvector for embeddings
-- **⚡ Cache**: Redis with compression and intelligent invalidation
-- **🔍 Search**: Vector embeddings with semantic similarity
-- **📊 Monitoring**: Prometheus, Grafana, OpenTelemetry
-- **🐳 Deployment**: Docker, Docker Compose, Kubernetes-ready
-- **🔐 Security**: JWT tokens, API keys, RBAC, audit logging
+- ** Backend**: FastAPI, Python 3.11+, Pydantic
+- ** Database**: PostgreSQL with pgvector for embeddings
+- ** Cache**: Redis with compression and intelligent invalidation
+- ** Search**: Vector embeddings with semantic similarity
+- ** Monitoring**: Prometheus, Grafana, OpenTelemetry
+- ** Deployment**: Docker, Docker Compose, Kubernetes-ready
+- ** Security**: JWT tokens, API keys, RBAC, audit logging
 
 ### **Project Structure**
 
 ```
 graphrag-api/
-├── src/graphrag_api_service/           # Main application code
-│   ├── api/                           # REST API endpoints
-│   ├── graphql/                       # GraphQL schema and resolvers
-│   │   ├── optimization.py            # Query optimization
-│   │   ├── subscriptions.py           # Real-time subscriptions
-│   │   └── testing.py                 # GraphQL testing framework
-│   ├── auth/                          # Authentication & authorization
-│   │   ├── jwt_auth.py                # JWT token management
-│   │   └── api_keys.py                # API key management
-│   ├── monitoring/                    # Monitoring & observability
-│   │   ├── prometheus.py              # Metrics collection
-│   │   ├── tracing.py                 # Distributed tracing
-│   │   └── grafana.py                 # Dashboard configuration
-│   ├── caching/                       # Caching layer
-│   │   └── redis_cache.py             # Redis integration
-│   ├── core/                          # Core business logic
-│   ├── models/                        # Data models
-│   └── utils/                         # Utility functions
-├── tests/                             # Comprehensive test suite
-│   ├── test_phase11_graphql_enhancement.py  # Phase 11 tests
-│   └── test_*.py                      # Other test modules
-├── docs/                              # Documentation
-│   ├── api/                           # API documentation
-│   │   ├── openapi.yaml               # OpenAPI 3.0 specification
-│   │   ├── graphql-schema.md          # GraphQL documentation
-│   │   ├── authentication-examples.md # Auth examples
-│   │   └── error-codes.md             # Error reference
-│   └── testing/                       # Testing guides
-├── postman/                           # Postman collection
-│   ├── GraphRAG-API-Collection.json   # Complete API collection
-│   └── environments/                  # Environment templates
-├── docker/                            # Docker configurations
-├── scripts/                           # Utility scripts
-└── monitoring/                        # Monitoring configurations
-    ├── prometheus.yml                 # Prometheus config
-    └── grafana/                       # Grafana dashboards
+src/graphrag_api_service/ # Main application code
+api/ # REST API endpoints
+graphql/ # GraphQL schema and resolvers
+optimization.py # Query optimization
+subscriptions.py # Real-time subscriptions
+testing.py # GraphQL testing framework
+auth/ # Authentication & authorization
+jwt_auth.py # JWT token management
+api_keys.py # API key management
+monitoring/ # Monitoring & observability
+prometheus.py # Metrics collection
+tracing.py # Distributed tracing
+grafana.py # Dashboard configuration
+caching/ # Caching layer
+redis_cache.py # Redis integration
+core/ # Core business logic
+models/ # Data models
+utils/ # Utility functions
+tests/ # Comprehensive test suite
+test_phase11_graphql_enhancement.py # Phase 11 tests
+test_*.py # Other test modules
+docs/ # Documentation
+api/ # API documentation
+openapi.yaml # OpenAPI 3.0 specification
+graphql-schema.md # GraphQL documentation
+authentication-examples.md # Auth examples
+error-codes.md # Error reference
+testing/ # Testing guides
+postman/ # Postman collection
+GraphRAG-API-Collection.json # Complete API collection
+environments/ # Environment templates
+docker/ # Docker configurations
+scripts/ # Utility scripts
+monitoring/ # Monitoring configurations
+prometheus.yml # Prometheus config
+grafana/ # Grafana dashboards
 ```
 
 ### **Architecture Patterns**
 
-- **🏗️ Modular Design**: Clean separation of concerns with dependency injection
-- **🔄 Factory Pattern**: LLM provider abstraction for multi-provider support
-- **📊 Observer Pattern**: Real-time subscriptions and event handling
-- **🎯 Strategy Pattern**: Configurable algorithms for graph operations
-- **🔒 Decorator Pattern**: Authentication and authorization middleware
-- **📈 Monitoring Pattern**: Comprehensive observability with metrics and tracing
+- ** Modular Design**: Clean separation of concerns with dependency injection
+- ** Factory Pattern**: LLM provider abstraction for multi-provider support
+- ** Observer Pattern**: Real-time subscriptions and event handling
+- ** Strategy Pattern**: Configurable algorithms for graph operations
+- ** Decorator Pattern**: Authentication and authorization middleware
+- ** Monitoring Pattern**: Comprehensive observability with metrics and tracing
 
-## 🔧 LLM Provider Integration
+## LLM Provider Integration
 
 ### **Ollama Integration (Local)**
 
@@ -493,16 +496,18 @@ OLLAMA_TIMEOUT=60
 ```
 
 **Setup Instructions:**
-1. Install Ollama: https://ollama.ai/
+
+1. Install Ollama: [https://ollama.ai/](https://ollama.ai/)
 2. Pull models: `ollama pull llama2` and `ollama pull nomic-embed-text`
 3. Start Ollama service: `ollama serve`
 4. Configure environment variables
 
 **Benefits:**
-- ✅ Complete data privacy (no external API calls)
-- ✅ No API costs or rate limits
-- ✅ Local embeddings and text generation
-- ✅ Offline operation capability
+
+- Complete data privacy (no external API calls)
+- No API costs or rate limits
+- Local embeddings and text generation
+- Offline operation capability
 
 ### **Google Cloud AI Integration**
 
@@ -517,16 +522,18 @@ VERTEX_AI_EMBEDDING_MODEL=textembedding-gecko
 ```
 
 **Setup Instructions:**
+
 1. Create Google Cloud project
 2. Enable Vertex AI API
 3. Create service account and download credentials
 4. Configure environment variables
 
 **Benefits:**
-- ✅ Enterprise-grade reliability and scaling
-- ✅ Latest AI models (Gemini, PaLM)
-- ✅ Managed infrastructure
-- ✅ Global availability
+
+- Enterprise-grade reliability and scaling
+- Latest AI models (Gemini, PaLM)
+- Managed infrastructure
+- Global availability
 
 ### **Provider Comparison Matrix**
 
@@ -540,7 +547,7 @@ VERTEX_AI_EMBEDDING_MODEL=textembedding-gecko
 | **Models** | Open source | Latest Google | GPT series |
 | **Setup** | Simple | Moderate | Simple |
 
-## 🚀 Use Cases & Examples
+## Use Cases & Examples
 
 ### **1. Knowledge Base Construction**
 
@@ -550,17 +557,17 @@ import requests
 
 # Upload documents for indexing
 response = requests.post(
-    "http://localhost:8000/api/indexing/start",
-    headers={"Authorization": "Bearer YOUR_TOKEN"},
-    json={
-        "workspace_id": "kb_workspace",
-        "data_path": "/data/documents",
-        "config": {
-            "chunk_size": 1000,
-            "overlap": 200,
-            "enable_community_detection": True
-        }
-    }
+"http://localhost:8000/api/indexing/start",
+headers={"Authorization": "Bearer YOUR_TOKEN"},
+json={
+"workspace_id": "kb_workspace",
+"data_path": "/data/documents",
+"config": {
+"chunk_size": 1000,
+"overlap": 200,
+"enable_community_detection": True
+}
+}
 )
 
 # Monitor indexing progress
@@ -573,20 +580,20 @@ status = requests.get(f"http://localhost:8000/api/indexing/status/{job_id}")
 ```graphql
 # GraphQL query for semantic search
 query SemanticQA($question: String!) {
-  search(query: $question, limit: 5) {
-    entities {
-      id
-      title
-      description
-    }
-    relationships {
-      source
-      target
-      type
-      description
-    }
-    score
-  }
+search(query: $question, limit: 5) {
+entities {
+id
+title
+description
+}
+relationships {
+source
+target
+type
+description
+}
+score
+}
 }
 ```
 
@@ -595,16 +602,16 @@ query SemanticQA($question: String!) {
 ```python
 # Analyze graph structure and communities
 communities = requests.get(
-    "http://localhost:8000/api/communities",
-    headers={"Authorization": "Bearer YOUR_TOKEN"},
-    params={"algorithm": "leiden", "resolution": 1.0}
+"http://localhost:8000/api/communities",
+headers={"Authorization": "Bearer YOUR_TOKEN"},
+params={"algorithm": "leiden", "resolution": 1.0}
 )
 
 # Get centrality analysis
 centrality = requests.post(
-    "http://localhost:8000/api/graph/centrality",
-    headers={"Authorization": "Bearer YOUR_TOKEN"},
-    json={"algorithm": "betweenness", "limit": 50}
+"http://localhost:8000/api/graph/centrality",
+headers={"Authorization": "Bearer YOUR_TOKEN"},
+json={"algorithm": "betweenness", "limit": 50}
 )
 ```
 
@@ -616,20 +623,20 @@ const ws = new WebSocket('ws://localhost:8000/graphql', 'graphql-ws');
 
 // Subscribe to performance metrics
 ws.send(JSON.stringify({
-  type: 'start',
-  payload: {
-    query: `
-      subscription {
-        performanceUpdates {
-          timestamp
-          cpuUsagePercent
-          memoryUsageMb
-          requestsPerSecond
-          cacheHitRate
-        }
-      }
-    `
-  }
+type: 'start',
+payload: {
+query: `
+subscription {
+performanceUpdates {
+timestamp
+cpuUsagePercent
+memoryUsageMb
+requestsPerSecond
+cacheHitRate
+}
+}
+`
+}
 }));
 ```
 
@@ -639,22 +646,22 @@ ws.send(JSON.stringify({
 # docker-compose.prod.yml for enterprise deployment
 version: '3.8'
 services:
-  graphrag-api:
-    image: graphrag-api:latest
-    environment:
-      - ENVIRONMENT=production
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-    deploy:
-      replicas: 3
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
+graphrag-api:
+image: graphrag-api:latest
+environment:
+- ENVIRONMENT=production
+- JWT_SECRET_KEY=${JWT_SECRET_KEY}
+- DATABASE_URL=${DATABASE_URL}
+- REDIS_URL=${REDIS_URL}
+deploy:
+replicas: 3
+resources:
+limits:
+cpus: '2'
+memory: 4G
 ```
 
-## 📈 Performance Benchmarks
+## Performance Benchmarks
 
 ### **Response Time Benchmarks**
 
@@ -683,22 +690,24 @@ services:
 | Medium Production | 8 cores | 16GB | 500GB | 500 |
 | Large Production | 16+ cores | 32GB+ | 1TB+ | 1000+ |
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### **Common Issues**
 
 #### **Authentication Problems**
+
 ```bash
 # Check JWT token validity
 curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/auth/verify
 
 # Refresh expired token
 curl -X POST http://localhost:8000/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "YOUR_REFRESH_TOKEN"}'
+-H "Content-Type: application/json" \
+-d '{"refresh_token": "YOUR_REFRESH_TOKEN"}'
 ```
 
 #### **Performance Issues**
+
 ```bash
 # Check system metrics
 curl http://localhost:8000/metrics/performance
@@ -711,18 +720,19 @@ redis-cli ping
 ```
 
 #### **GraphQL Query Optimization**
+
 ```graphql
 # Use field selection to optimize queries
 query OptimizedQuery {
-  entities(first: 10) {
-    edges {
-      node {
-        id
-        title
-        # Only request needed fields
-      }
-    }
-  }
+entities(first: 10) {
+edges {
+node {
+id
+title
+# Only request needed fields
+}
+}
+}
 }
 ```
 
@@ -737,7 +747,7 @@ export LOG_LEVEL=DEBUG
 python -m uvicorn src.graphrag_api_service.main:app --reload --log-level debug
 ```
 
-## 🤝 Contributing
+## Contributing
 
 ### **Development Setup**
 
@@ -777,7 +787,7 @@ pytest tests/
 4. **Update Documentation**: Update relevant docs and README
 5. **Submit PR**: Create pull request with detailed description
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -805,46 +815,52 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## 🆘 Support & Community
+## Support & Community
 
 ### **Documentation**
-- **📖 API Documentation**: [docs/api/](docs/api/)
-- **🧪 Testing Guide**: [docs/testing/](docs/testing/)
-- **🚀 Deployment Guide**: [docs/deployment/](docs/deployment/)
-- **📊 Monitoring Guide**: [docs/monitoring/](docs/monitoring/)
+
+- ** API Documentation**: [docs/api/](docs/api/)
+- ** Testing Guide**: [docs/testing/](docs/testing/)
+- ** Deployment Guide**: [docs/deployment/](docs/deployment/)
+- ** Monitoring Guide**: [docs/monitoring/](docs/monitoring/)
 
 ### **Community & Support**
-- **🐛 Issues**: [GitHub Issues](https://github.com/pierregrothe/graphrag-api/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/pierregrothe/graphrag-api/discussions)
-- **📧 Email**: pierre@grothe.ca
-- **📱 Twitter**: [@pierregrothe](https://twitter.com/pierregrothe)
+
+- ** Issues**: [GitHub Issues](https://github.com/pierregrothe/graphrag-api/issues)
+- ** Discussions**: [GitHub Discussions](https://github.com/pierregrothe/graphrag-api/discussions)
+- ** Email**: <pierre@grothe.ca>
+- ** Twitter**: [@pierregrothe](https://twitter.com/pierregrothe)
 
 ### **Enterprise Support**
-For enterprise deployments, custom integrations, and professional support:
-- **📧 Enterprise Contact**: enterprise@graphrag.com
-- **📞 Phone Support**: Available for enterprise customers
-- **🎯 Custom Development**: Tailored solutions and integrations
-- **📚 Training & Consulting**: Implementation and optimization services
 
-## 🎯 Roadmap
+For enterprise deployments, custom integrations, and professional support:
+
+- ** Enterprise Contact**: <enterprise@graphrag.com>
+- ** Phone Support**: Available for enterprise customers
+- ** Custom Development**: Tailored solutions and integrations
+- ** Training & Consulting**: Implementation and optimization services
+
+## Roadmap
 
 ### **Upcoming Features (Phase 12+)**
-- **🔄 Kubernetes Deployment**: Helm charts and operators
-- **🌐 Multi-language SDKs**: Python, JavaScript, Go, Java clients
-- **🔍 Advanced Analytics**: Machine learning insights and predictions
-- **🔗 Enterprise Integrations**: Salesforce, Microsoft Graph, Slack
-- **📊 Business Intelligence**: Advanced reporting and dashboards
-- **🔐 Advanced Security**: OAuth2/OIDC, SAML, advanced threat detection
+
+- ** Kubernetes Deployment**: Helm charts and operators
+- ** Multi-language SDKs**: Python, JavaScript, Go, Java clients
+- ** Advanced Analytics**: Machine learning insights and predictions
+- ** Enterprise Integrations**: Salesforce, Microsoft Graph, Slack
+- ** Business Intelligence**: Advanced reporting and dashboards
+- ** Advanced Security**: OAuth2/OIDC, SAML, advanced threat detection
 
 ### **Long-term Vision**
-- **🌍 Global Distribution**: Multi-region deployment with data replication
-- **🤖 AI-Powered Insights**: Automated knowledge discovery and recommendations
-- **📱 Mobile Applications**: Native iOS and Android apps
-- **🔌 Plugin Ecosystem**: Extensible plugin architecture for custom integrations
-- **📈 Predictive Analytics**: Trend analysis and forecasting capabilities
+
+- ** Global Distribution**: Multi-region deployment with data replication
+- ** AI-Powered Insights**: Automated knowledge discovery and recommendations
+- ** Mobile Applications**: Native iOS and Android apps
+- ** Plugin Ecosystem**: Extensible plugin architecture for custom integrations
+- ** Predictive Analytics**: Trend analysis and forecasting capabilities
 
 ---
 
-**⭐ Star this repository if you find it useful!**
+** Star this repository if you find it useful!**
 
-**🚀 Ready to build enterprise knowledge graphs? Get started with GraphRAG API today!**
+** Ready to build enterprise knowledge graphs? Get started with GraphRAG API today!**

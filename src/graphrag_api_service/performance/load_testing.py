@@ -29,7 +29,7 @@ class LoadTestConfig(BaseModel):
     timeout_seconds: float = 30.0
 
 
-class TestScenario(BaseModel):
+class LoadTestScenario(BaseModel):
     """Test scenario definition."""
 
     name: str
@@ -71,7 +71,7 @@ class BenchmarkSuite:
         self.config = config
         self.scenarios = self._create_default_scenarios()
 
-    def _create_default_scenarios(self) -> List[TestScenario]:
+    def _create_default_scenarios(self) -> List[LoadTestScenario]:
         """Create default test scenarios.
 
         Returns:
@@ -79,25 +79,25 @@ class BenchmarkSuite:
         """
         return [
             # Basic API endpoints
-            TestScenario(
+            LoadTestScenario(
                 name="health_check",
                 method="GET",
                 endpoint="/health",
                 weight=0.1
             ),
-            TestScenario(
+            LoadTestScenario(
                 name="get_entities",
                 method="GET",
                 endpoint="/api/entities",
                 weight=0.3
             ),
-            TestScenario(
+            LoadTestScenario(
                 name="get_relationships",
                 method="GET",
                 endpoint="/api/relationships",
                 weight=0.3
             ),
-            TestScenario(
+            LoadTestScenario(
                 name="search_entities",
                 method="POST",
                 endpoint="/api/entities/search",
@@ -105,7 +105,7 @@ class BenchmarkSuite:
                 weight=0.2
             ),
             # Advanced features
-            TestScenario(
+            LoadTestScenario(
                 name="multi_hop_query",
                 method="POST",
                 endpoint="/api/graph/query/multi-hop",
@@ -117,7 +117,7 @@ class BenchmarkSuite:
                 },
                 weight=0.05
             ),
-            TestScenario(
+            LoadTestScenario(
                 name="community_detection",
                 method="POST",
                 endpoint="/api/graph/analytics/communities",
@@ -126,7 +126,7 @@ class BenchmarkSuite:
             ),
         ]
 
-    def add_scenario(self, scenario: TestScenario) -> None:
+    def add_scenario(self, scenario: LoadTestScenario) -> None:
         """Add a custom test scenario.
 
         Args:
@@ -202,7 +202,7 @@ class BenchmarkSuite:
         logger.debug(f"User {user_id} completed {request_count} requests")
         return results
 
-    def _select_weighted_scenario(self) -> TestScenario:
+    def _select_weighted_scenario(self) -> LoadTestScenario:
         """Select a scenario based on weights.
 
         Returns:
@@ -224,7 +224,7 @@ class BenchmarkSuite:
     async def _execute_request(
         self, 
         session: aiohttp.ClientSession, 
-        scenario: TestScenario, 
+        scenario: LoadTestScenario,
         user_id: int
     ) -> Dict[str, Any]:
         """Execute a single request.

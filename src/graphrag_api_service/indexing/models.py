@@ -6,7 +6,7 @@
 """Data models for GraphRAG indexing operations."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -81,7 +81,7 @@ class IndexingJob(BaseModel):
         default=IndexingJobStatus.QUEUED, description="Current job status"
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), description="Job creation timestamp"
+        default_factory=lambda: datetime.now(timezone.utc), description="Job creation timestamp"
     )
     started_at: datetime | None = Field(None, description="Job start timestamp")
     completed_at: datetime | None = Field(None, description="Job completion timestamp")
@@ -103,24 +103,24 @@ class IndexingJob(BaseModel):
     def start_job(self) -> None:
         """Mark job as started."""
         self.status = IndexingJobStatus.RUNNING
-        self.started_at = datetime.now(UTC)
+        self.started_at = datetime.now(timezone.utc)
 
     def complete_job(self) -> None:
         """Mark job as completed."""
         self.status = IndexingJobStatus.COMPLETED
-        self.completed_at = datetime.now(UTC)
+        self.completed_at = datetime.now(timezone.utc)
         self.progress.overall_progress = 1.0
 
     def fail_job(self, error_message: str) -> None:
         """Mark job as failed with error message."""
         self.status = IndexingJobStatus.FAILED
-        self.completed_at = datetime.now(UTC)
+        self.completed_at = datetime.now(timezone.utc)
         self.error_message = error_message
 
     def cancel_job(self) -> None:
         """Mark job as cancelled."""
         self.status = IndexingJobStatus.CANCELLED
-        self.completed_at = datetime.now(UTC)
+        self.completed_at = datetime.now(timezone.utc)
 
     def can_retry(self) -> bool:
         """Check if job can be retried."""
@@ -155,7 +155,7 @@ class IndexingJob(BaseModel):
         if not self.started_at:
             return None
 
-        end_time = self.completed_at or datetime.utcnow()
+        end_time = self.completed_at or datetime.now(timezone.utc)
         return (end_time - self.started_at).total_seconds()
 
 

@@ -8,7 +8,7 @@
 import hashlib
 import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Set
 
 from pydantic import BaseModel
@@ -103,7 +103,7 @@ class APIKeyManager:
         
         expires_at = None
         if request.expires_in_days:
-            expires_at = datetime.utcnow() + timedelta(days=request.expires_in_days)
+            expires_at = datetime.now(timezone.utc) + timedelta(days=request.expires_in_days)
         
         api_key = APIKey(
             id=key_id,
@@ -114,7 +114,7 @@ class APIKeyManager:
             tenant_id=tenant_id,
             permissions=request.permissions,
             rate_limit=request.rate_limit,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             expires_at=expires_at
         )
         
@@ -168,7 +168,7 @@ class APIKeyManager:
             return None
         
         # Update usage statistics
-        api_key.last_used_at = datetime.utcnow()
+        api_key.last_used_at = datetime.now(timezone.utc)
         api_key.usage_count += 1
         
         return api_key
@@ -183,7 +183,7 @@ class APIKeyManager:
         Returns:
             True if within rate limit
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         hour_ago = now - timedelta(hours=1)
         
         # Get usage in the last hour

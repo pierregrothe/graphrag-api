@@ -1,0 +1,220 @@
+{
+  "index_name": "graphrag-api-docs",
+  "start_urls": [
+    {
+      "url": "https://docs.graphrag.com/",
+      "selectors_key": "homepage",
+      "tags": ["homepage"]
+    },
+    {
+      "url": "https://docs.graphrag.com/docs/",
+      "selectors_key": "docs",
+      "tags": ["docs"]
+    },
+    {
+      "url": "https://docs.graphrag.com/api/",
+      "selectors_key": "api",
+      "tags": ["api", "reference"]
+    },
+    {
+      "url": "https://docs.graphrag.com/guides/",
+      "selectors_key": "guides",
+      "tags": ["guides", "tutorials"]
+    }
+  ],
+  "sitemap_urls": [
+    "https://docs.graphrag.com/sitemap.xml"
+  ],
+  "sitemap_alternate_links": true,
+  "stop_urls": [
+    "/tests",
+    "/playground"
+  ],
+  "selectors": {
+    "homepage": {
+      "lvl0": {
+        "selector": ".hero__title",
+        "global": true,
+        "default_value": "GraphRAG API Documentation"
+      },
+      "lvl1": "main h1",
+      "lvl2": "main h2",
+      "lvl3": "main h3",
+      "lvl4": "main h4",
+      "lvl5": "main h5",
+      "text": "main p, main li, main td:last-child"
+    },
+    "docs": {
+      "lvl0": {
+        "selector": ".theme-doc-sidebar-item-category-level-1 > .menu__link--active",
+        "global": true,
+        "default_value": "Documentation"
+      },
+      "lvl1": "[class^='docTitle']",
+      "lvl2": ".markdown h2",
+      "lvl3": ".markdown h3",
+      "lvl4": ".markdown h4",
+      "lvl5": ".markdown h5",
+      "text": ".markdown p, .markdown li, .markdown td:last-child",
+      "lang": {
+        "selector": "/html/@lang",
+        "type": "xpath",
+        "global": true,
+        "default_value": "en-US"
+      }
+    },
+    "api": {
+      "lvl0": {
+        "selector": ".theme-doc-sidebar-item-category-level-1 > .menu__link--active",
+        "global": true,
+        "default_value": "API Reference"
+      },
+      "lvl1": "[class^='docTitle']",
+      "lvl2": ".markdown h2",
+      "lvl3": ".markdown h3",
+      "lvl4": ".markdown h4",
+      "lvl5": ".markdown h5",
+      "text": ".markdown p, .markdown li, .markdown td:last-child, .api-explorer code",
+      "lang": {
+        "selector": "/html/@lang",
+        "type": "xpath",
+        "global": true,
+        "default_value": "en-US"
+      }
+    },
+    "guides": {
+      "lvl0": {
+        "selector": ".theme-doc-sidebar-item-category-level-1 > .menu__link--active",
+        "global": true,
+        "default_value": "Guides"
+      },
+      "lvl1": "[class^='docTitle']",
+      "lvl2": ".markdown h2",
+      "lvl3": ".markdown h3",
+      "lvl4": ".markdown h4",
+      "lvl5": ".markdown h5",
+      "text": ".markdown p, .markdown li, .markdown td:last-child",
+      "lang": {
+        "selector": "/html/@lang",
+        "type": "xpath",
+        "global": true,
+        "default_value": "en-US"
+      }
+    }
+  },
+  "custom_settings": {
+    "separatorsToIndex": "_",
+    "attributeForDistinct": "language",
+    "attributesForFaceting": [
+      "language",
+      "version",
+      "type",
+      "tags"
+    ],
+    "optionalWords": [
+      "the",
+      "a",
+      "an",
+      "and",
+      "or",
+      "but",
+      "in",
+      "on",
+      "at",
+      "to",
+      "for",
+      "of",
+      "with",
+      "by"
+    ],
+    "ranking": [
+      "words",
+      "filters",
+      "typo",
+      "attribute",
+      "proximity",
+      "exact",
+      "custom"
+    ],
+    "customRanking": [
+      "desc(weight.pageRank)",
+      "desc(weight.level)",
+      "asc(weight.position)"
+    ],
+    "minWordSizefor1Typo": 3,
+    "minWordSizefor2Typos": 7,
+    "allowTyposOnNumericTokens": false,
+    "minProximity": 1,
+    "ignorePlurals": true,
+    "advancedSyntax": true,
+    "searchableAttributes": [
+      "unordered(hierarchy.lvl0)",
+      "unordered(hierarchy.lvl1)",
+      "unordered(hierarchy.lvl2)",
+      "unordered(hierarchy.lvl3)",
+      "unordered(hierarchy.lvl4)",
+      "unordered(hierarchy.lvl5)",
+      "unordered(hierarchy.lvl6)",
+      "content"
+    ],
+    "distinct": true,
+    "attributeForDistinct": "url",
+    "customRanking": [
+      "desc(weight.pageRank)",
+      "desc(weight.level)",
+      "asc(weight.position)"
+    ],
+    "ranking": [
+      "words",
+      "filters",
+      "typo",
+      "attribute",
+      "proximity",
+      "exact",
+      "custom"
+    ],
+    "highlightPreTag": "<span class='algolia-docsearch-suggestion--highlight'>",
+    "highlightPostTag": "</span>",
+    "minWordSizefor1Typo": 3,
+    "minWordSizefor2Typos": 7,
+    "allowTyposOnNumericTokens": false,
+    "minProximity": 1,
+    "ignorePlurals": true,
+    "advancedSyntax": true,
+    "attributeCriteriaComputedByMinProximity": true,
+    "removeWordsIfNoResults": "lastWords"
+  },
+  "conversation_id": [
+    "graphrag-api-docs"
+  ],
+  "nb_hits": 46250,
+  "user_agent": "Algolia DocSearch Scraper",
+  "schedule": "at 02:00 every day",
+  "records_per_page": 200,
+  "only_content_level": false,
+  "use_anchors": false,
+  "js_render": false,
+  "js_wait": 0,
+  "scrape_start_urls": true,
+  "strip_chars": " .,;:#",
+  "selectors_exclude": [
+    ".hash-link",
+    ".anchor",
+    ".table-of-contents",
+    "nav",
+    "aside",
+    "footer",
+    ".pagination-nav",
+    ".docusaurus-highlight-code-line",
+    ".token-line",
+    ".prism-code"
+  ],
+  "custom_settings": {
+    "attributesForFaceting": [
+      "language",
+      "version",
+      "type",
+      "tags"
+    ]
+  }
+}
