@@ -92,8 +92,7 @@ flowchart TD
     classDef placeholderStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
     classDef futureStyle fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#666,stroke-dasharray: 5 5
     classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
-    classDef newImplementedStyle fill:#e0f7fa,stroke:#00bcd4,
-    stroke-width:3px,color:#000
+    classDef newImplementedStyle fill:#e0f7fa,stroke:#00bcd4,stroke-width:3px,color:#000
 
     %% Apply Classes
     class ClientLayer clientStyle
