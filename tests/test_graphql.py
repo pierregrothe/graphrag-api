@@ -200,7 +200,7 @@ def mock_graphrag_integration():
             "token_count": 100,
         }
     )
-    mock.index = AsyncMock(
+    mock.index_data = AsyncMock(
         return_value={
             "success": True,
             "message": "Indexing started",

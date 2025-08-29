@@ -91,15 +91,28 @@ class Mutation:
 
         workspace = workspace_manager.create_workspace(request)
 
+        # Handle case where workspace.config might be None (for testing)
+        if workspace.config:
+            workspace_name = workspace.config.name
+            workspace_description = workspace.config.description
+            workspace_data_path = workspace.config.data_path
+            config_dict = workspace.config.model_dump()
+        else:
+            # Fallback to request data if config is None
+            workspace_name = name
+            workspace_description = description or ""
+            workspace_data_path = data_path
+            config_dict = {}
+
         return Workspace(
             id=workspace.id,
-            name=workspace.config.name,
-            description=workspace.config.description,
-            data_path=workspace.config.data_path,
+            name=workspace_name,
+            description=workspace_description,
+            data_path=workspace_data_path,
             status=convert_workspace_status(workspace.status),
             created_at=workspace.created_at,
             updated_at=workspace.updated_at,
-            config=workspace.config.model_dump() if workspace.config else {},
+            config=config_dict,
         )
 
     @strawberry.mutation
@@ -225,7 +238,7 @@ class Mutation:
         if workspace_id:
             workspace_manager: WorkspaceManager = info.context["workspace_manager"]
             workspace = workspace_manager.get_workspace(workspace_id)
-            if workspace:
+            if workspace and workspace.config:
                 root_directory = workspace.config.data_path
 
         if not root_directory:
