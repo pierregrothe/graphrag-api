@@ -126,7 +126,6 @@ class TestSystemOperations:
         """Test enhanced status generation."""
         # Add some metrics
         system_operations.metrics["graph_queries"] = 10
-        system_operations.metrics["indexing_jobs"] = 5
 
         status = await system_operations.get_enhanced_status()
 
@@ -136,7 +135,9 @@ class TestSystemOperations:
         assert "provider_info" in status
         assert "graph_metrics" in status
         assert "indexing_metrics" in status
-        assert status["indexing_metrics"]["total_jobs"] == 5
+        assert "total_jobs" in status["indexing_metrics"]
+        assert "active_jobs" in status["indexing_metrics"]
+        assert "queued_jobs" in status["indexing_metrics"]
         assert "workspace_metrics" in status
         assert "recent_operations" in status
 

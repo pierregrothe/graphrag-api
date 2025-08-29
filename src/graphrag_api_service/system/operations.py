@@ -265,16 +265,13 @@ class SystemOperations:
                     graph_metrics = {"available": False}
 
             # Get indexing metrics
+            indexing_stats = self.indexing_manager.get_indexing_stats()
             indexing_metrics = {
-                "total_jobs": self.metrics["indexing_jobs"],
-                "active_jobs": (
-                    len(self.indexing_manager.jobs) if hasattr(self.indexing_manager, "jobs") else 0
-                ),
-                "queued_jobs": (
-                    self.indexing_manager.job_queue.qsize()
-                    if hasattr(self.indexing_manager, "job_queue")
-                    else 0
-                ),
+                "total_jobs": indexing_stats.total_jobs,
+                "active_jobs": indexing_stats.running_jobs,
+                "queued_jobs": indexing_stats.queued_jobs,
+                "completed_jobs": indexing_stats.completed_jobs,
+                "failed_jobs": indexing_stats.failed_jobs,
             }
 
             # Get workspace metrics
