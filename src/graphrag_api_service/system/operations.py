@@ -99,7 +99,9 @@ class SystemOperations:
                 if not health.healthy:
                     # Rollback on validation failure
                     self.settings.llm_provider = LLMProvider(previous_provider)
-                    raise SystemOperationsError(f"Provider validation failed: Provider is not healthy")
+                    raise SystemOperationsError(
+                        "Provider validation failed: Provider is not healthy"
+                    )
                 validation_result = health.model_dump()
 
             # Update GraphRAG integration if available
@@ -132,7 +134,7 @@ class SystemOperations:
             Dictionary containing detailed health information
         """
         try:
-            health_status = {
+            health_status: dict[str, Any] = {
                 "status": "healthy",
                 "timestamp": datetime.now(UTC).isoformat(),
                 "components": {},
@@ -150,9 +152,9 @@ class SystemOperations:
                 health_status["provider"] = {
                     "name": self.settings.llm_provider.value,
                     "healthy": provider_health.healthy,
-                    "models": getattr(provider_health, 'available_models', []),
-                    "error": getattr(provider_health, 'error', None),
-                    "metadata": getattr(provider_health, 'metadata', {}),
+                    "models": getattr(provider_health, "available_models", []),
+                    "error": getattr(provider_health, "error", None),
+                    "metadata": getattr(provider_health, "metadata", {}),
                 }
                 if not provider_health.healthy:
                     health_status["status"] = "degraded"
@@ -174,7 +176,7 @@ class SystemOperations:
             workspaces = self.workspace_manager.list_workspaces()
             health_status["workspaces"] = {
                 "total": len(workspaces),
-                "active": sum(1 for w in workspaces if getattr(w, 'status', None) == "active"),
+                "active": sum(1 for w in workspaces if getattr(w, "status", None) == "active"),
             }
 
             # Check graph data availability

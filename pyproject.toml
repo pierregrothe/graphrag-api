@@ -19,6 +19,7 @@ google-cloud-aiplatform = "^1.111.0"
 google-generativeai = "^0.8.5"
 pandas = "^2.3.2"
 psutil = "^7.0.0"
+strawberry-graphql = {extras = ["fastapi"], version = "^0.281.0"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
@@ -28,6 +29,7 @@ pytest-asyncio = "^1.1.0"
 mypy = "^1.17.1"
 types-pyyaml = "^6.0.12.20250822"
 pandas-stubs = "^2.3.2.250827"
+types-psutil = "^7.0.0.20250822"
 
 [build-system]
 requires = ["poetry-core"]
@@ -36,22 +38,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 100
 target-version = ['py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
+include = '\.pyi?$' 
 
 [tool.ruff]
 target-version = "py312"

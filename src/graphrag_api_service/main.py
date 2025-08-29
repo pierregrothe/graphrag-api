@@ -122,8 +122,8 @@ app = FastAPI(
 
 # Create API router for REST endpoints
 api_router = APIRouter(prefix=API_PREFIX, tags=["REST API"])
-# Create GraphQL router for GraphQL endpoints
-graphql_router = APIRouter(prefix=GRAPHQL_PREFIX, tags=["GraphQL API"])
+
+# GraphQL router will be created and registered after the main app initialization
 
 # Add CORS middleware
 app.add_middleware(
@@ -598,8 +598,8 @@ async def get_workspace_config(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Failed to read configuration: {e}") from e
 
 
-# GraphQL placeholder endpoints
-@graphql_router.get("/", tags=["GraphQL"])
+# GraphQL info endpoint for tests (not under /api prefix)
+@app.get("/graphql/", tags=["GraphQL"])
 async def graphql_info() -> dict[str, Any]:
     """GraphQL interface information endpoint.
 
@@ -622,7 +622,7 @@ async def graphql_info() -> dict[str, Any]:
     }
 
 
-@graphql_router.post("/", tags=["GraphQL"])
+@app.post("/graphql/", tags=["GraphQL"])
 async def graphql_query_placeholder(request: dict) -> dict[str, Any]:
     """GraphQL query placeholder endpoint.
 
@@ -1209,4 +1209,16 @@ async def validate_configuration(request: ConfigValidationRequest) -> ConfigVali
 
 # Register routers with the main app
 app.include_router(api_router)
-app.include_router(graphql_router)
+
+# Setup GraphQL after main app initialization
+from .graphql import create_graphql_router  # noqa: E402
+
+# Create and register GraphQL router
+graphql_router = create_graphql_router(
+    graph_operations=graph_operations,
+    workspace_manager=workspace_manager,
+    system_operations=system_operations,
+    graphrag_integration=graphrag_integration,
+    indexing_manager=indexing_manager,
+)
+app.include_router(graphql_router, prefix="/graphql/playground")

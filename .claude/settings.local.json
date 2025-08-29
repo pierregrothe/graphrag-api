@@ -21,7 +21,8 @@
       "WebFetch(domain:docs.mermaidchart.com)",
       "WebFetch(domain:docs.github.com)",
       "Bash(poetry run python:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(poetry add:*)"
     ],
     "deny": [],
     "ask": []
