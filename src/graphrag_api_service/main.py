@@ -5,6 +5,7 @@
 
 """Main FastAPI application module for GraphRAG API service."""
 
+import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
@@ -30,6 +31,12 @@ from .graph import (
 from .graph.advanced_query_engine import AdvancedQueryEngine, MultiHopQuery, TemporalQuery
 from .graph.analytics import GraphAnalytics
 from .graph.operations import GraphOperationsError
+from .performance.cache_manager import cleanup_cache_manager, get_cache_manager
+from .performance.compression import get_performance_middleware
+from .performance.connection_pool import cleanup_connection_pool, get_connection_pool
+from .performance.memory_optimizer import get_memory_optimizer
+from .performance.monitoring import cleanup_performance_monitor, get_performance_monitor
+from .security.middleware import get_security_middleware
 from .graphrag_integration import GraphRAGError, GraphRAGIntegration
 from .indexing import IndexingManager
 from .indexing.models import (
@@ -105,7 +112,38 @@ async def lifespan(app: FastAPI):
     await indexing_manager.start()
     logger.info("Indexing manager started successfully")
 
+    # Initialize performance components
+    try:
+        # Initialize connection pool
+        connection_pool = await get_connection_pool()
+        logger.info("Connection pool initialized successfully")
+
+        # Initialize cache manager
+        cache_manager = await get_cache_manager()
+        logger.info("Cache manager initialized successfully")
+
+        # Initialize performance monitor
+        performance_monitor = await get_performance_monitor()
+        logger.info("Performance monitoring started successfully")
+
+        # Initialize memory optimizer
+        memory_optimizer = get_memory_optimizer()
+        logger.info("Memory optimizer initialized successfully")
+
+        logger.info("All performance components initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize performance components: {e}")
+
     yield
+
+    # Shutdown performance components
+    try:
+        await cleanup_performance_monitor()
+        await cleanup_cache_manager()
+        await cleanup_connection_pool()
+        logger.info("Performance components shut down successfully")
+    except Exception as e:
+        logger.error(f"Error shutting down performance components: {e}")
 
     # Shutdown indexing manager
     await indexing_manager.stop()
@@ -128,14 +166,85 @@ api_router = APIRouter(prefix=API_PREFIX, tags=["REST API"])
 
 # GraphQL router will be created and registered after the main app initialization
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add security and performance middleware
+security_middleware = get_security_middleware()
+performance_middleware = get_performance_middleware()
+
+# Add CORS middleware (configured through security middleware)
+cors_config = security_middleware.get_cors_config()
+if cors_config:
+    app.add_middleware(
+        CORSMiddleware,
+        **cors_config
+    )
+
+# Add custom middleware for performance monitoring and security
+@app.middleware("http")
+async def performance_security_middleware(request: Request, call_next):
+    """Combined performance monitoring and security middleware."""
+    start_time = time.time()
+
+    # Security checks
+    try:
+        await security_middleware.process_request(request)
+    except HTTPException as e:
+        # Log security event
+        security_middleware.audit_logger.log_request(
+            request_id=str(id(request)),
+            method=request.method,
+            path=str(request.url.path),
+            user_agent=request.headers.get("user-agent"),
+            ip_address=security_middleware.get_client_ip(request),
+            status_code=e.status_code,
+            response_time=time.time() - start_time,
+            error_message=e.detail,
+        )
+        raise e
+
+    # Performance monitoring
+    performance_monitor = await get_performance_monitor()
+    async with performance_monitor.track_request(
+        endpoint=str(request.url.path),
+        method=request.method,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=security_middleware.get_client_ip(request),
+    ) as request_id:
+        try:
+            response = await call_next(request)
+
+            # Add security headers
+            security_middleware.add_security_headers(response)
+
+            # Log successful request
+            security_middleware.audit_logger.log_request(
+                request_id=request_id,
+                method=request.method,
+                path=str(request.url.path),
+                user_agent=request.headers.get("user-agent"),
+                ip_address=security_middleware.get_client_ip(request),
+                status_code=response.status_code,
+                response_time=time.time() - start_time,
+            )
+
+            return response
+
+        except Exception as e:
+            # Record error
+            await performance_monitor.record_error(request_id, 500)
+
+            # Log error request
+            security_middleware.audit_logger.log_request(
+                request_id=request_id,
+                method=request.method,
+                path=str(request.url.path),
+                user_agent=request.headers.get("user-agent"),
+                ip_address=security_middleware.get_client_ip(request),
+                status_code=500,
+                response_time=time.time() - start_time,
+                error_message=str(e),
+            )
+
+            raise e
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -218,6 +327,226 @@ async def health_check() -> dict[str, str]:
     """
     logger.debug("Health check accessed")
     return {"status": "healthy"}
+
+
+@api_router.get("/health/detailed", tags=["Health"])
+async def detailed_health_check() -> dict[str, Any]:
+    """Detailed health check with component status.
+
+    Returns:
+        Dict containing detailed health information
+    """
+    try:
+        # Check performance components
+        performance_monitor = await get_performance_monitor()
+        cache_manager = await get_cache_manager()
+        connection_pool = await get_connection_pool()
+        memory_optimizer = get_memory_optimizer()
+
+        # Get current metrics
+        performance_metrics = await performance_monitor.get_current_metrics()
+        cache_status = await cache_manager.get_status()
+        pool_status = await connection_pool.get_pool_status()
+        memory_status = await memory_optimizer.get_optimization_status()
+
+        return {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "components": {
+                "performance_monitor": {
+                    "status": "healthy" if performance_metrics else "degraded",
+                    "metrics": performance_metrics.dict() if performance_metrics else None,
+                },
+                "cache_manager": {
+                    "status": "healthy",
+                    "metrics": cache_status,
+                },
+                "connection_pool": {
+                    "status": "healthy" if pool_status["initialized"] else "degraded",
+                    "metrics": pool_status,
+                },
+                "memory_optimizer": {
+                    "status": "healthy",
+                    "metrics": memory_status,
+                },
+            },
+        }
+    except Exception as e:
+        logger.error(f"Detailed health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "timestamp": time.time(),
+            "error": str(e),
+        }
+
+
+@api_router.get("/health/database", tags=["Health"])
+async def database_health_check() -> dict[str, Any]:
+    """Database connectivity health check.
+
+    Returns:
+        Dict containing database health status
+    """
+    try:
+        connection_pool = await get_connection_pool()
+        pool_status = await connection_pool.get_pool_status()
+
+        return {
+            "status": "healthy" if pool_status["initialized"] else "unhealthy",
+            "database": pool_status,
+        }
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+        }
+
+
+@api_router.get("/health/memory", tags=["Health"])
+async def memory_health_check() -> dict[str, Any]:
+    """Memory usage health check.
+
+    Returns:
+        Dict containing memory health status
+    """
+    try:
+        memory_optimizer = get_memory_optimizer()
+        memory_stats = memory_optimizer.monitor.get_memory_stats()
+
+        status = "healthy"
+        if memory_stats.usage_percent > 90:
+            status = "critical"
+        elif memory_stats.usage_percent > 80:
+            status = "warning"
+
+        return {
+            "status": status,
+            "memory_usage_percent": memory_stats.usage_percent,
+            "memory_stats": memory_stats.dict(),
+        }
+    except Exception as e:
+        logger.error(f"Memory health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+        }
+
+
+@api_router.get("/metrics/performance", tags=["Monitoring"])
+async def get_performance_metrics() -> dict[str, Any]:
+    """Get performance metrics and statistics.
+
+    Returns:
+        Dict containing performance metrics
+    """
+    try:
+        performance_monitor = await get_performance_monitor()
+        performance_summary = await performance_monitor.get_performance_summary()
+
+        return {
+            "status": "success",
+            "metrics": performance_summary,
+        }
+    except Exception as e:
+        logger.error(f"Failed to get performance metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get performance metrics: {e}")
+
+
+@api_router.get("/metrics/cache", tags=["Monitoring"])
+async def get_cache_metrics() -> dict[str, Any]:
+    """Get cache performance metrics.
+
+    Returns:
+        Dict containing cache metrics
+    """
+    try:
+        cache_manager = await get_cache_manager()
+        cache_metrics = await cache_manager.get_metrics()
+        cache_status = await cache_manager.get_status()
+
+        return {
+            "status": "success",
+            "metrics": cache_metrics.dict(),
+            "cache_status": cache_status,
+        }
+    except Exception as e:
+        logger.error(f"Failed to get cache metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get cache metrics: {e}")
+
+
+@api_router.get("/metrics/security", tags=["Monitoring"])
+async def get_security_metrics() -> dict[str, Any]:
+    """Get security audit metrics.
+
+    Returns:
+        Dict containing security metrics
+    """
+    try:
+        security_middleware = get_security_middleware()
+        security_summary = security_middleware.audit_logger.get_security_summary()
+
+        return {
+            "status": "success",
+            "security_summary": security_summary,
+        }
+    except Exception as e:
+        logger.error(f"Failed to get security metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get security metrics: {e}")
+
+
+@api_router.post("/admin/cache/clear", tags=["Administration"])
+async def clear_cache(namespace: str = None) -> dict[str, Any]:
+    """Clear cache entries.
+
+    Args:
+        namespace: Optional namespace to clear (clears all if not specified)
+
+    Returns:
+        Dict containing operation result
+    """
+    try:
+        cache_manager = await get_cache_manager()
+
+        if namespace:
+            cleared_count = await cache_manager.clear_namespace(namespace)
+            message = f"Cleared {cleared_count} entries from namespace '{namespace}'"
+        else:
+            # Clear all cache entries by clearing all known namespaces
+            total_cleared = 0
+            namespaces = ["entities", "relationships", "communities", "analytics"]
+            for ns in namespaces:
+                cleared_count = await cache_manager.clear_namespace(ns)
+                total_cleared += cleared_count
+            message = f"Cleared {total_cleared} total cache entries"
+
+        return {
+            "status": "success",
+            "message": message,
+        }
+    except Exception as e:
+        logger.error(f"Failed to clear cache: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear cache: {e}")
+
+
+@api_router.post("/admin/memory/optimize", tags=["Administration"])
+async def optimize_memory() -> dict[str, Any]:
+    """Optimize memory usage.
+
+    Returns:
+        Dict containing optimization results
+    """
+    try:
+        memory_optimizer = get_memory_optimizer()
+        optimization_results = memory_optimizer.monitor.optimize_memory_usage()
+
+        return {
+            "status": "success",
+            "optimization_results": optimization_results,
+        }
+    except Exception as e:
+        logger.error(f"Failed to optimize memory: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to optimize memory: {e}")
 
 
 @api_router.get("/info", tags=["Information"])
