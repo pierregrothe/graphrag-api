@@ -242,12 +242,12 @@ Since there are no reliable Python tools for Mermaid validation, use GitHub as t
 
 #### CRITICAL: NO EMOJIS IN CODE
 
-**⚠️ NEVER use emojis in Python code, strings, or any code output that will be executed.**
+**[WARNING] NEVER use emojis in Python code, strings, or any code output that will be executed.**
 
 - Emojis cause `UnicodeEncodeError: 'charmap' codec can't encode character` on Windows
-- This includes checkmarks (✅), warnings (⚠️), or any Unicode symbols in Python strings
+- This includes checkmarks ([x]), warnings ([WARNING]), or any Unicode symbols in Python strings
 - Use text alternatives: "SUCCESS", "ERROR", "WARNING", "[PASS]", "[FAIL]"
-- Example that FAILS: `print("✅ Config loaded")`
+- Example that FAILS: `print("[x] Config loaded")`
 - Example that WORKS: `print("Config loaded successfully")`
 
 #### Import Organization and Code Style

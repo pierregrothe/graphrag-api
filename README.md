@@ -5,10 +5,10 @@ A FastAPI-based API service for Microsoft GraphRAG with multi-provider LLM suppo
 This project provides a robust and scalable API to interact with the Microsoft GraphRAG engine, supporting both
 local (Ollama) and cloud-based (Google Gemini) language models for flexible deployment scenarios.
 
-## 🎯 Current Status
+## [TARGET] Current Status
 
-**✅ Production Ready Features:**
-- **159/159 tests passing** (100% success rate) 🎯
+**[x] Production Ready Features:**
+- **159/159 tests passing** (100% success rate) [TARGET]
 - **Type safety implemented** with comprehensive mypy checking (0 errors)
 - **Multi-provider LLM support** (Ollama, Google Gemini, Vertex AI)
 - **Comprehensive REST API** with full GraphRAG integration
@@ -21,7 +21,7 @@ local (Ollama) and cloud-based (Google Gemini) language models for flexible depl
 - **Cross-API validation** with comprehensive integration tests
 - **Cache management** with statistics and clearing operations
 
-**🎉 Phase 8 COMPLETED - 100% Unified API Operations:**
+**[SUCCESS] Phase 8 COMPLETED - 100% Unified API Operations:**
 - **ACHIEVED 100% feature parity** between REST and GraphQL APIs (27/27 features)
 - Added missing REST endpoints for single entity/relationship access and cache management
 - Implemented complete GraphQL operations for indexing, cache management, and application info
@@ -37,14 +37,14 @@ local (Ollama) and cloud-based (Google Gemini) language models for flexible depl
 ```mermaid
 flowchart TD
     %% Client Layer
-    subgraph ClientLayer ["🌐 Client Applications"]
+    subgraph ClientLayer ["[WEB] Client Applications"]
         A[Web Client]
         A1[Mobile App]
         A2[API Client]
     end
 
     %% FastAPI Server Layer
-    subgraph ServerLayer ["⚡ FastAPI Server (Implemented)"]
+    subgraph ServerLayer ["[API] FastAPI Server (Implemented)"]
         B(FastAPI Server)
         B1[Health Endpoints]
         B2[Info Endpoints]
@@ -52,14 +52,14 @@ flowchart TD
     end
 
     %% Configuration Layer
-    subgraph ConfigLayer ["⚙️ Configuration System (Implemented)"]
+    subgraph ConfigLayer ["[CONFIG] Configuration System (Implemented)"]
         C1[Environment Variables]
         C2[Pydantic Settings]
         C3[Provider Selection]
     end
 
     %% Provider Factory Layer - IMPLEMENTED
-    subgraph FactoryLayer ["🔄 LLM Provider Factory (Implemented)"]
+    subgraph FactoryLayer ["[FACTORY] LLM Provider Factory (Implemented)"]
         D{Provider Factory}
         D1[Configuration Loader]
         D2((Health Monitor))
@@ -67,7 +67,7 @@ flowchart TD
     end
 
     %% Ollama Provider - IMPLEMENTED
-    subgraph OllamaLayer ["🏠 Ollama Provider (Implemented)"]
+    subgraph OllamaLayer ["[LOCAL] Ollama Provider (Implemented)"]
         E[Ollama Client]
         E1[Gemma 4b Integration]
         E2[Embedding Support]
@@ -75,7 +75,7 @@ flowchart TD
     end
 
     %% Gemini Provider - IMPLEMENTED
-    subgraph GeminiLayer ["☁️ Google Gemini Provider (Implemented)"]
+    subgraph GeminiLayer ["[CLOUD] Google Gemini Provider (Implemented)"]
         F[Gemini Client]
         F1[Gemini 2.5 Flash/Pro]
         F2[Vertex AI Support]
@@ -83,7 +83,7 @@ flowchart TD
     end
 
     %% Graph Operations Layer - NEWLY IMPLEMENTED
-    subgraph GraphOperationsLayer ["📊 Graph Operations (Implemented)"]
+    subgraph GraphOperationsLayer ["[GRAPH] Graph Operations (Implemented)"]
         H[Entity Querying]
         H1[Relationship Querying]
         H2[Graph Statistics]
@@ -92,7 +92,7 @@ flowchart TD
     end
 
     %% GraphRAG Core Layer - PARTIALLY IMPLEMENTED
-    subgraph GraphRAGCoreLayer ["🚧 GraphRAG Core (Phase 3 - Partially Implemented)"]
+    subgraph GraphRAGCoreLayer ["[CORE] GraphRAG Core (Phase 3 - Partially Implemented)"]
         G[Document Indexing]
         G1[Knowledge Graph Creation]
         G2[Query Processing]
@@ -177,27 +177,27 @@ flowchart TD
 
 ```mermaid
 sequenceDiagram
-    participant Client as 📱 Client App
-    participant API as ⚡ FastAPI Server
-    participant Config as ⚙️ Configuration System
-    participant Factory as 🔄 Provider Factory
-    participant Ollama as 🏠 Ollama Provider
-    participant Gemini as ☁️ Gemini Provider
-    participant GraphOps as 📊 Graph Operations
+    participant Client as [CLIENT] Client App
+    participant API as [API] FastAPI Server
+    participant Config as [CONFIG] Configuration System
+    participant Factory as [FACTORY] Provider Factory
+    participant Ollama as [LOCAL] Ollama Provider
+    participant Gemini as [CLOUD] Gemini Provider
+    participant GraphOps as [GRAPH] Graph Operations
 
     rect rgb(232, 245, 233)
-        Note over Client,API: Health & Info Endpoints (✅ Implemented)
+        Note over Client,API: Health & Info Endpoints ([x] Implemented)
         Client->>+API: GET /health
-        API-->>-Client: Server Status ✅
+        API-->>-Client: Server Status [x]
 
         Client->>+API: GET /info
         API->>+Config: Load Settings
         Config-->>-API: Provider Configuration
-        API-->>-Client: System Information ✅
+        API-->>-Client: System Information [x]
     end
 
     rect rgb(230, 245, 255)
-        Note over Client,Factory: Provider Status & Health Monitoring (✅ Implemented)
+        Note over Client,Factory: Provider Status & Health Monitoring ([x] Implemented)
         Client->>+API: GET /graphrag/status
         API->>+Config: Load Provider Settings
         Config-->>-API: Current Provider Type
@@ -209,50 +209,50 @@ sequenceDiagram
             Factory->>+Ollama: Health Check
             Ollama->>Ollama: Check localhost:11434
             Ollama->>Ollama: Verify Models Available
-            Ollama-->>-Factory: Health Status ✅/❌
+            Ollama-->>-Factory: Health Status [x]/[MISSING]
         else Gemini Provider Configured
             Factory->>+Gemini: Health Check
             Gemini->>Gemini: Validate API Key/ADC
             Gemini->>Gemini: Test Model Access
-            Gemini-->>-Factory: Health Status ✅/❌
+            Gemini-->>-Factory: Health Status [x]/[MISSING]
         end
 
         Factory-->>-API: Provider Health Info
-        API-->>-Client: Complete System Status ✅
+        API-->>-Client: Complete System Status [x]
     end
 
     rect rgb(224, 247, 250)
-        Note over Client,API: GraphRAG Endpoints (✅ Implemented - Graph Operations)
+        Note over Client,API: GraphRAG Endpoints ([x] Implemented - Graph Operations)
         Client->>+API: POST /graphrag/graph/entities/query
         API->>+GraphOps: query_entities(filters, pagination)
         GraphOps->>GraphOps: Load entities.parquet
         GraphOps-->>-API: EntityQueryResponse
-        API-->>-Client: Query Results ✅
+        API-->>-Client: Query Results [x]
 
         Client->>+API: POST /graphrag/graph/relationships/query
         API->>+GraphOps: query_relationships(filters, pagination)
         GraphOps->>GraphOps: Load relationships.parquet
         GraphOps-->>-API: RelationshipQueryResponse
-        API-->>-Client: Query Results ✅
+        API-->>-Client: Query Results [x]
 
         Client->>+API: GET /graphrag/graph/statistics
         API->>+GraphOps: get_graph_statistics()
         GraphOps->>GraphOps: Load all parquet files
         GraphOps-->>-API: GraphStatsResponse
-        API-->>-Client: Statistics ✅
+        API-->>-Client: Statistics [x]
 
         Client->>+API: POST /graphrag/graph/visualize
         API->>+GraphOps: generate_visualization(limits, layout)
         GraphOps->>GraphOps: Load entities/relationships.parquet
         GraphOps-->>-API: GraphVisualizationResponse
-        API-->>-Client: Visualization Data ✅
+        API-->>-Client: Visualization Data [x]
 
         Client->>+API: POST /graphrag/graph/export
         API->>+GraphOps: export_graph(format, includes)
         GraphOps->>GraphOps: Load selected parquet files
         GraphOps->>GraphOps: Create temp export file
         GraphOps-->>-API: GraphExportResponse
-        API-->>-Client: Export Details ✅
+        API-->>-Client: Export Details [x]
     end
 ```
 
@@ -262,7 +262,7 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> ServerStartup: FastAPI Server Start
 
-    state "Configuration Loading (✅ Implemented)" as ConfigLoad {
+    state "Configuration Loading ([x] Implemented)" as ConfigLoad {
         [*] --> LoadEnv: Load .env Variables
         LoadEnv --> ParseSettings: Pydantic Validation
         ParseSettings --> SelectProvider: Determine LLM_PROVIDER
@@ -276,7 +276,7 @@ stateDiagram-v2
 
     ServerStartup --> ConfigLoad
 
-    state "Ollama Provider (✅ Implemented)" as OllamaProvider {
+    state "Ollama Provider ([x] Implemented)" as OllamaProvider {
         [*] --> InitOllama: Initialize Ollama Client
         InitOllama --> TestConnection: Check Ollama Server
         TestConnection --> OllamaHealthy: Connection Success
@@ -285,7 +285,7 @@ stateDiagram-v2
         OllamaUnhealthy --> [*]: Provider Unavailable
     }
 
-    state "Gemini Provider (✅ Implemented)" as GeminiProvider {
+    state "Gemini Provider ([x] Implemented)" as GeminiProvider {
         [*] --> InitGemini: Initialize Gemini Client
         InitGemini --> ValidateAuth: Check API Key or ADC
         ValidateAuth --> TestModels: Verify Model Access
@@ -298,7 +298,7 @@ stateDiagram-v2
     ConfigLoad --> OllamaProvider: Ollama Selected
     ConfigLoad --> GeminiProvider: Gemini Selected
 
-    state "API Service (✅ Implemented)" as APIService {
+    state "API Service ([x] Implemented)" as APIService {
         [*] --> ServingRequests: Ready for HTTP Requests
         ServingRequests --> HealthCheck: GET health
         ServingRequests --> InfoRequest: GET info
@@ -412,7 +412,7 @@ stateDiagram-v2
 
 ## Current Development Status
 
-**Phase 2 Complete** ✅ (Provider Abstraction Layer - August 2025)
+**Phase 2 Complete** [x] (Provider Abstraction Layer - August 2025)
 
 - **Multi-Provider Architecture**: Ollama (local) + Google Gemini (cloud) with Vertex AI support
 - **Quality Assurance**: 100% clean code quality pipeline (Black + Ruff + mypy + markdownlint)
