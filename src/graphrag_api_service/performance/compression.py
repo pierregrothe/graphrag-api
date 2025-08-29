@@ -8,7 +8,7 @@
 import gzip
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -30,17 +30,17 @@ class PaginationParams(BaseModel):
 
     page: int = 1
     page_size: int = 50
-    cursor: Optional[str] = None
-    sort_by: Optional[str] = None
+    cursor: str | None = None
+    sort_by: str | None = None
     sort_order: str = "asc"
 
 
 class PaginatedResponse(BaseModel):
     """Paginated response structure."""
 
-    data: List[Any]
-    pagination: Dict[str, Any]
-    total_count: Optional[int] = None
+    data: list[Any]
+    pagination: dict[str, Any]
+    total_count: int | None = None
 
 
 class CompressionConfig(BaseModel):
@@ -49,7 +49,7 @@ class CompressionConfig(BaseModel):
     enabled: bool = True
     min_size_bytes: int = 1024
     compression_level: int = 6
-    supported_encodings: List[str] = ["gzip", "deflate"]
+    supported_encodings: list[str] = ["gzip", "deflate"]
 
 
 class ResponseCompressor:
@@ -83,7 +83,7 @@ class ResponseCompressor:
         accept_encoding = request.headers.get("accept-encoding", "")
         return any(encoding in accept_encoding for encoding in self.config.supported_encodings)
 
-    def compress_response(self, content: bytes, encoding: str = "gzip") -> Tuple[bytes, str]:
+    def compress_response(self, content: bytes, encoding: str = "gzip") -> tuple[bytes, str]:
         """Compress response content.
 
         Args:
@@ -98,6 +98,7 @@ class ResponseCompressor:
             return compressed, "gzip"
         elif encoding == "deflate":
             import zlib
+
             compressed = zlib.compress(content, level=self.config.compression_level)
             return compressed, "deflate"
         else:
@@ -146,7 +147,7 @@ class PaginationHandler:
         page = int(query_params.get("page", 1))
         page_size = min(
             int(query_params.get("page_size", self.config.default_page_size)),
-            self.config.max_page_size
+            self.config.max_page_size,
         )
         cursor = query_params.get("cursor")
         sort_by = query_params.get("sort_by")
@@ -162,9 +163,9 @@ class PaginationHandler:
 
     def paginate_data(
         self,
-        data: List[Any],
+        data: list[Any],
         params: PaginationParams,
-        total_count: Optional[int] = None,
+        total_count: int | None = None,
     ) -> PaginatedResponse:
         """Paginate data based on parameters.
 
@@ -239,8 +240,8 @@ class PerformanceMiddleware:
 
     def __init__(
         self,
-        compression_config: Optional[CompressionConfig] = None,
-        pagination_config: Optional[PaginationConfig] = None,
+        compression_config: CompressionConfig | None = None,
+        pagination_config: PaginationConfig | None = None,
     ):
         """Initialize the performance middleware.
 
@@ -282,7 +283,9 @@ class PerformanceMiddleware:
         # Check if compression should be applied
         if self.compressor.should_compress(request, len(content)):
             encoding = self.compressor.get_preferred_encoding(request)
-            compressed_content, actual_encoding = self.compressor.compress_response(content, encoding)
+            compressed_content, actual_encoding = self.compressor.compress_response(
+                content, encoding
+            )
 
             # Calculate compression ratio
             compression_ratio = len(compressed_content) / len(content)
@@ -298,7 +301,7 @@ class PerformanceMiddleware:
                     "Content-Encoding": actual_encoding,
                     "Content-Length": str(len(compressed_content)),
                     "X-Compression-Ratio": f"{compression_ratio:.2f}",
-                }
+                },
             )
         else:
             response = JSONResponse(content=response_data)
@@ -307,9 +310,9 @@ class PerformanceMiddleware:
 
     def create_paginated_response(
         self,
-        data: List[Any],
+        data: list[Any],
         request: Request,
-        total_count: Optional[int] = None,
+        total_count: int | None = None,
     ) -> PaginatedResponse:
         """Create a paginated response.
 
@@ -326,7 +329,7 @@ class PerformanceMiddleware:
 
 
 # Global performance middleware instance
-_performance_middleware: Optional[PerformanceMiddleware] = None
+_performance_middleware: PerformanceMiddleware | None = None
 
 
 def get_performance_middleware() -> PerformanceMiddleware:
@@ -357,7 +360,9 @@ def compress_json_response(data: Any, request: Request) -> Response:
     return asyncio.run(middleware.process_response(request, data, auto_paginate=False))
 
 
-def paginate_response(data: List[Any], request: Request, total_count: Optional[int] = None) -> Dict[str, Any]:
+def paginate_response(
+    data: list[Any], request: Request, total_count: int | None = None
+) -> dict[str, Any]:
     """Paginate response data.
 
     Args:

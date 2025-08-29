@@ -5,13 +5,12 @@
 
 """GraphQL testing framework with comprehensive query validation and testing utilities."""
 
-import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-from graphql import build_schema, validate, parse, GraphQLError
-from graphql.validation import ValidationRule
 from strawberry.schema import Schema
+
+from graphql import GraphQLError, parse, validate
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +22,10 @@ class GraphQLTestCase:
         self,
         name: str,
         query: str,
-        variables: Optional[Dict[str, Any]] = None,
-        expected_data: Optional[Dict[str, Any]] = None,
-        expected_errors: Optional[List[str]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        variables: dict[str, Any] | None = None,
+        expected_data: dict[str, Any] | None = None,
+        expected_errors: list[str] | None = None,
+        context: dict[str, Any] | None = None,
     ):
         """Initialize a GraphQL test case.
 
@@ -57,7 +56,9 @@ class GraphQLValidator:
         """
         self.schema = schema
 
-    def validate_query(self, query: str, variables: Optional[Dict[str, Any]] = None) -> List[GraphQLError]:
+    def validate_query(
+        self, query: str, variables: dict[str, Any] | None = None
+    ) -> list[GraphQLError]:
         """Validate a GraphQL query.
 
         Args:
@@ -70,15 +71,15 @@ class GraphQLValidator:
         try:
             # Parse the query
             document = parse(query)
-            
+
             # Validate against schema
             errors = validate(self.schema._schema, document)
-            
+
             return errors
         except Exception as e:
             return [GraphQLError(str(e))]
 
-    def validate_query_complexity(self, query: str, max_depth: int = 10) -> List[str]:
+    def validate_query_complexity(self, query: str, max_depth: int = 10) -> list[str]:
         """Validate query complexity and depth.
 
         Args:
@@ -89,17 +90,17 @@ class GraphQLValidator:
             List of complexity issues
         """
         issues = []
-        
+
         try:
             document = parse(query)
             depth = self._calculate_query_depth(document)
-            
+
             if depth > max_depth:
                 issues.append(f"Query depth {depth} exceeds maximum {max_depth}")
-                
+
         except Exception as e:
             issues.append(f"Error analyzing query complexity: {str(e)}")
-            
+
         return issues
 
     def _calculate_query_depth(self, document) -> int:
@@ -112,12 +113,12 @@ class GraphQLValidator:
             Maximum query depth
         """
         max_depth = 0
-        
+
         for definition in document.definitions:
-            if hasattr(definition, 'selection_set'):
+            if hasattr(definition, "selection_set"):
                 depth = self._calculate_selection_depth(definition.selection_set, 1)
                 max_depth = max(max_depth, depth)
-                
+
         return max_depth
 
     def _calculate_selection_depth(self, selection_set, current_depth: int) -> int:
@@ -131,17 +132,15 @@ class GraphQLValidator:
             Maximum depth in this selection set
         """
         max_depth = current_depth
-        
+
         if not selection_set or not selection_set.selections:
             return max_depth
-            
+
         for selection in selection_set.selections:
-            if hasattr(selection, 'selection_set') and selection.selection_set:
-                depth = self._calculate_selection_depth(
-                    selection.selection_set, current_depth + 1
-                )
+            if hasattr(selection, "selection_set") and selection.selection_set:
+                depth = self._calculate_selection_depth(selection.selection_set, current_depth + 1)
                 max_depth = max(max_depth, depth)
-                
+
         return max_depth
 
 
@@ -157,7 +156,7 @@ class GraphQLTestRunner:
         self.schema = schema
         self.validator = GraphQLValidator(schema)
 
-    async def run_test_case(self, test_case: GraphQLTestCase) -> Dict[str, Any]:
+    async def run_test_case(self, test_case: GraphQLTestCase) -> dict[str, Any]:
         """Run a single test case.
 
         Args:
@@ -176,13 +175,12 @@ class GraphQLTestRunner:
 
         try:
             import time
+
             start_time = time.time()
 
             # Validate query syntax
-            validation_errors = self.validator.validate_query(
-                test_case.query, test_case.variables
-            )
-            
+            validation_errors = self.validator.validate_query(test_case.query, test_case.variables)
+
             if validation_errors:
                 result["status"] = "failed"
                 result["errors"].extend([str(error) for error in validation_errors])
@@ -259,7 +257,7 @@ class GraphQLTestRunner:
         else:
             return actual == expected
 
-    async def run_test_suite(self, test_cases: List[GraphQLTestCase]) -> Dict[str, Any]:
+    async def run_test_suite(self, test_cases: list[GraphQLTestCase]) -> dict[str, Any]:
         """Run a complete test suite.
 
         Args:
@@ -278,6 +276,7 @@ class GraphQLTestRunner:
         }
 
         import time
+
         start_time = time.time()
 
         for test_case in test_cases:
@@ -302,14 +301,15 @@ class GraphQLTestSuiteBuilder:
 
     def __init__(self):
         """Initialize the test suite builder."""
-        self.test_cases: List[GraphQLTestCase] = []
+        self.test_cases: list[GraphQLTestCase] = []
 
     def add_entity_tests(self) -> None:
         """Add entity-related test cases."""
         # Basic entity query
-        self.test_cases.append(GraphQLTestCase(
-            name="entity_basic_query",
-            query="""
+        self.test_cases.append(
+            GraphQLTestCase(
+                name="entity_basic_query",
+                query="""
                 query GetEntities($limit: Int) {
                     entities(limit: $limit) {
                         id
@@ -318,13 +318,15 @@ class GraphQLTestSuiteBuilder:
                     }
                 }
             """,
-            variables={"limit": 10},
-        ))
+                variables={"limit": 10},
+            )
+        )
 
         # Entity with relationships
-        self.test_cases.append(GraphQLTestCase(
-            name="entity_with_relationships",
-            query="""
+        self.test_cases.append(
+            GraphQLTestCase(
+                name="entity_with_relationships",
+                query="""
                 query GetEntityWithRelationships($entityId: String!) {
                     entity(id: $entityId) {
                         id
@@ -338,14 +340,16 @@ class GraphQLTestSuiteBuilder:
                     }
                 }
             """,
-            variables={"entityId": "test-entity-1"},
-        ))
+                variables={"entityId": "test-entity-1"},
+            )
+        )
 
     def add_relationship_tests(self) -> None:
         """Add relationship-related test cases."""
-        self.test_cases.append(GraphQLTestCase(
-            name="relationship_basic_query",
-            query="""
+        self.test_cases.append(
+            GraphQLTestCase(
+                name="relationship_basic_query",
+                query="""
                 query GetRelationships($limit: Int) {
                     relationships(limit: $limit) {
                         id
@@ -356,14 +360,16 @@ class GraphQLTestSuiteBuilder:
                     }
                 }
             """,
-            variables={"limit": 10},
-        ))
+                variables={"limit": 10},
+            )
+        )
 
     def add_community_tests(self) -> None:
         """Add community-related test cases."""
-        self.test_cases.append(GraphQLTestCase(
-            name="community_basic_query",
-            query="""
+        self.test_cases.append(
+            GraphQLTestCase(
+                name="community_basic_query",
+                query="""
                 query GetCommunities($limit: Int) {
                     communities(limit: $limit) {
                         id
@@ -373,14 +379,16 @@ class GraphQLTestSuiteBuilder:
                     }
                 }
             """,
-            variables={"limit": 10},
-        ))
+                variables={"limit": 10},
+            )
+        )
 
     def add_mutation_tests(self) -> None:
         """Add mutation test cases."""
-        self.test_cases.append(GraphQLTestCase(
-            name="create_workspace_mutation",
-            query="""
+        self.test_cases.append(
+            GraphQLTestCase(
+                name="create_workspace_mutation",
+                query="""
                 mutation CreateWorkspace($name: String!, $description: String) {
                     createWorkspace(name: $name, description: $description) {
                         id
@@ -390,14 +398,16 @@ class GraphQLTestSuiteBuilder:
                     }
                 }
             """,
-            variables={"name": "test-workspace", "description": "Test workspace"},
-        ))
+                variables={"name": "test-workspace", "description": "Test workspace"},
+            )
+        )
 
     def add_subscription_tests(self) -> None:
         """Add subscription test cases."""
-        self.test_cases.append(GraphQLTestCase(
-            name="indexing_updates_subscription",
-            query="""
+        self.test_cases.append(
+            GraphQLTestCase(
+                name="indexing_updates_subscription",
+                query="""
                 subscription IndexingUpdates {
                     indexingUpdates {
                         workspaceId
@@ -407,9 +417,10 @@ class GraphQLTestSuiteBuilder:
                     }
                 }
             """,
-        ))
+            )
+        )
 
-    def build_comprehensive_suite(self) -> List[GraphQLTestCase]:
+    def build_comprehensive_suite(self) -> list[GraphQLTestCase]:
         """Build a comprehensive test suite.
 
         Returns:

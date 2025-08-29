@@ -67,10 +67,10 @@ class Mutation:
         """Create a new workspace.
 
         Args:
-            info: GraphQL context information
             name: Workspace name
             description: Optional workspace description
             data_path: Optional data path for the workspace
+            info: GraphQL context information
 
         Returns:
             Created workspace
@@ -133,11 +133,11 @@ class Mutation:
         """Update an existing workspace.
 
         Args:
-            info: GraphQL context information
             id: Workspace ID
             name: Optional new name
             description: Optional new description
             config: Optional new configuration
+            info: GraphQL context information
 
         Returns:
             Updated workspace if successful
@@ -173,12 +173,12 @@ class Mutation:
         return None
 
     @strawberry.mutation
-    async def delete_workspace(self, info: Info, id: str) -> bool:
+    async def delete_workspace(self, id: str, info: Info) -> bool:
         """Delete a workspace.
 
         Args:
-            info: GraphQL context information
             id: Workspace ID
+            info: GraphQL context information
 
         Returns:
             True if deleted, False otherwise
@@ -187,12 +187,12 @@ class Mutation:
         return workspace_manager.delete_workspace(id)
 
     @strawberry.mutation
-    async def set_active_workspace(self, info: Info, id: str) -> Workspace | None:
+    async def set_active_workspace(self, id: str, info: Info) -> Workspace | None:
         """Set the active workspace.
 
         Args:
-            info: GraphQL context information
             id: Workspace ID
+            info: GraphQL context information
 
         Returns:
             Active workspace if successful
@@ -229,11 +229,11 @@ class Mutation:
         """Start indexing for a workspace.
 
         Args:
-            info: GraphQL context information
             workspace_id: Optional workspace ID
             root_directory: Optional root directory for indexing
             config_file: Optional configuration file path
             rebuild: Whether to rebuild existing index
+            info: GraphQL context information
 
         Returns:
             IndexResponse with job information
@@ -280,12 +280,12 @@ class Mutation:
             )
 
     @strawberry.mutation
-    async def cancel_indexing(self, info: Info, job_id: str) -> bool:
+    async def cancel_indexing(self, job_id: str, info: Info) -> bool:
         """Cancel an indexing job.
 
         Args:
-            info: GraphQL context information
             job_id: Job ID to cancel
+            info: GraphQL context information
 
         Returns:
             True if cancelled, False otherwise
@@ -297,12 +297,12 @@ class Mutation:
 
     # System Mutations
     @strawberry.mutation
-    async def switch_provider(self, info: Info, provider: LLMProvider) -> ProviderSwitchResult:
+    async def switch_provider(self, provider: LLMProvider, info: Info) -> ProviderSwitchResult:
         """Switch the LLM provider.
 
         Args:
-            info: GraphQL context information
             provider: Target provider
+            info: GraphQL context information
 
         Returns:
             ProviderSwitchResult with switch status
@@ -329,9 +329,9 @@ class Mutation:
         """Validate configuration data.
 
         Args:
-            info: GraphQL context information
             config_type: Type of configuration
             config_data: Configuration data to validate
+            info: GraphQL context information
 
         Returns:
             ConfigValidationResult with validation details
@@ -368,7 +368,6 @@ class Mutation:
         """Export graph data in various formats.
 
         Args:
-            info: GraphQL context information
             format: Export format (json, csv)
             include_entities: Include entities in export
             include_relationships: Include relationships in export
@@ -376,6 +375,7 @@ class Mutation:
             entity_limit: Optional limit on entities
             relationship_limit: Optional limit on relationships
             workspace_id: Optional workspace ID for scoped export
+            info: GraphQL context information
 
         Returns:
             GraphExport with download information
@@ -419,12 +419,12 @@ class Mutation:
 
     # Indexing Mutations
     @strawberry.mutation
-    async def cancel_indexing_job(self, info: Info, id: str) -> IndexingJobDetail | None:
+    async def cancel_indexing_job(self, id: str, info: Info) -> IndexingJobDetail | None:
         """Cancel an indexing job.
 
         Args:
-            info: GraphQL context information
             id: Job ID to cancel
+            info: GraphQL context information
 
         Returns:
             Updated IndexingJobDetail if successful, None if job not found

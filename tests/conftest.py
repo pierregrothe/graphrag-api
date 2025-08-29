@@ -21,12 +21,10 @@ from src.graphrag_api_service.main import app
 @pytest.fixture(autouse=True)
 def disable_rate_limiting():
     """Automatically disable rate limiting for all tests."""
-    with patch.dict(os.environ, {
-        "TESTING": "true",
-        "RATE_LIMITING_ENABLED": "false"
-    }):
+    with patch.dict(os.environ, {"TESTING": "true", "RATE_LIMITING_ENABLED": "false"}):
         # Also patch the security middleware to ensure rate limiting is disabled
         from src.graphrag_api_service.security.middleware import reset_security_middleware
+
         reset_security_middleware()
         yield
 
@@ -187,15 +185,19 @@ def vertex_ai_config() -> dict[str, Any]:
 @pytest.fixture
 def test_client() -> TestClient:
     """Fixture providing FastAPI test client with data paths configured."""
-    from src.graphrag_api_service.security.middleware import reset_security_middleware, get_security_middleware
+    from src.graphrag_api_service.security.middleware import (
+        get_security_middleware,
+        reset_security_middleware,
+    )
 
     with patch.dict(
-        os.environ, {
+        os.environ,
+        {
             "GRAPHRAG_DATA_PATH": "/test/data",
             "GRAPHRAG_CONFIG_PATH": "/test/config",
             "TESTING": "true",  # Disable rate limiting for tests
-            "RATE_LIMITING_ENABLED": "false"
-        }
+            "RATE_LIMITING_ENABLED": "false",
+        },
     ):
         # Reset security middleware to pick up new environment variables
         reset_security_middleware()
@@ -210,16 +212,20 @@ def test_client() -> TestClient:
 @pytest.fixture
 def authenticated_client() -> TestClient:
     """Fixture providing authenticated FastAPI test client (future use)."""
-    from src.graphrag_api_service.security.middleware import reset_security_middleware, get_security_middleware
+    from src.graphrag_api_service.security.middleware import (
+        get_security_middleware,
+        reset_security_middleware,
+    )
 
     # Placeholder for when authentication is implemented
     with patch.dict(
-        os.environ, {
+        os.environ,
+        {
             "GRAPHRAG_DATA_PATH": "/test/data",
             "GRAPHRAG_CONFIG_PATH": "/test/config",
             "TESTING": "true",  # Disable rate limiting for tests
-            "RATE_LIMITING_ENABLED": "false"
-        }
+            "RATE_LIMITING_ENABLED": "false",
+        },
     ):
         # Reset security middleware to pick up new environment variables
         reset_security_middleware()

@@ -22,7 +22,10 @@
       "WebFetch(domain:docs.github.com)",
       "Bash(poetry run python:*)",
       "Bash(python:*)",
-      "Bash(poetry add:*)"
+      "Bash(poetry add:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []

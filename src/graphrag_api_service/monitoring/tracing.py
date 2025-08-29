@@ -7,11 +7,12 @@
 
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
 # Import instrumentation packages conditionally
 try:
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -65,8 +66,8 @@ class TracingConfig:
         service_name: str = "graphrag-api",
         service_version: str = "1.0.0",
         environment: str = "production",
-        jaeger_endpoint: Optional[str] = None,
-        otlp_endpoint: Optional[str] = None,
+        jaeger_endpoint: str | None = None,
+        otlp_endpoint: str | None = None,
         sample_rate: float = 1.0,
         enable_console_export: bool = False,
     ):
@@ -100,18 +101,20 @@ class TracingManager:
             config: Tracing configuration
         """
         self.config = config
-        self.tracer_provider: Optional[TracerProvider] = None
-        self.tracer: Optional[trace.Tracer] = None
+        self.tracer_provider: TracerProvider | None = None
+        self.tracer: trace.Tracer | None = None
 
     def setup_tracing(self) -> None:
         """Set up OpenTelemetry tracing."""
         try:
             # Create resource
-            resource = Resource.create({
-                ResourceAttributes.SERVICE_NAME: self.config.service_name,
-                ResourceAttributes.SERVICE_VERSION: self.config.service_version,
-                ResourceAttributes.DEPLOYMENT_ENVIRONMENT: self.config.environment,
-            })
+            resource = Resource.create(
+                {
+                    ResourceAttributes.SERVICE_NAME: self.config.service_name,
+                    ResourceAttributes.SERVICE_VERSION: self.config.service_version,
+                    ResourceAttributes.DEPLOYMENT_ENVIRONMENT: self.config.environment,
+                }
+            )
 
             # Create tracer provider
             self.tracer_provider = TracerProvider(resource=resource)
@@ -146,9 +149,7 @@ class TracingManager:
                     agent_host_name=self.config.jaeger_endpoint.split("://")[1].split(":")[0],
                     agent_port=int(self.config.jaeger_endpoint.split(":")[-1]),
                 )
-                self.tracer_provider.add_span_processor(
-                    BatchSpanProcessor(jaeger_exporter)
-                )
+                self.tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
                 logger.info(f"Jaeger exporter configured: {self.config.jaeger_endpoint}")
             except Exception as e:
                 logger.error(f"Failed to configure Jaeger exporter: {e}")
@@ -157,9 +158,7 @@ class TracingManager:
         if self.config.otlp_endpoint:
             try:
                 otlp_exporter = OTLPSpanExporter(endpoint=self.config.otlp_endpoint)
-                self.tracer_provider.add_span_processor(
-                    BatchSpanProcessor(otlp_exporter)
-                )
+                self.tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
                 logger.info(f"OTLP exporter configured: {self.config.otlp_endpoint}")
             except Exception as e:
                 logger.error(f"Failed to configure OTLP exporter: {e}")
@@ -167,10 +166,9 @@ class TracingManager:
         # Console exporter for debugging
         if self.config.enable_console_export:
             from opentelemetry.sdk.trace.export import ConsoleSpanExporter
+
             console_exporter = ConsoleSpanExporter()
-            self.tracer_provider.add_span_processor(
-                BatchSpanProcessor(console_exporter)
-            )
+            self.tracer_provider.add_span_processor(BatchSpanProcessor(console_exporter))
             logger.info("Console exporter configured")
 
     def _setup_instrumentation(self) -> None:
@@ -222,10 +220,10 @@ class TracingManager:
             logger.error(f"Failed to set up instrumentation: {e}")
 
     def create_span(
-        self, 
-        name: str, 
-        attributes: Optional[Dict[str, Any]] = None,
-        kind: trace.SpanKind = trace.SpanKind.INTERNAL
+        self,
+        name: str,
+        attributes: dict[str, Any] | None = None,
+        kind: trace.SpanKind = trace.SpanKind.INTERNAL,
     ) -> trace.Span:
         """Create a new span.
 
@@ -242,14 +240,14 @@ class TracingManager:
             return trace.NonRecordingSpan(trace.SpanContext(0, 0, False))
 
         span = self.tracer.start_span(name, kind=kind)
-        
+
         if attributes:
             for key, value in attributes.items():
                 span.set_attribute(key, value)
-        
+
         return span
 
-    def add_span_attributes(self, span: trace.Span, attributes: Dict[str, Any]) -> None:
+    def add_span_attributes(self, span: trace.Span, attributes: dict[str, Any]) -> None:
         """Add attributes to an existing span.
 
         Args:
@@ -292,7 +290,7 @@ class GraphQLTracingExtension:
         operation_type: str,
         operation_name: str,
         query: str,
-        variables: Optional[Dict[str, Any]] = None,
+        variables: dict[str, Any] | None = None,
     ) -> trace.Span:
         """Create a span for GraphQL operation.
 
@@ -318,15 +316,16 @@ class GraphQLTracingExtension:
         if variables:
             # Only include non-sensitive variables
             safe_variables = {
-                k: v for k, v in variables.items()
-                if not any(sensitive in k.lower() for sensitive in ["password", "token", "secret", "key"])
+                k: v
+                for k, v in variables.items()
+                if not any(
+                    sensitive in k.lower() for sensitive in ["password", "token", "secret", "key"]
+                )
             }
             attributes["graphql.variables"] = str(safe_variables)[:500]
 
         return self.tracing_manager.create_span(
-            span_name,
-            attributes=attributes,
-            kind=trace.SpanKind.SERVER
+            span_name, attributes=attributes, kind=trace.SpanKind.SERVER
         )
 
     def trace_resolver(self, field_name: str, parent_type: str) -> trace.Span:
@@ -340,24 +339,22 @@ class GraphQLTracingExtension:
             Created span
         """
         span_name = f"graphql.resolve.{parent_type}.{field_name}"
-        
+
         attributes = {
             "graphql.field.name": field_name,
             "graphql.field.parent_type": parent_type,
         }
 
         return self.tracing_manager.create_span(
-            span_name,
-            attributes=attributes,
-            kind=trace.SpanKind.INTERNAL
+            span_name, attributes=attributes, kind=trace.SpanKind.INTERNAL
         )
 
 
 # Global tracing manager
-_tracing_manager: Optional[TracingManager] = None
+_tracing_manager: TracingManager | None = None
 
 
-def get_tracing_manager() -> Optional[TracingManager]:
+def get_tracing_manager() -> TracingManager | None:
     """Get the global tracing manager.
 
     Returns:
@@ -366,7 +363,7 @@ def get_tracing_manager() -> Optional[TracingManager]:
     return _tracing_manager
 
 
-def initialize_tracing(config: Optional[TracingConfig] = None) -> TracingManager:
+def initialize_tracing(config: TracingConfig | None = None) -> TracingManager:
     """Initialize distributed tracing.
 
     Args:

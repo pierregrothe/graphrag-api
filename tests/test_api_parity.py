@@ -6,8 +6,9 @@
 """Cross-API integration tests to validate REST and GraphQL parity."""
 
 import os
-import pytest
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from src.graphrag_api_service.main import app
@@ -22,12 +23,13 @@ class TestAPIParity:
         from src.graphrag_api_service.security.middleware import reset_security_middleware
 
         with patch.dict(
-            os.environ, {
+            os.environ,
+            {
                 "GRAPHRAG_DATA_PATH": "/test/data",
                 "GRAPHRAG_CONFIG_PATH": "/test/config",
                 "TESTING": "true",  # Disable rate limiting for tests
-                "RATE_LIMITING_ENABLED": "false"
-            }
+                "RATE_LIMITING_ENABLED": "false",
+            },
         ):
             # Reset security middleware to pick up new environment variables
             reset_security_middleware()
@@ -49,10 +51,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_query}
-        )
+        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
         assert graphql_response.status_code == 200
         graphql_data = graphql_response.json()
 
@@ -89,10 +88,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_query}
-        )
+        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
         assert graphql_response.status_code == 200
         graphql_data = graphql_response.json()
 
@@ -113,7 +109,7 @@ class TestAPIParity:
             rest_create_data = {
                 "name": unique_name,
                 "description": "Test workspace for API parity",
-                "data_path": temp_dir
+                "data_path": temp_dir,
             }
             rest_create_response = client.post("/api/workspaces", json=rest_create_data)
             assert rest_create_response.status_code == 200
@@ -131,22 +127,25 @@ class TestAPIParity:
                 }}
             }}
             """
-            graphql_response = client.post(
-                "/graphql/playground/",
-                json={"query": graphql_query}
-            )
+            graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
             assert graphql_response.status_code == 200
             graphql_data = graphql_response.json()
 
             # Validate workspace data consistency
-            if "data" in graphql_data and graphql_data["data"] and graphql_data["data"]["workspace"]:
+            if (
+                "data" in graphql_data
+                and graphql_data["data"]
+                and graphql_data["data"]["workspace"]
+            ):
                 graphql_workspace = graphql_data["data"]["workspace"]
                 assert rest_workspace["id"] == graphql_workspace["id"]
                 # Note: REST returns workspace with config field, GraphQL flattens it
                 if "name" in graphql_workspace and "config" in rest_workspace:
                     assert rest_workspace["config"]["name"] == graphql_workspace["name"]
                 if "description" in graphql_workspace and "config" in rest_workspace:
-                    assert rest_workspace["config"]["description"] == graphql_workspace["description"]
+                    assert (
+                        rest_workspace["config"]["description"] == graphql_workspace["description"]
+                    )
             elif "errors" in graphql_data:
                 # GraphQL may have context issues in test environment - this is acceptable
                 assert len(graphql_data["errors"]) > 0
@@ -171,10 +170,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_query}
-        )
+        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
 
         # Both should handle the case where no data is available consistently
         if rest_response.status_code == 200:
@@ -203,10 +199,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_query}
-        )
+        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
 
         # Both should handle invalid IDs gracefully
         # REST should return 404 or appropriate error
@@ -230,10 +223,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_query}
-        )
+        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
 
         if rest_response.status_code == 200 and graphql_response.status_code == 200:
             rest_data = rest_response.json()
@@ -268,10 +258,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_query}
-        )
+        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
 
         # Both should handle pagination parameters appropriately
         # Even if no data is available, the structure should be consistent
@@ -310,10 +297,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_query}
-        )
+        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
 
         # Both should handle indexing statistics consistently
         if rest_response.status_code == 200:
@@ -353,10 +337,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_query}
-        )
+        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
 
         # Both should handle job listing consistently
         if rest_response.status_code == 200:
@@ -389,8 +370,7 @@ class TestAPIParity:
         }
         """
         graphql_stats_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_stats_query}
+            "/graphql/playground/", json={"query": graphql_stats_query}
         )
 
         # Both should handle cache statistics consistently
@@ -422,8 +402,7 @@ class TestAPIParity:
         }
         """
         graphql_clear_response = client.post(
-            "/graphql/playground/",
-            json={"query": graphql_clear_mutation}
+            "/graphql/playground/", json={"query": graphql_clear_mutation}
         )
 
         # Both should handle cache clearing consistently

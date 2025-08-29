@@ -7,7 +7,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import strawberry
 
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     JSONType = Any
 else:
     JSONType = strawberry.scalars.JSON
+
 
 # Enums
 @strawberry.enum
@@ -585,6 +586,6 @@ class IndexingStatus:
     status: str
     progress: float
     message: str
-    error: Optional[str] = None
-    started_at: Optional[float] = None
-    completed_at: Optional[float] = None
+    error: str | None = None
+    started_at: float | None = None
+    completed_at: float | None = None

@@ -6,11 +6,10 @@
 """Load testing framework for performance benchmarking and stress testing."""
 
 import asyncio
-import json
 import logging
 import statistics
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import aiohttp
 from pydantic import BaseModel
@@ -25,7 +24,7 @@ class LoadTestConfig(BaseModel):
     concurrent_users: int = 10
     test_duration_seconds: int = 60
     ramp_up_seconds: int = 10
-    requests_per_user: Optional[int] = None
+    requests_per_user: int | None = None
     timeout_seconds: float = 30.0
 
 
@@ -35,8 +34,8 @@ class LoadTestScenario(BaseModel):
     name: str
     method: str
     endpoint: str
-    headers: Dict[str, str] = {}
-    payload: Optional[Dict[str, Any]] = None
+    headers: dict[str, str] = {}
+    payload: dict[str, Any] | None = None
     weight: float = 1.0  # Relative frequency of this scenario
 
 
@@ -56,7 +55,7 @@ class LoadTestResult(BaseModel):
     p99_response_time: float
     requests_per_second: float
     error_rate: float
-    errors: Dict[str, int]
+    errors: dict[str, int]
 
 
 class BenchmarkSuite:
@@ -71,7 +70,7 @@ class BenchmarkSuite:
         self.config = config
         self.scenarios = self._create_default_scenarios()
 
-    def _create_default_scenarios(self) -> List[LoadTestScenario]:
+    def _create_default_scenarios(self) -> list[LoadTestScenario]:
         """Create default test scenarios.
 
         Returns:
@@ -79,30 +78,19 @@ class BenchmarkSuite:
         """
         return [
             # Basic API endpoints
+            LoadTestScenario(name="health_check", method="GET", endpoint="/health", weight=0.1),
             LoadTestScenario(
-                name="health_check",
-                method="GET",
-                endpoint="/health",
-                weight=0.1
+                name="get_entities", method="GET", endpoint="/api/entities", weight=0.3
             ),
             LoadTestScenario(
-                name="get_entities",
-                method="GET",
-                endpoint="/api/entities",
-                weight=0.3
-            ),
-            LoadTestScenario(
-                name="get_relationships",
-                method="GET",
-                endpoint="/api/relationships",
-                weight=0.3
+                name="get_relationships", method="GET", endpoint="/api/relationships", weight=0.3
             ),
             LoadTestScenario(
                 name="search_entities",
                 method="POST",
                 endpoint="/api/entities/search",
                 payload={"query": "test entity", "limit": 10},
-                weight=0.2
+                weight=0.2,
             ),
             # Advanced features
             LoadTestScenario(
@@ -113,16 +101,16 @@ class BenchmarkSuite:
                     "start_entities": ["entity1"],
                     "end_entities": ["entity2"],
                     "max_hops": 3,
-                    "scoring_algorithm": "pagerank"
+                    "scoring_algorithm": "pagerank",
                 },
-                weight=0.05
+                weight=0.05,
             ),
             LoadTestScenario(
                 name="community_detection",
                 method="POST",
                 endpoint="/api/graph/analytics/communities",
                 payload={"algorithm": "louvain", "resolution": 1.0},
-                weight=0.05
+                weight=0.05,
             ),
         ]
 
@@ -134,13 +122,15 @@ class BenchmarkSuite:
         """
         self.scenarios.append(scenario)
 
-    async def run_load_test(self) -> Dict[str, LoadTestResult]:
+    async def run_load_test(self) -> dict[str, LoadTestResult]:
         """Run the complete load test suite.
 
         Returns:
             Dictionary of test results by scenario name
         """
-        logger.info(f"Starting load test with {self.config.concurrent_users} users for {self.config.test_duration_seconds}s")
+        logger.info(
+            f"Starting load test with {self.config.concurrent_users} users for {self.config.test_duration_seconds}s"
+        )
 
         # Create user tasks
         tasks = []
@@ -163,7 +153,7 @@ class BenchmarkSuite:
         logger.info("Load test completed")
         return scenario_results
 
-    async def _simulate_user(self, user_id: int, start_delay: float) -> List[Dict[str, Any]]:
+    async def _simulate_user(self, user_id: int, start_delay: float) -> list[dict[str, Any]]:
         """Simulate a single user's behavior.
 
         Args:
@@ -179,15 +169,16 @@ class BenchmarkSuite:
         start_time = time.time()
         request_count = 0
 
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.config.timeout_seconds)) as session:
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=self.config.timeout_seconds)
+        ) as session:
             while True:
                 # Check if test duration exceeded
                 if time.time() - start_time > self.config.test_duration_seconds:
                     break
 
                 # Check if request limit reached
-                if (self.config.requests_per_user and 
-                    request_count >= self.config.requests_per_user):
+                if self.config.requests_per_user and request_count >= self.config.requests_per_user:
                     break
 
                 # Select scenario based on weights
@@ -222,11 +213,8 @@ class BenchmarkSuite:
         return self.scenarios[-1]  # Fallback
 
     async def _execute_request(
-        self, 
-        session: aiohttp.ClientSession, 
-        scenario: LoadTestScenario,
-        user_id: int
-    ) -> Dict[str, Any]:
+        self, session: aiohttp.ClientSession, scenario: LoadTestScenario, user_id: int
+    ) -> dict[str, Any]:
         """Execute a single request.
 
         Args:
@@ -247,10 +235,7 @@ class BenchmarkSuite:
                     status_code = response.status
             else:
                 async with session.request(
-                    scenario.method.upper(),
-                    url,
-                    json=scenario.payload,
-                    headers=scenario.headers
+                    scenario.method.upper(), url, json=scenario.payload, headers=scenario.headers
                 ) as response:
                     await response.text()
                     status_code = response.status
@@ -281,9 +266,7 @@ class BenchmarkSuite:
             }
 
     def _aggregate_scenario_results(
-        self, 
-        scenario_name: str, 
-        user_results: List[List[Dict[str, Any]]]
+        self, scenario_name: str, user_results: list[list[dict[str, Any]]]
     ) -> LoadTestResult:
         """Aggregate results for a specific scenario.
 
@@ -298,10 +281,9 @@ class BenchmarkSuite:
         scenario_requests = []
         for user_result in user_results:
             if isinstance(user_result, list):
-                scenario_requests.extend([
-                    req for req in user_result 
-                    if req.get("scenario") == scenario_name
-                ])
+                scenario_requests.extend(
+                    [req for req in user_result if req.get("scenario") == scenario_name]
+                )
 
         if not scenario_requests:
             return LoadTestResult(
@@ -330,7 +312,7 @@ class BenchmarkSuite:
         response_times.sort()
 
         # Calculate percentiles
-        def percentile(data: List[float], p: float) -> float:
+        def percentile(data: list[float], p: float) -> float:
             if not data:
                 return 0.0
             index = int(len(data) * p / 100)
@@ -369,7 +351,7 @@ class BenchmarkSuite:
             errors=errors,
         )
 
-    def generate_report(self, results: Dict[str, LoadTestResult]) -> str:
+    def generate_report(self, results: dict[str, LoadTestResult]) -> str:
         """Generate a human-readable test report.
 
         Args:
@@ -382,7 +364,7 @@ class BenchmarkSuite:
         report.append("=" * 80)
         report.append("GRAPHRAG API LOAD TEST REPORT")
         report.append("=" * 80)
-        report.append(f"Configuration:")
+        report.append("Configuration:")
         report.append(f"  Concurrent Users: {self.config.concurrent_users}")
         report.append(f"  Test Duration: {self.config.test_duration_seconds}s")
         report.append(f"  Ramp-up Time: {self.config.ramp_up_seconds}s")
@@ -397,7 +379,7 @@ class BenchmarkSuite:
             report.append(f"  Success Rate: {(1 - result.error_rate) * 100:.1f}%")
             report.append(f"  Requests/sec: {result.requests_per_second:.2f}")
             report.append("")
-            report.append(f"  Response Times (ms):")
+            report.append("  Response Times (ms):")
             report.append(f"    Average: {result.average_response_time * 1000:.1f}")
             report.append(f"    Min: {result.min_response_time * 1000:.1f}")
             report.append(f"    Max: {result.max_response_time * 1000:.1f}")
@@ -405,12 +387,12 @@ class BenchmarkSuite:
             report.append(f"    P90: {result.p90_response_time * 1000:.1f}")
             report.append(f"    P95: {result.p95_response_time * 1000:.1f}")
             report.append(f"    P99: {result.p99_response_time * 1000:.1f}")
-            
+
             if result.errors:
-                report.append(f"  Errors:")
+                report.append("  Errors:")
                 for error, count in result.errors.items():
                     report.append(f"    {error}: {count}")
-            
+
             report.append("")
 
         return "\n".join(report)

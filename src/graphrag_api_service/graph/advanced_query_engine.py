@@ -181,8 +181,14 @@ class AdvancedQueryEngine:
                 filtered_relationships = pd.DataFrame()
 
             # Execute base query on filtered data
-            entities_data = [{str(k): v for k, v in record.items()} for record in filtered_entities.to_dict("records")]
-            relationships_data = [{str(k): v for k, v in record.items()} for record in filtered_relationships.to_dict("records")]
+            entities_data = [
+                {str(k): v for k, v in record.items()}
+                for record in filtered_entities.to_dict("records")
+            ]
+            relationships_data = [
+                {str(k): v for k, v in record.items()}
+                for record in filtered_relationships.to_dict("records")
+            ]
 
             execution_time = (datetime.now() - start_time).total_seconds() * 1000
 
@@ -341,10 +347,11 @@ class AdvancedQueryEngine:
         if self._entities_cache is None:
             return []
 
-        filtered_entities = self._entities_cache[
-            self._entities_cache["id"].isin(entity_ids)
+        filtered_entities = self._entities_cache[self._entities_cache["id"].isin(entity_ids)]
+        return [
+            {str(k): v for k, v in record.items()}
+            for record in filtered_entities.to_dict("records")
         ]
-        return [{str(k): v for k, v in record.items()} for record in filtered_entities.to_dict("records")]
 
     async def _get_relationships_details(self, relationship_ids: list[str]) -> list[dict[str, Any]]:
         """Get detailed information for specific relationships.
@@ -361,4 +368,7 @@ class AdvancedQueryEngine:
         filtered_relationships = self._relationships_cache[
             self._relationships_cache["id"].isin(relationship_ids)
         ]
-        return [{str(k): v for k, v in record.items()} for record in filtered_relationships.to_dict("records")]
+        return [
+            {str(k): v for k, v in record.items()}
+            for record in filtered_relationships.to_dict("records")
+        ]

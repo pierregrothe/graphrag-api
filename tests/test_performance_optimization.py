@@ -6,15 +6,24 @@
 """Tests for performance optimization components including caching, connection pooling, and monitoring."""
 
 import asyncio
-import pytest
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
-from unittest.mock import AsyncMock, MagicMock, patch
+import pytest
 
 from src.graphrag_api_service.performance.cache_manager import CacheConfig, CacheManager
-from src.graphrag_api_service.performance.connection_pool import ConnectionPool, ConnectionPoolConfig
-from src.graphrag_api_service.performance.monitoring import PerformanceMonitor, AlertConfig
-from src.graphrag_api_service.performance.memory_optimizer import MemoryOptimizer, MemoryConfig
-from src.graphrag_api_service.performance.compression import ResponseCompressor, CompressionConfig, PaginationHandler, PaginationConfig
+from src.graphrag_api_service.performance.compression import (
+    CompressionConfig,
+    PaginationConfig,
+    PaginationHandler,
+    ResponseCompressor,
+)
+from src.graphrag_api_service.performance.connection_pool import (
+    ConnectionPool,
+    ConnectionPoolConfig,
+)
+from src.graphrag_api_service.performance.memory_optimizer import MemoryConfig, MemoryOptimizer
+from src.graphrag_api_service.performance.monitoring import AlertConfig, PerformanceMonitor
 
 
 class TestCacheManager:
@@ -44,14 +53,14 @@ class TestCacheManager:
         """Test cache TTL expiration."""
         # Set with short TTL
         await cache_manager.set("test", "key1", {"data": "value1"}, ttl=1)
-        
+
         # Should be available immediately
         result = await cache_manager.get("test", "key1")
         assert result is not None
 
         # Wait for expiration
         await asyncio.sleep(1.1)
-        
+
         result = await cache_manager.get("test", "key1")
         assert result is None
 
@@ -127,13 +136,13 @@ class TestConnectionPool:
         # Create a test DataFrame file
         test_df = pd.DataFrame({"id": [1, 2, 3], "name": ["A", "B", "C"]})
         test_path = "test_data.parquet"
-        
-        with patch('pandas.read_parquet', return_value=test_df):
+
+        with patch("pandas.read_parquet", return_value=test_df):
             result = await connection_pool.execute_query(
                 query_type="test_query",
                 data_path=test_path,
                 filters={"id": [1, 2]},
-                use_cache=False
+                use_cache=False,
             )
             assert isinstance(result, pd.DataFrame)
 
@@ -141,12 +150,12 @@ class TestConnectionPool:
     async def test_connection_pool_metrics(self, connection_pool):
         """Test connection pool metrics."""
         # Execute some queries
-        with patch('pandas.read_parquet', return_value=pd.DataFrame()):
+        with patch("pandas.read_parquet", return_value=pd.DataFrame()):
             await connection_pool.execute_query("test", "test.parquet", use_cache=False)
 
         metrics = await connection_pool.get_metrics()
         assert len(metrics) > 0
-        assert all(hasattr(m, 'query_type') for m in metrics)
+        assert all(hasattr(m, "query_type") for m in metrics)
 
 
 class TestPerformanceMonitor:
@@ -205,11 +214,13 @@ class TestMemoryOptimizer:
     def test_dataframe_optimization(self, memory_optimizer):
         """Test DataFrame memory optimization."""
         # Create a test DataFrame with suboptimal types
-        df = pd.DataFrame({
-            "int_col": [1, 2, 3, 4, 5],
-            "float_col": [1.0, 2.0, 3.0, 4.0, 5.0],
-            "str_col": ["A", "B", "A", "B", "A"]
-        })
+        df = pd.DataFrame(
+            {
+                "int_col": [1, 2, 3, 4, 5],
+                "float_col": [1.0, 2.0, 3.0, 4.0, 5.0],
+                "str_col": ["A", "B", "A", "B", "A"],
+            }
+        )
 
         optimized_df = memory_optimizer.optimize_dataframe(df)
         assert isinstance(optimized_df, pd.DataFrame)
@@ -218,9 +229,9 @@ class TestMemoryOptimizer:
     def test_memory_stats(self, memory_optimizer):
         """Test memory statistics collection."""
         stats = memory_optimizer.monitor.get_memory_stats()
-        assert hasattr(stats, 'total_memory_mb')
-        assert hasattr(stats, 'used_memory_mb')
-        assert hasattr(stats, 'usage_percent')
+        assert hasattr(stats, "total_memory_mb")
+        assert hasattr(stats, "used_memory_mb")
+        assert hasattr(stats, "usage_percent")
 
     @pytest.mark.asyncio
     async def test_optimization_status(self, memory_optimizer):
@@ -263,7 +274,7 @@ class TestCompressionAndPagination:
         """Test actual content compression."""
         content = b"This is a test content that should be compressed" * 100
         compressed, encoding = response_compressor.compress_response(content, "gzip")
-        
+
         assert len(compressed) < len(content)
         assert encoding == "gzip"
 
@@ -275,7 +286,7 @@ class TestCompressionAndPagination:
             "page": "2",
             "page_size": "20",
             "sort_by": "name",
-            "sort_order": "desc"
+            "sort_order": "desc",
         }
 
         params = pagination_handler.parse_pagination_params(mock_request)
@@ -288,14 +299,14 @@ class TestCompressionAndPagination:
         """Test data pagination."""
         # Create test data
         data = [{"id": i, "name": f"Item {i}"} for i in range(50)]
-        
+
         # Mock pagination params
         params = MagicMock()
         params.page = 2
         params.page_size = 10
 
         result = pagination_handler.paginate_data(data, params, total_count=50)
-        
+
         assert len(result.data) == 10
         assert result.pagination["page"] == 2
         assert result.pagination["total_pages"] == 5

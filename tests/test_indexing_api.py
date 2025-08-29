@@ -27,12 +27,13 @@ def client():
     from src.graphrag_api_service.security.middleware import reset_security_middleware
 
     with patch.dict(
-        os.environ, {
+        os.environ,
+        {
             "GRAPHRAG_DATA_PATH": "/test/data",
             "GRAPHRAG_CONFIG_PATH": "/test/config",
             "TESTING": "true",  # Disable rate limiting for tests
-            "RATE_LIMITING_ENABLED": "false"
-        }
+            "RATE_LIMITING_ENABLED": "false",
+        },
     ):
         # Reset security middleware to pick up new environment variables
         reset_security_middleware()

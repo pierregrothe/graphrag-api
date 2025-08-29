@@ -5,51 +5,46 @@
 
 """Comprehensive tests for Phase 11 GraphQL enhancements and monitoring systems."""
 
-import asyncio
-import json
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.graphrag_api_service.graphql.optimization import (
-    FieldSelector,
-    QueryComplexityAnalyzer,
-    QueryCache,
-)
-from src.graphrag_api_service.graphql.testing import (
-    GraphQLTestCase,
-    GraphQLValidator,
-    GraphQLTestRunner,
-    GraphQLTestSuiteBuilder,
-)
-from src.graphrag_api_service.graphql.subscriptions import (
-    SubscriptionManager,
-    get_subscription_manager,
-)
-from src.graphrag_api_service.monitoring.prometheus import (
-    PrometheusMetrics,
-    get_metrics,
-)
-from src.graphrag_api_service.monitoring.tracing import (
-    TracingConfig,
-    TracingManager,
-    GraphQLTracingExtension,
+import pytest
+
+from src.graphrag_api_service.auth.api_keys import (
+    APIKeyManager,
+    APIKeyPermissions,
+    APIKeyRequest,
 )
 from src.graphrag_api_service.auth.jwt_auth import (
+    AuthenticationService,
     JWTConfig,
     JWTManager,
     TokenData,
-    AuthenticationService,
-)
-from src.graphrag_api_service.auth.api_keys import (
-    APIKeyManager,
-    APIKeyRequest,
-    APIKeyPermissions,
 )
 from src.graphrag_api_service.caching.redis_cache import (
+    GraphRAGRedisCache,
     RedisCacheConfig,
     RedisDistributedCache,
-    GraphRAGRedisCache,
+)
+from src.graphrag_api_service.graphql.optimization import (
+    FieldSelector,
+    QueryCache,
+    QueryComplexityAnalyzer,
+)
+from src.graphrag_api_service.graphql.subscriptions import (
+    SubscriptionManager,
+)
+from src.graphrag_api_service.graphql.testing import (
+    GraphQLTestCase,
+    GraphQLTestSuiteBuilder,
+)
+from src.graphrag_api_service.monitoring.prometheus import (
+    PrometheusMetrics,
+)
+from src.graphrag_api_service.monitoring.tracing import (
+    GraphQLTracingExtension,
+    TracingConfig,
+    TracingManager,
 )
 
 
@@ -66,12 +61,12 @@ class TestGraphQLOptimization:
     def test_field_selector_get_selected_fields(self):
         """Test field selection extraction."""
         field_selector = FieldSelector()
-        
+
         # Mock GraphQL info
         mock_info = MagicMock()
         mock_info.field_nodes = []
-        
-        selected_fields = field_selector.get_selected_fields(mock_info, "Entity")
+
+        selected_fields = field_selector.get_selected_fields("Entity", mock_info)
         assert isinstance(selected_fields, set)
 
     def test_query_complexity_analyzer(self):
@@ -84,16 +79,12 @@ class TestGraphQLOptimization:
     def test_query_cache_operations(self):
         """Test query cache operations."""
         cache = QueryCache()
-        
+
         # Test cache key generation
-        cache_key = cache.generate_cache_key(
-            "entities", 
-            {"limit": 10}, 
-            {"id", "title"}
-        )
+        cache_key = cache.generate_cache_key("entities", {"limit": 10}, {"id", "title"})
         assert isinstance(cache_key, str)
         assert len(cache_key) == 16  # SHA256 hash truncated to 16 chars
-        
+
         # Test cache operations
         cache.set(cache_key, {"test": "data"}, ttl=300)
         result = cache.get(cache_key)
@@ -110,9 +101,9 @@ class TestGraphQLTesting:
             name="test_entities",
             query="query { entities { id title } }",
             variables={"limit": 10},
-            expected_data={"entities": []}
+            expected_data={"entities": []},
         )
-        
+
         assert test_case.name == "test_entities"
         assert "entities" in test_case.query
         assert test_case.variables["limit"] == 10
@@ -122,10 +113,10 @@ class TestGraphQLTesting:
         builder = GraphQLTestSuiteBuilder()
         builder.add_entity_tests()
         builder.add_relationship_tests()
-        
+
         test_cases = builder.build_comprehensive_suite()
         assert len(test_cases) > 0
-        
+
         # Check that entity tests were added
         entity_tests = [tc for tc in test_cases if "entity" in tc.name.lower()]
         assert len(entity_tests) > 0
@@ -138,11 +129,11 @@ class TestGraphQLSubscriptions:
     async def test_subscription_manager_lifecycle(self):
         """Test subscription manager lifecycle."""
         manager = SubscriptionManager()
-        
+
         # Test start/stop
         await manager.start()
         assert manager._running is True
-        
+
         await manager.stop()
         assert manager._running is False
 
@@ -151,15 +142,15 @@ class TestGraphQLSubscriptions:
         """Test publish/subscribe functionality."""
         manager = SubscriptionManager()
         await manager.start()
-        
+
         # Test publishing
         test_data = {"entity_id": "test-1", "action": "created"}
         await manager.publish("entity_updates", test_data)
-        
+
         # Test subscriber count
         count = manager.get_subscriber_count("entity_updates")
         assert count == 0  # No active subscribers
-        
+
         await manager.stop()
 
 
@@ -176,10 +167,10 @@ class TestPrometheusMetrics:
     def test_record_request_metrics(self):
         """Test recording request metrics."""
         metrics = PrometheusMetrics()
-        
+
         # Record a request
         metrics.record_request("GET", "/api/entities", 200, 0.5)
-        
+
         # Verify metrics were recorded
         metric_output = metrics.get_metrics()
         assert "graphrag_requests_total" in metric_output
@@ -188,10 +179,10 @@ class TestPrometheusMetrics:
     def test_record_graphql_metrics(self):
         """Test recording GraphQL metrics."""
         metrics = PrometheusMetrics()
-        
+
         # Record a GraphQL query
         metrics.record_graphql_query("query", "getEntities", 0.3, 50)
-        
+
         # Verify metrics were recorded
         metric_output = metrics.get_metrics()
         assert "graphrag_graphql_queries_total" in metric_output
@@ -200,12 +191,12 @@ class TestPrometheusMetrics:
     def test_cache_metrics(self):
         """Test cache metrics recording."""
         metrics = PrometheusMetrics()
-        
+
         # Record cache operations
         metrics.record_cache_hit("entities")
         metrics.record_cache_miss("relationships")
         metrics.update_cache_metrics("entities", 1024, 100)
-        
+
         # Verify metrics
         metric_output = metrics.get_metrics()
         assert "graphrag_cache_hits_total" in metric_output
@@ -218,11 +209,9 @@ class TestDistributedTracing:
     def test_tracing_config(self):
         """Test tracing configuration."""
         config = TracingConfig(
-            service_name="test-service",
-            jaeger_endpoint="http://localhost:14268",
-            sample_rate=0.5
+            service_name="test-service", jaeger_endpoint="http://localhost:14268", sample_rate=0.5
         )
-        
+
         assert config.service_name == "test-service"
         assert config.sample_rate == 0.5
 
@@ -230,7 +219,7 @@ class TestDistributedTracing:
         """Test tracing manager initialization."""
         config = TracingConfig(service_name="test-service")
         manager = TracingManager(config)
-        
+
         assert manager.config.service_name == "test-service"
         assert manager.tracer_provider is None  # Not initialized yet
 
@@ -239,7 +228,7 @@ class TestDistributedTracing:
         config = TracingConfig(service_name="test-service")
         manager = TracingManager(config)
         extension = GraphQLTracingExtension(manager)
-        
+
         assert extension.tracing_manager == manager
 
 
@@ -248,11 +237,8 @@ class TestJWTAuthentication:
 
     def test_jwt_config(self):
         """Test JWT configuration."""
-        config = JWTConfig(
-            secret_key="test-secret",
-            access_token_expire_minutes=15
-        )
-        
+        config = JWTConfig(secret_key="test-secret", access_token_expire_minutes=15)
+
         assert config.secret_key == "test-secret"
         assert config.access_token_expire_minutes == 15
 
@@ -260,22 +246,22 @@ class TestJWTAuthentication:
         """Test JWT token creation."""
         config = JWTConfig(secret_key="test-secret")
         manager = JWTManager(config)
-        
-        from datetime import datetime
+
+
         token_data = TokenData(
             user_id="user-1",
             username="testuser",
             email="test@example.com",
             roles=["user"],
             permissions=["read:entities"],
-            expires_at=datetime.now(timezone.utc)
+            expires_at=datetime.now(UTC),
         )
-        
+
         # Create access token
         access_token = manager.create_access_token(token_data)
         assert isinstance(access_token, str)
         assert len(access_token) > 0
-        
+
         # Verify token
         payload = manager.verify_token(access_token)
         assert payload["sub"] == "user-1"
@@ -285,10 +271,10 @@ class TestJWTAuthentication:
         """Test password hashing and verification."""
         config = JWTConfig(secret_key="test-secret")
         manager = JWTManager(config)
-        
+
         password = "test-password"
         hashed = manager.hash_password(password)
-        
+
         assert hashed != password
         assert manager.verify_password(password, hashed) is True
         assert manager.verify_password("wrong-password", hashed) is False
@@ -301,15 +287,13 @@ class TestAPIKeyManagement:
     async def test_api_key_creation(self):
         """Test API key creation."""
         manager = APIKeyManager()
-        
+
         request = APIKeyRequest(
-            name="test-key",
-            permissions=[APIKeyPermissions.READ_ENTITIES],
-            rate_limit=100
+            name="test-key", permissions=[APIKeyPermissions.READ_ENTITIES], rate_limit=100
         )
-        
+
         response = await manager.create_api_key("user-1", request)
-        
+
         assert response.name == "test-key"
         assert len(response.key) > 0
         assert response.prefix.startswith("grag_")
@@ -319,14 +303,11 @@ class TestAPIKeyManagement:
     async def test_api_key_validation(self):
         """Test API key validation."""
         manager = APIKeyManager()
-        
+
         # Create a key
-        request = APIKeyRequest(
-            name="test-key",
-            permissions=[APIKeyPermissions.READ_ENTITIES]
-        )
+        request = APIKeyRequest(name="test-key", permissions=[APIKeyPermissions.READ_ENTITIES])
         response = await manager.create_api_key("user-1", request)
-        
+
         # Validate the key
         api_key = await manager.validate_api_key(response.key)
         assert api_key is not None
@@ -337,19 +318,19 @@ class TestAPIKeyManagement:
     async def test_api_key_rate_limiting(self):
         """Test API key rate limiting."""
         manager = APIKeyManager()
-        
+
         # Create a key with low rate limit
         request = APIKeyRequest(
             name="rate-limited-key",
             permissions=[APIKeyPermissions.READ_ENTITIES],
-            rate_limit=1  # Only 1 request per hour
+            rate_limit=1,  # Only 1 request per hour
         )
         response = await manager.create_api_key("user-1", request)
-        
+
         # First validation should succeed
         api_key1 = await manager.validate_api_key(response.key)
         assert api_key1 is not None
-        
+
         # Second validation should fail due to rate limit
         api_key2 = await manager.validate_api_key(response.key)
         assert api_key2 is None
@@ -360,12 +341,8 @@ class TestRedisCache:
 
     def test_redis_cache_config(self):
         """Test Redis cache configuration."""
-        config = RedisCacheConfig(
-            host="localhost",
-            port=6379,
-            default_ttl=3600
-        )
-        
+        config = RedisCacheConfig(host="localhost", port=6379, default_ttl=3600)
+
         assert config.host == "localhost"
         assert config.port == 6379
         assert config.default_ttl == 3600
@@ -375,22 +352,22 @@ class TestRedisCache:
         """Test Redis cache operations (mocked)."""
         config = RedisCacheConfig()
         cache = RedisDistributedCache(config)
-        
+
         # Mock Redis client
-        with patch('redis.asyncio.Redis') as mock_redis:
+        with patch("redis.asyncio.Redis") as mock_redis:
             mock_client = AsyncMock()
             mock_redis.return_value = mock_client
             mock_client.ping.return_value = True
             mock_client.get.return_value = None
             mock_client.setex.return_value = True
-            
+
             cache.redis_client = mock_client
             cache._connected = True
-            
+
             # Test cache operations
             result = await cache.get("test", "key1")
             assert result is None
-            
+
             success = await cache.set("test", "key1", {"data": "value"})
             assert success is True
 
@@ -399,7 +376,7 @@ class TestRedisCache:
         config = RedisCacheConfig()
         redis_cache = RedisDistributedCache(config)
         graphrag_cache = GraphRAGRedisCache(redis_cache)
-        
+
         assert graphrag_cache.redis_cache == redis_cache
         assert "entities" in graphrag_cache.namespaces
         assert "relationships" in graphrag_cache.namespaces
@@ -412,11 +389,11 @@ class TestIntegration:
         """Test integration between metrics and tracing."""
         # Initialize metrics
         metrics = PrometheusMetrics()
-        
+
         # Initialize tracing
         tracing_config = TracingConfig(service_name="test-service")
         tracing_manager = TracingManager(tracing_config)
-        
+
         # Test that both can coexist
         assert metrics is not None
         assert tracing_manager is not None
@@ -427,14 +404,14 @@ class TestIntegration:
         # Initialize JWT auth
         jwt_config = JWTConfig(secret_key="test-secret")
         auth_service = AuthenticationService(jwt_config)
-        
+
         # Initialize API key manager
         api_key_manager = APIKeyManager()
-        
+
         # Initialize cache
         cache_config = RedisCacheConfig()
         redis_cache = RedisDistributedCache(cache_config)
-        
+
         # Test that all components can be initialized together
         assert auth_service is not None
         assert api_key_manager is not None

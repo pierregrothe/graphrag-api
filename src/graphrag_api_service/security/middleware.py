@@ -5,16 +5,13 @@
 
 """Basic security framework with CORS, validation, and audit logging."""
 
-import json
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from fastapi import HTTPException, Request, Response, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +21,9 @@ class SecurityConfig(BaseModel):
 
     # CORS settings
     cors_enabled: bool = True
-    allowed_origins: List[str] = ["*"]
-    allowed_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allowed_headers: List[str] = ["*"]
+    allowed_origins: list[str] = ["*"]
+    allowed_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed_headers: list[str] = ["*"]
     allow_credentials: bool = False
 
     # Rate limiting
@@ -42,8 +39,8 @@ class SecurityConfig(BaseModel):
 
     # Request validation
     max_request_size_mb: int = 10
-    required_headers: List[str] = []
-    blocked_user_agents: List[str] = []
+    required_headers: list[str] = []
+    blocked_user_agents: list[str] = []
 
     # Security headers
     security_headers_enabled: bool = True
@@ -59,12 +56,12 @@ class AuditLogEntry(BaseModel):
     request_id: str
     method: str
     path: str
-    user_agent: Optional[str]
+    user_agent: str | None
     ip_address: str
     status_code: int
     response_time: float
-    error_message: Optional[str] = None
-    user_id: Optional[str] = None
+    error_message: str | None = None
+    user_id: str | None = None
 
 
 class RateLimiter:
@@ -79,7 +76,7 @@ class RateLimiter:
         """
         self.requests_per_minute = requests_per_minute
         self.burst_limit = burst_limit
-        self._requests: Dict[str, List[float]] = {}
+        self._requests: dict[str, list[float]] = {}
 
     def is_allowed(self, client_id: str) -> bool:
         """Check if request is allowed for client.
@@ -99,8 +96,7 @@ class RateLimiter:
 
         # Clean old requests
         self._requests[client_id] = [
-            req_time for req_time in self._requests[client_id]
-            if req_time > minute_ago
+            req_time for req_time in self._requests[client_id] if req_time > minute_ago
         ]
 
         # Check rate limits
@@ -108,10 +104,9 @@ class RateLimiter:
 
         # Check burst limit (last 10 seconds)
         ten_seconds_ago = current_time - 10
-        burst_requests = len([
-            req_time for req_time in self._requests[client_id]
-            if req_time > ten_seconds_ago
-        ])
+        burst_requests = len(
+            [req_time for req_time in self._requests[client_id] if req_time > ten_seconds_ago]
+        )
 
         if burst_requests >= self.burst_limit:
             return False
@@ -138,10 +133,9 @@ class RateLimiter:
         current_time = time.time()
         minute_ago = current_time - 60
 
-        recent_requests = len([
-            req_time for req_time in self._requests[client_id]
-            if req_time > minute_ago
-        ])
+        recent_requests = len(
+            [req_time for req_time in self._requests[client_id] if req_time > minute_ago]
+        )
 
         return max(0, self.requests_per_minute - recent_requests)
 
@@ -172,7 +166,7 @@ class RequestValidator:
             if size_mb > self.config.max_request_size_mb:
                 raise HTTPException(
                     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                    detail=f"Request too large: {size_mb:.1f}MB (max: {self.config.max_request_size_mb}MB)"
+                    detail=f"Request too large: {size_mb:.1f}MB (max: {self.config.max_request_size_mb}MB)",
                 )
 
     def validate_headers(self, request: Request) -> None:
@@ -188,7 +182,7 @@ class RequestValidator:
             if header.lower() not in [h.lower() for h in request.headers.keys()]:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Missing required header: {header}"
+                    detail=f"Missing required header: {header}",
                 )
 
     def validate_user_agent(self, request: Request) -> None:
@@ -204,8 +198,7 @@ class RequestValidator:
         for blocked_agent in self.config.blocked_user_agents:
             if blocked_agent.lower() in user_agent:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="User agent not allowed"
+                    status_code=status.HTTP_403_FORBIDDEN, detail="User agent not allowed"
                 )
 
     def sanitize_input(self, data: Any) -> Any:
@@ -237,19 +230,19 @@ class AuditLogger:
 
     def __init__(self):
         """Initialize the audit logger."""
-        self._audit_log: List[AuditLogEntry] = []
+        self._audit_log: list[AuditLogEntry] = []
 
     def log_request(
         self,
         request_id: str,
         method: str,
         path: str,
-        user_agent: Optional[str],
+        user_agent: str | None,
         ip_address: str,
         status_code: int,
         response_time: float,
-        error_message: Optional[str] = None,
-        user_id: Optional[str] = None,
+        error_message: str | None = None,
+        user_id: str | None = None,
     ) -> None:
         """Log an audit entry.
 
@@ -290,7 +283,7 @@ class AuditLogger:
                 f"IP: {ip_address} - Error: {error_message}"
             )
 
-    def get_audit_log(self, limit: int = 100) -> List[AuditLogEntry]:
+    def get_audit_log(self, limit: int = 100) -> list[AuditLogEntry]:
         """Get recent audit log entries.
 
         Args:
@@ -301,7 +294,7 @@ class AuditLogger:
         """
         return self._audit_log[-limit:].copy()
 
-    def get_security_summary(self) -> Dict[str, Any]:
+    def get_security_summary(self) -> dict[str, Any]:
         """Get security summary statistics.
 
         Returns:
@@ -334,14 +327,15 @@ class AuditLogger:
             "status_code_distribution": status_counts,
             "top_error_endpoints": top_error_endpoints,
             "top_client_ips": top_ips,
-            "error_rate": sum(1 for e in recent_entries if e.status_code >= 400) / len(recent_entries),
+            "error_rate": sum(1 for e in recent_entries if e.status_code >= 400)
+            / len(recent_entries),
         }
 
 
 class SecurityMiddleware:
     """Main security middleware coordinator."""
 
-    def __init__(self, config: Optional[SecurityConfig] = None):
+    def __init__(self, config: SecurityConfig | None = None):
         """Initialize the security middleware.
 
         Args:
@@ -351,6 +345,7 @@ class SecurityMiddleware:
 
         # Check for testing mode and adjust rate limiting accordingly
         import os
+
         testing_env = os.getenv("TESTING", "false").lower()
         rate_limiting_env = os.getenv("RATE_LIMITING_ENABLED", "true").lower()
         is_testing = testing_env == "true" or rate_limiting_env == "false"
@@ -359,10 +354,11 @@ class SecurityMiddleware:
             # In testing mode, use very high limits or disable completely
             self.rate_limiter = None
         else:
-            self.rate_limiter = RateLimiter(
-                self.config.requests_per_minute,
-                self.config.burst_limit
-            ) if self.config.rate_limiting_enabled else None
+            self.rate_limiter = (
+                RateLimiter(self.config.requests_per_minute, self.config.burst_limit)
+                if self.config.rate_limiting_enabled
+                else None
+            )
 
         self.validator = RequestValidator(self.config)
         self.audit_logger = AuditLogger()
@@ -415,6 +411,7 @@ class SecurityMiddleware:
 
         # Rate limiting - check for testing mode at runtime
         import os
+
         testing_env = os.getenv("TESTING", "false").lower()
         rate_limiting_env = os.getenv("RATE_LIMITING_ENABLED", "true").lower()
         is_testing = testing_env == "true" or rate_limiting_env == "false"
@@ -424,7 +421,7 @@ class SecurityMiddleware:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Rate limit exceeded",
-                headers={"Retry-After": "60", "X-RateLimit-Remaining": str(remaining)}
+                headers={"Retry-After": "60", "X-RateLimit-Remaining": str(remaining)},
             )
 
         # Request validation
@@ -450,7 +447,7 @@ class SecurityMiddleware:
 
 
 # Global security middleware instance
-_security_middleware: Optional[SecurityMiddleware] = None
+_security_middleware: SecurityMiddleware | None = None
 
 
 def get_security_middleware() -> SecurityMiddleware:

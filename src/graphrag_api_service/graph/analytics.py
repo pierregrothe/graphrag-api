@@ -191,7 +191,9 @@ class GraphAnalytics:
 
             # Simplified clustering implementation
             if num_clusters is None:
-                entities_count = len(self._entities_cache) if self._entities_cache is not None else 0
+                entities_count = (
+                    len(self._entities_cache) if self._entities_cache is not None else 0
+                )
                 num_clusters = min(10, max(1, entities_count // 5))
 
             clusters = await self._simple_clustering(num_clusters)
@@ -242,7 +244,9 @@ class GraphAnalytics:
         """Build internal graph representation for analytics."""
         # Simplified graph building
         self._graph_cache = {
-            "nodes": self._entities_cache["id"].tolist() if self._entities_cache is not None else [],
+            "nodes": (
+                self._entities_cache["id"].tolist() if self._entities_cache is not None else []
+            ),
             "edges": (
                 self._relationships_cache[["source", "target"]].to_dict("records")
                 if self._relationships_cache is not None
@@ -320,7 +324,11 @@ class GraphAnalytics:
 
         for i in range(num_clusters):
             start_idx = i * entities_per_cluster
-            end_idx = (i + 1) * entities_per_cluster if i < num_clusters - 1 else len(self._entities_cache)
+            end_idx = (
+                (i + 1) * entities_per_cluster
+                if i < num_clusters - 1
+                else len(self._entities_cache)
+            )
 
             cluster_entities = self._entities_cache.iloc[start_idx:end_idx]["id"].tolist()
 
@@ -361,6 +369,9 @@ class GraphAnalytics:
             anomalous_rels = self._relationships_cache[
                 self._relationships_cache["weight"] > high_weight_threshold
             ]
-            anomalies = [{str(k): v for k, v in record.items()} for record in anomalous_rels.to_dict("records")]
+            anomalies = [
+                {str(k): v for k, v in record.items()}
+                for record in anomalous_rels.to_dict("records")
+            ]
 
         return anomalies

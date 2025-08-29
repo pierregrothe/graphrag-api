@@ -23,60 +23,64 @@ from src.graphrag_api_service.graph.operations import GraphOperationsError
 @pytest.fixture
 def sample_entities_data():
     """Sample entities data for testing."""
-    return pd.DataFrame([
-        {
-            "id": "entity_1",
-            "title": "Entity 1",
-            "type": "PERSON",
-            "description": "Test entity 1",
-        },
-        {
-            "id": "entity_2",
-            "title": "Entity 2",
-            "type": "ORGANIZATION",
-            "description": "Test entity 2",
-        },
-        {
-            "id": "entity_3",
-            "title": "Entity 3",
-            "type": "PERSON",
-            "description": "Test entity 3",
-        },
-        {
-            "id": "entity_4",
-            "title": "Entity 4",
-            "type": "LOCATION",
-            "description": "Test entity 4",
-        },
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "id": "entity_1",
+                "title": "Entity 1",
+                "type": "PERSON",
+                "description": "Test entity 1",
+            },
+            {
+                "id": "entity_2",
+                "title": "Entity 2",
+                "type": "ORGANIZATION",
+                "description": "Test entity 2",
+            },
+            {
+                "id": "entity_3",
+                "title": "Entity 3",
+                "type": "PERSON",
+                "description": "Test entity 3",
+            },
+            {
+                "id": "entity_4",
+                "title": "Entity 4",
+                "type": "LOCATION",
+                "description": "Test entity 4",
+            },
+        ]
+    )
 
 
 @pytest.fixture
 def sample_relationships_data():
     """Sample relationships data for testing."""
-    return pd.DataFrame([
-        {
-            "id": "rel_1",
-            "source": "entity_1",
-            "target": "entity_2",
-            "description": "works for",
-            "weight": 0.8,
-        },
-        {
-            "id": "rel_2",
-            "source": "entity_2",
-            "target": "entity_3",
-            "description": "collaborates with",
-            "weight": 0.6,
-        },
-        {
-            "id": "rel_3",
-            "source": "entity_1",
-            "target": "entity_4",
-            "description": "located in",
-            "weight": 0.9,
-        },
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "id": "rel_1",
+                "source": "entity_1",
+                "target": "entity_2",
+                "description": "works for",
+                "weight": 0.8,
+            },
+            {
+                "id": "rel_2",
+                "source": "entity_2",
+                "target": "entity_3",
+                "description": "collaborates with",
+                "weight": 0.6,
+            },
+            {
+                "id": "rel_3",
+                "source": "entity_1",
+                "target": "entity_4",
+                "description": "located in",
+                "weight": 0.9,
+            },
+        ]
+    )
 
 
 @pytest.fixture
@@ -89,10 +93,14 @@ class TestGraphAnalytics:
     """Test cases for the GraphAnalytics class."""
 
     @pytest.mark.asyncio
-    async def test_load_data_success(self, graph_analytics, sample_entities_data, sample_relationships_data):
+    async def test_load_data_success(
+        self, graph_analytics, sample_entities_data, sample_relationships_data
+    ):
         """Test successful data loading."""
-        with patch("os.path.exists", return_value=True), \
-             patch("pandas.read_parquet") as mock_read_parquet:
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("pandas.read_parquet") as mock_read_parquet,
+        ):
 
             mock_read_parquet.side_effect = [sample_entities_data, sample_relationships_data]
 
@@ -107,14 +115,18 @@ class TestGraphAnalytics:
     @pytest.mark.asyncio
     async def test_load_data_exception(self, graph_analytics):
         """Test data loading with exception."""
-        with patch("os.path.exists", return_value=True), \
-             patch("pandas.read_parquet", side_effect=Exception("Read error")):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("pandas.read_parquet", side_effect=Exception("Read error")),
+        ):
 
             with pytest.raises(GraphOperationsError, match="Data loading failed"):
                 await graph_analytics.load_data()
 
     @pytest.mark.asyncio
-    async def test_detect_communities_success(self, graph_analytics, sample_entities_data, sample_relationships_data):
+    async def test_detect_communities_success(
+        self, graph_analytics, sample_entities_data, sample_relationships_data
+    ):
         """Test successful community detection."""
         graph_analytics._entities_cache = sample_entities_data
         graph_analytics._relationships_cache = sample_relationships_data
@@ -146,7 +158,9 @@ class TestGraphAnalytics:
             assert len(result.communities) == 0
 
     @pytest.mark.asyncio
-    async def test_calculate_centrality_measures_success(self, graph_analytics, sample_entities_data, sample_relationships_data):
+    async def test_calculate_centrality_measures_success(
+        self, graph_analytics, sample_entities_data, sample_relationships_data
+    ):
         """Test successful centrality calculation."""
         graph_analytics._entities_cache = sample_entities_data
         graph_analytics._relationships_cache = sample_relationships_data
@@ -164,7 +178,9 @@ class TestGraphAnalytics:
             assert 0 <= result.pagerank <= 1
 
     @pytest.mark.asyncio
-    async def test_calculate_centrality_measures_all_nodes(self, graph_analytics, sample_entities_data, sample_relationships_data):
+    async def test_calculate_centrality_measures_all_nodes(
+        self, graph_analytics, sample_entities_data, sample_relationships_data
+    ):
         """Test centrality calculation for all nodes."""
         graph_analytics._entities_cache = sample_entities_data
         graph_analytics._relationships_cache = sample_relationships_data
@@ -221,7 +237,9 @@ class TestGraphAnalytics:
         assert len(result.clusters) == result.num_clusters
 
     @pytest.mark.asyncio
-    async def test_detect_anomalies_success(self, graph_analytics, sample_entities_data, sample_relationships_data):
+    async def test_detect_anomalies_success(
+        self, graph_analytics, sample_entities_data, sample_relationships_data
+    ):
         """Test successful anomaly detection."""
         # Add weight column for relationship anomaly detection
         sample_relationships_data["weight"] = [0.8, 0.6, 0.95]  # 0.95 should be anomalous
@@ -237,7 +255,9 @@ class TestGraphAnalytics:
         assert isinstance(result.anomalous_relationships, list)
 
     @pytest.mark.asyncio
-    async def test_detect_anomalies_no_weight_column(self, graph_analytics, sample_entities_data, sample_relationships_data):
+    async def test_detect_anomalies_no_weight_column(
+        self, graph_analytics, sample_entities_data, sample_relationships_data
+    ):
         """Test anomaly detection without weight column."""
         # Remove weight column
         sample_relationships_data = sample_relationships_data.drop(columns=["weight"])
@@ -250,7 +270,9 @@ class TestGraphAnalytics:
         assert len(result.anomalous_relationships) == 0  # No weight-based anomalies
 
     @pytest.mark.asyncio
-    async def test_build_graph_representation(self, graph_analytics, sample_entities_data, sample_relationships_data):
+    async def test_build_graph_representation(
+        self, graph_analytics, sample_entities_data, sample_relationships_data
+    ):
         """Test graph representation building."""
         graph_analytics._entities_cache = sample_entities_data
         graph_analytics._relationships_cache = sample_relationships_data
@@ -280,10 +302,12 @@ class TestGraphAnalytics:
     @pytest.mark.asyncio
     async def test_simple_community_detection_no_type_column(self, graph_analytics):
         """Test community detection without type column."""
-        entities_no_type = pd.DataFrame([
-            {"id": "entity_1", "title": "Entity 1"},
-            {"id": "entity_2", "title": "Entity 2"},
-        ])
+        entities_no_type = pd.DataFrame(
+            [
+                {"id": "entity_1", "title": "Entity 1"},
+                {"id": "entity_2", "title": "Entity 2"},
+            ]
+        )
         graph_analytics._entities_cache = entities_no_type
 
         communities = await graph_analytics._simple_community_detection()
@@ -324,7 +348,9 @@ class TestGraphAnalytics:
         assert total_entities == 4  # All entities should be assigned
 
     @pytest.mark.asyncio
-    async def test_detect_entity_anomalies(self, graph_analytics, sample_entities_data, sample_relationships_data):
+    async def test_detect_entity_anomalies(
+        self, graph_analytics, sample_entities_data, sample_relationships_data
+    ):
         """Test entity anomaly detection."""
         graph_analytics._entities_cache = sample_entities_data
         graph_analytics._relationships_cache = sample_relationships_data
@@ -351,21 +377,31 @@ class TestGraphAnalytics:
     async def test_exception_handling(self, graph_analytics):
         """Test exception handling in various methods."""
         # Test community detection exception
-        with patch.object(graph_analytics, "_simple_community_detection", side_effect=Exception("Community error")):
+        with patch.object(
+            graph_analytics, "_simple_community_detection", side_effect=Exception("Community error")
+        ):
             with pytest.raises(GraphOperationsError, match="Community detection failed"):
                 await graph_analytics.detect_communities()
 
         # Test centrality calculation exception
-        with patch.object(graph_analytics, "_calculate_degree_centrality", side_effect=Exception("Centrality error")):
+        with patch.object(
+            graph_analytics,
+            "_calculate_degree_centrality",
+            side_effect=Exception("Centrality error"),
+        ):
             with pytest.raises(GraphOperationsError, match="Centrality calculation failed"):
                 await graph_analytics.calculate_centrality_measures(["entity_1"])
 
         # Test clustering exception
-        with patch.object(graph_analytics, "_simple_clustering", side_effect=Exception("Clustering error")):
+        with patch.object(
+            graph_analytics, "_simple_clustering", side_effect=Exception("Clustering error")
+        ):
             with pytest.raises(GraphOperationsError, match="Graph clustering failed"):
                 await graph_analytics.perform_clustering()
 
         # Test anomaly detection exception
-        with patch.object(graph_analytics, "_detect_entity_anomalies", side_effect=Exception("Anomaly error")):
+        with patch.object(
+            graph_analytics, "_detect_entity_anomalies", side_effect=Exception("Anomaly error")
+        ):
             with pytest.raises(GraphOperationsError, match="Anomaly detection failed"):
                 await graph_analytics.detect_anomalies()

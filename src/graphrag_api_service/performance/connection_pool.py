@@ -8,8 +8,9 @@
 import asyncio
 import logging
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
 from pydantic import BaseModel
@@ -48,11 +49,11 @@ class ConnectionPool:
             config: Connection pool configuration
         """
         self.config = config
-        self._connections: List[Dict[str, Any]] = []
+        self._connections: list[dict[str, Any]] = []
         self._available_connections: asyncio.Queue = asyncio.Queue()
         self._active_connections: int = 0
         self._lock = asyncio.Lock()
-        self._metrics: List[QueryMetrics] = []
+        self._metrics: list[QueryMetrics] = []
         self._initialized = False
 
     async def initialize(self) -> None:
@@ -70,9 +71,11 @@ class ConnectionPool:
                 await self._available_connections.put(connection)
 
             self._initialized = True
-            logger.info(f"Connection pool initialized with {self.config.min_connections} connections")
+            logger.info(
+                f"Connection pool initialized with {self.config.min_connections} connections"
+            )
 
-    async def _create_connection(self) -> Dict[str, Any]:
+    async def _create_connection(self) -> dict[str, Any]:
         """Create a new database connection.
 
         Returns:
@@ -94,7 +97,7 @@ class ConnectionPool:
         return connection
 
     @asynccontextmanager
-    async def get_connection(self) -> AsyncGenerator[Dict[str, Any], None]:
+    async def get_connection(self) -> AsyncGenerator[dict[str, Any], None]:
         """Get a connection from the pool.
 
         Yields:
@@ -108,10 +111,9 @@ class ConnectionPool:
             # Try to get an available connection
             try:
                 connection = await asyncio.wait_for(
-                    self._available_connections.get(),
-                    timeout=self.config.connection_timeout
+                    self._available_connections.get(), timeout=self.config.connection_timeout
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Create new connection if under max limit
                 if self._active_connections < self.config.max_connections:
                     connection = await self._create_connection()
@@ -133,7 +135,7 @@ class ConnectionPool:
         self,
         query_type: str,
         data_path: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         use_cache: bool = True,
     ) -> pd.DataFrame:
         """Execute a query with connection pooling and caching.
@@ -157,12 +159,16 @@ class ConnectionPool:
                 if cached_result is not None:
                     cache_hit = True
                     execution_time = time.time() - start_time
-                    await self._record_metrics(query_type, execution_time, len(cached_result), cache_hit)
+                    await self._record_metrics(
+                        query_type, execution_time, len(cached_result), cache_hit
+                    )
                     return cached_result
 
             # Execute query with connection pooling
             async with self.get_connection() as connection:
-                result = await self._execute_with_connection(connection, query_type, data_path, filters)
+                result = await self._execute_with_connection(
+                    connection, query_type, data_path, filters
+                )
 
                 # Cache result if enabled
                 if use_cache and result is not None:
@@ -182,10 +188,10 @@ class ConnectionPool:
 
     async def _execute_with_connection(
         self,
-        connection: Dict[str, Any],
+        connection: dict[str, Any],
         query_type: str,
         data_path: str,
-        filters: Optional[Dict[str, Any]],
+        filters: dict[str, Any] | None,
     ) -> pd.DataFrame:
         """Execute query with a specific connection.
 
@@ -202,7 +208,7 @@ class ConnectionPool:
 
         # Simulate database operation with file loading
         try:
-            if data_path.endswith('.parquet'):
+            if data_path.endswith(".parquet"):
                 result = pd.read_parquet(data_path)
             else:
                 result = pd.DataFrame()
@@ -223,8 +229,8 @@ class ConnectionPool:
             raise
 
     async def _get_cached_result(
-        self, query_type: str, data_path: str, filters: Optional[Dict[str, Any]]
-    ) -> Optional[pd.DataFrame]:
+        self, query_type: str, data_path: str, filters: dict[str, Any] | None
+    ) -> pd.DataFrame | None:
         """Get cached query result.
 
         Args:
@@ -244,7 +250,7 @@ class ConnectionPool:
         self,
         query_type: str,
         data_path: str,
-        filters: Optional[Dict[str, Any]],
+        filters: dict[str, Any] | None,
         result: pd.DataFrame,
     ) -> None:
         """Cache query result.
@@ -289,7 +295,7 @@ class ConnectionPool:
             f"Rows: {rows_processed}, Cache: {cache_hit}"
         )
 
-    async def get_metrics(self) -> List[QueryMetrics]:
+    async def get_metrics(self) -> list[QueryMetrics]:
         """Get query performance metrics.
 
         Returns:
@@ -297,7 +303,7 @@ class ConnectionPool:
         """
         return self._metrics.copy()
 
-    async def get_pool_status(self) -> Dict[str, Any]:
+    async def get_pool_status(self) -> dict[str, Any]:
         """Get connection pool status.
 
         Returns:
@@ -326,7 +332,7 @@ class ConnectionPool:
 
 
 # Global connection pool instance
-_connection_pool: Optional[ConnectionPool] = None
+_connection_pool: ConnectionPool | None = None
 
 
 async def get_connection_pool() -> ConnectionPool:

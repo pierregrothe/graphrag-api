@@ -6,20 +6,20 @@
 """GraphQL subscriptions for real-time updates and notifications."""
 
 import asyncio
-import json
 import logging
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import strawberry
 from strawberry.types import Info
 
 from .types import (
-    Entity,
-    Relationship,
     Community,
+    Entity,
     IndexingStatus,
-    SystemStatus,
     PerformanceMetrics,
+    Relationship,
+    SystemStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class SubscriptionManager:
 
     def __init__(self):
         """Initialize the subscription manager."""
-        self._subscribers: Dict[str, List[asyncio.Queue]] = {
+        self._subscribers: dict[str, list[asyncio.Queue]] = {
             "indexing_updates": [],
             "entity_updates": [],
             "relationship_updates": [],
@@ -79,7 +79,7 @@ class SubscriptionManager:
                     if update is None:  # End signal
                         break
                     yield update
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
         finally:
             # Remove subscriber
@@ -117,7 +117,7 @@ class SubscriptionManager:
 
 
 # Global subscription manager
-_subscription_manager: Optional[SubscriptionManager] = None
+_subscription_manager: SubscriptionManager | None = None
 
 
 async def get_subscription_manager() -> SubscriptionManager:
@@ -147,7 +147,7 @@ class Subscription:
             Indexing status updates
         """
         subscription_manager = await get_subscription_manager()
-        
+
         async for update in subscription_manager.subscribe("indexing_updates"):
             if isinstance(update, dict):
                 yield IndexingStatus(
@@ -162,9 +162,7 @@ class Subscription:
 
     @strawberry.subscription
     async def entity_updates(
-        self, 
-        workspace_id: Optional[str] = None,
-        info: Info = None
+        self, workspace_id: str | None = None, info: Info = None
     ) -> AsyncGenerator[Entity, None]:
         """Subscribe to entity updates.
 
@@ -175,13 +173,13 @@ class Subscription:
             Entity updates
         """
         subscription_manager = await get_subscription_manager()
-        
+
         async for update in subscription_manager.subscribe("entity_updates"):
             if isinstance(update, dict):
                 # Filter by workspace if specified
                 if workspace_id and update.get("workspace_id") != workspace_id:
                     continue
-                    
+
                 yield Entity(
                     id=update.get("id", ""),
                     title=update.get("title", ""),
@@ -194,9 +192,7 @@ class Subscription:
 
     @strawberry.subscription
     async def relationship_updates(
-        self, 
-        workspace_id: Optional[str] = None,
-        info: Info = None
+        self, workspace_id: str | None = None, info: Info = None
     ) -> AsyncGenerator[Relationship, None]:
         """Subscribe to relationship updates.
 
@@ -207,13 +203,13 @@ class Subscription:
             Relationship updates
         """
         subscription_manager = await get_subscription_manager()
-        
+
         async for update in subscription_manager.subscribe("relationship_updates"):
             if isinstance(update, dict):
                 # Filter by workspace if specified
                 if workspace_id and update.get("workspace_id") != workspace_id:
                     continue
-                    
+
                 yield Relationship(
                     id=update.get("id", ""),
                     source=update.get("source", ""),
@@ -226,9 +222,7 @@ class Subscription:
 
     @strawberry.subscription
     async def community_updates(
-        self, 
-        workspace_id: Optional[str] = None,
-        info: Info = None
+        self, workspace_id: str | None = None, info: Info = None
     ) -> AsyncGenerator[Community, None]:
         """Subscribe to community updates.
 
@@ -239,13 +233,13 @@ class Subscription:
             Community updates
         """
         subscription_manager = await get_subscription_manager()
-        
+
         async for update in subscription_manager.subscribe("community_updates"):
             if isinstance(update, dict):
                 # Filter by workspace if specified
                 if workspace_id and update.get("workspace_id") != workspace_id:
                     continue
-                    
+
                 yield Community(
                     id=update.get("id", ""),
                     level=update.get("level", 0),
@@ -262,7 +256,7 @@ class Subscription:
             System status updates
         """
         subscription_manager = await get_subscription_manager()
-        
+
         async for update in subscription_manager.subscribe("system_updates"):
             if isinstance(update, dict):
                 yield SystemStatus(
@@ -282,7 +276,7 @@ class Subscription:
             Performance metrics updates
         """
         subscription_manager = await get_subscription_manager()
-        
+
         async for update in subscription_manager.subscribe("performance_updates"):
             if isinstance(update, dict):
                 yield PerformanceMetrics(

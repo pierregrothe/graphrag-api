@@ -14,11 +14,7 @@ from .queries import Query
 from .subscriptions import Subscription
 
 # Create the GraphQL schema with subscriptions
-schema = strawberry.Schema(
-    query=Query,
-    mutation=Mutation,
-    subscription=Subscription
-)
+schema = strawberry.Schema(query=Query, mutation=Mutation, subscription=Subscription)
 
 
 def create_graphql_router(

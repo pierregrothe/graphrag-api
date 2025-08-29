@@ -7,12 +7,13 @@
 
 import gc
 import logging
-import psutil
 import weakref
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, List, Optional, Set, Union
+from typing import Any
 
 import pandas as pd
+import psutil
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class MemoryStats(BaseModel):
     available_memory_mb: float
     usage_percent: float
     process_memory_mb: float
-    gc_collections: Dict[str, int]
+    gc_collections: dict[str, int]
 
 
 class DataFrameOptimizer:
@@ -61,29 +62,29 @@ class DataFrameOptimizer:
             col_type = optimized_df[column].dtype
 
             # Optimize numeric columns
-            if col_type in ['int64', 'int32']:
+            if col_type in ["int64", "int32"]:
                 col_min = optimized_df[column].min()
                 col_max = optimized_df[column].max()
 
                 if col_min >= -128 and col_max <= 127:
-                    optimized_df[column] = optimized_df[column].astype('int8')
+                    optimized_df[column] = optimized_df[column].astype("int8")
                 elif col_min >= -32768 and col_max <= 32767:
-                    optimized_df[column] = optimized_df[column].astype('int16')
+                    optimized_df[column] = optimized_df[column].astype("int16")
                 elif col_min >= -2147483648 and col_max <= 2147483647:
-                    optimized_df[column] = optimized_df[column].astype('int32')
+                    optimized_df[column] = optimized_df[column].astype("int32")
 
-            elif col_type == 'float64':
-                optimized_df[column] = pd.to_numeric(optimized_df[column], downcast='float')
+            elif col_type == "float64":
+                optimized_df[column] = pd.to_numeric(optimized_df[column], downcast="float")
 
             # Optimize string columns
-            elif col_type == 'object':
+            elif col_type == "object":
                 if optimized_df[column].nunique() / len(optimized_df) < 0.5:
-                    optimized_df[column] = optimized_df[column].astype('category')
+                    optimized_df[column] = optimized_df[column].astype("category")
 
         return optimized_df
 
     @staticmethod
-    def get_memory_usage(df: pd.DataFrame) -> Dict[str, float]:
+    def get_memory_usage(df: pd.DataFrame) -> dict[str, float]:
         """Get detailed memory usage of DataFrame.
 
         Args:
@@ -99,9 +100,8 @@ class DataFrameOptimizer:
             "total_mb": total_mb,
             "index_mb": memory_usage.iloc[0] / (1024 * 1024),
             "columns": {
-                col: memory_usage.iloc[i + 1] / (1024 * 1024)
-                for i, col in enumerate(df.columns)
-            }
+                col: memory_usage.iloc[i + 1] / (1024 * 1024) for i, col in enumerate(df.columns)
+            },
         }
 
 
@@ -117,11 +117,8 @@ class ChunkedProcessor:
         self.chunk_size = chunk_size
 
     def process_dataframe_chunks(
-        self,
-        df: pd.DataFrame,
-        processor_func: callable,
-        **kwargs
-    ) -> List[Any]:
+        self, df: pd.DataFrame, processor_func: callable, **kwargs
+    ) -> list[Any]:
         """Process DataFrame in chunks.
 
         Args:
@@ -138,7 +135,7 @@ class ChunkedProcessor:
         logger.info(f"Processing {len(df)} rows in {total_chunks} chunks of {self.chunk_size}")
 
         for i in range(0, len(df), self.chunk_size):
-            chunk = df.iloc[i:i + self.chunk_size]
+            chunk = df.iloc[i : i + self.chunk_size]
             chunk_result = processor_func(chunk, **kwargs)
             results.append(chunk_result)
 
@@ -151,9 +148,7 @@ class ChunkedProcessor:
         return results
 
     def aggregate_chunked_results(
-        self,
-        results: List[Any],
-        aggregation_func: callable = None
+        self, results: list[Any], aggregation_func: callable = None
     ) -> Any:
         """Aggregate results from chunked processing.
 
@@ -194,7 +189,7 @@ class MemoryMonitor:
             config: Memory configuration
         """
         self.config = config
-        self._tracked_objects: Set[weakref.ref] = set()
+        self._tracked_objects: set[weakref.ref] = set()
 
     def get_memory_stats(self) -> MemoryStats:
         """Get current memory statistics.
@@ -276,7 +271,7 @@ class MemoryMonitor:
                 if self.config.enable_gc_optimization:
                     self.force_garbage_collection()
 
-    def force_garbage_collection(self) -> Dict[str, int]:
+    def force_garbage_collection(self) -> dict[str, int]:
         """Force garbage collection and return statistics.
 
         Returns:
@@ -294,7 +289,7 @@ class MemoryMonitor:
         logger.debug(f"Garbage collection completed: {collected}")
         return collected
 
-    def optimize_memory_usage(self) -> Dict[str, Any]:
+    def optimize_memory_usage(self) -> dict[str, Any]:
         """Optimize current memory usage.
 
         Returns:
@@ -328,7 +323,7 @@ class MemoryMonitor:
 class MemoryOptimizer:
     """Main memory optimization coordinator."""
 
-    def __init__(self, config: Optional[MemoryConfig] = None):
+    def __init__(self, config: MemoryConfig | None = None):
         """Initialize the memory optimizer.
 
         Args:
@@ -360,12 +355,7 @@ class MemoryOptimizer:
 
         return optimized_df
 
-    def process_large_dataset(
-        self,
-        df: pd.DataFrame,
-        processor_func: callable,
-        **kwargs
-    ) -> Any:
+    def process_large_dataset(self, df: pd.DataFrame, processor_func: callable, **kwargs) -> Any:
         """Process large dataset with memory optimization.
 
         Args:
@@ -380,16 +370,20 @@ class MemoryOptimizer:
         memory_stats = self.monitor.get_memory_stats()
         df_memory = self.dataframe_optimizer.get_memory_usage(df)
 
-        if (memory_stats.usage_percent > self.config.memory_warning_threshold or
-            df_memory["total_mb"] > 100):  # 100MB threshold
+        if (
+            memory_stats.usage_percent > self.config.memory_warning_threshold
+            or df_memory["total_mb"] > 100
+        ):  # 100MB threshold
 
-            logger.info(f"Using chunked processing for large dataset ({df_memory['total_mb']:.1f}MB)")
+            logger.info(
+                f"Using chunked processing for large dataset ({df_memory['total_mb']:.1f}MB)"
+            )
             results = self.chunked_processor.process_dataframe_chunks(df, processor_func, **kwargs)
             return self.chunked_processor.aggregate_chunked_results(results)
         else:
             return processor_func(df, **kwargs)
 
-    async def get_optimization_status(self) -> Dict[str, Any]:
+    async def get_optimization_status(self) -> dict[str, Any]:
         """Get current optimization status.
 
         Returns:
@@ -406,7 +400,7 @@ class MemoryOptimizer:
 
 
 # Global memory optimizer instance
-_memory_optimizer: Optional[MemoryOptimizer] = None
+_memory_optimizer: MemoryOptimizer | None = None
 
 
 def get_memory_optimizer() -> MemoryOptimizer:

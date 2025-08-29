@@ -11,9 +11,8 @@ import json
 import logging
 import pickle
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
-import pandas as pd
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -65,12 +64,12 @@ class CacheManager:
             config: Cache configuration
         """
         self.config = config
-        self._cache: Dict[str, CacheEntry] = {}
-        self._access_order: List[str] = []
+        self._cache: dict[str, CacheEntry] = {}
+        self._access_order: list[str] = []
         self._lock = asyncio.Lock()
         self._metrics = CacheMetrics()
-        self._cleanup_task: Optional[asyncio.Task] = None
-        self._response_times: List[float] = []
+        self._cleanup_task: asyncio.Task | None = None
+        self._response_times: list[float] = []
 
     async def start(self) -> None:
         """Start the cache manager and cleanup task."""
@@ -89,7 +88,9 @@ class CacheManager:
             self._cleanup_task = None
             logger.info("Cache manager stopped")
 
-    def _generate_key(self, namespace: str, identifier: str, params: Optional[Dict[str, Any]] = None) -> str:
+    def _generate_key(
+        self, namespace: str, identifier: str, params: dict[str, Any] | None = None
+    ) -> str:
         """Generate a cache key.
 
         Args:
@@ -113,8 +114,8 @@ class CacheManager:
         self,
         namespace: str,
         identifier: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Any]:
+        params: dict[str, Any] | None = None,
+    ) -> Any | None:
         """Get an item from the cache.
 
         Args:
@@ -164,8 +165,8 @@ class CacheManager:
         namespace: str,
         identifier: str,
         data: Any,
-        params: Optional[Dict[str, Any]] = None,
-        ttl: Optional[int] = None,
+        params: dict[str, Any] | None = None,
+        ttl: int | None = None,
     ) -> bool:
         """Set an item in the cache.
 
@@ -189,6 +190,7 @@ class CacheManager:
 
             if self.config.compression_enabled and len(serialized_data) > 1024:
                 import gzip
+
                 serialized_data = gzip.compress(serialized_data)
                 compressed = True
 
@@ -235,7 +237,7 @@ class CacheManager:
         self,
         namespace: str,
         identifier: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> bool:
         """Delete an item from the cache.
 
@@ -338,7 +340,9 @@ class CacheManager:
 
         # Update average
         if self._response_times:
-            self._metrics.average_response_time = sum(self._response_times) / len(self._response_times)
+            self._metrics.average_response_time = sum(self._response_times) / len(
+                self._response_times
+            )
 
     async def _cleanup_loop(self) -> None:
         """Background cleanup loop for expired entries."""
@@ -383,7 +387,7 @@ class CacheManager:
 
             return self._metrics.model_copy()
 
-    async def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> dict[str, Any]:
         """Get cache status information.
 
         Returns:
@@ -406,7 +410,7 @@ class CacheManager:
 
 
 # Global cache manager instance
-_cache_manager: Optional[CacheManager] = None
+_cache_manager: CacheManager | None = None
 
 
 async def get_cache_manager() -> CacheManager:

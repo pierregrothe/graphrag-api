@@ -5,19 +5,17 @@
 
 """Tests for security middleware including CORS, rate limiting, and audit logging."""
 
-import time
-import pytest
 from unittest.mock import MagicMock, patch
 
-from fastapi import HTTPException, Request
-from fastapi.responses import Response
+import pytest
+from fastapi import HTTPException
 
 from src.graphrag_api_service.security.middleware import (
-    SecurityConfig,
-    SecurityMiddleware,
+    AuditLogger,
     RateLimiter,
     RequestValidator,
-    AuditLogger,
+    SecurityConfig,
+    SecurityMiddleware,
 )
 
 
@@ -32,7 +30,7 @@ class TestRateLimiter:
     def test_rate_limiting_allows_initial_requests(self, rate_limiter):
         """Test that initial requests are allowed."""
         client_id = "test_client"
-        
+
         # First few requests should be allowed
         for _ in range(5):
             assert rate_limiter.is_allowed(client_id) is True
@@ -40,60 +38,60 @@ class TestRateLimiter:
     def test_rate_limiting_blocks_burst_requests(self, rate_limiter):
         """Test that burst requests are blocked."""
         client_id = "test_client"
-        
+
         # Fill up the burst limit
         for _ in range(5):
             rate_limiter.is_allowed(client_id)
-        
+
         # Next request should be blocked
         assert rate_limiter.is_allowed(client_id) is False
 
     def test_rate_limiting_per_minute_limit(self, rate_limiter):
         """Test per-minute rate limiting."""
         client_id = "test_client"
-        
+
         # Simulate requests over time
-        with patch('time.time') as mock_time:
+        with patch("time.time") as mock_time:
             mock_time.return_value = 1000.0
-            
+
             # Fill up the per-minute limit
             for _ in range(10):
                 rate_limiter.is_allowed(client_id)
-            
+
             # Next request should be blocked
             assert rate_limiter.is_allowed(client_id) is False
 
     def test_rate_limiting_resets_after_time(self, rate_limiter):
         """Test that rate limiting resets after time passes."""
         client_id = "test_client"
-        
-        with patch('time.time') as mock_time:
+
+        with patch("time.time") as mock_time:
             # Fill up the limit
             mock_time.return_value = 1000.0
             for _ in range(10):
                 rate_limiter.is_allowed(client_id)
-            
+
             # Should be blocked
             assert rate_limiter.is_allowed(client_id) is False
-            
+
             # Move time forward by more than a minute
             mock_time.return_value = 1070.0
-            
+
             # Should be allowed again
             assert rate_limiter.is_allowed(client_id) is True
 
     def test_remaining_requests_calculation(self, rate_limiter):
         """Test remaining requests calculation."""
         client_id = "test_client"
-        
+
         # Initial remaining should be the full limit
         remaining = rate_limiter.get_remaining_requests(client_id)
         assert remaining == 10
-        
+
         # After some requests, remaining should decrease
         for _ in range(3):
             rate_limiter.is_allowed(client_id)
-        
+
         remaining = rate_limiter.get_remaining_requests(client_id)
         assert remaining == 7
 
@@ -105,9 +103,7 @@ class TestRequestValidator:
     def validator(self):
         """Create a request validator for testing."""
         config = SecurityConfig(
-            max_request_size_mb=1,
-            required_headers=["x-api-key"],
-            blocked_user_agents=["badbot"]
+            max_request_size_mb=1, required_headers=["x-api-key"], blocked_user_agents=["badbot"]
         )
         return RequestValidator(config)
 
@@ -115,7 +111,7 @@ class TestRequestValidator:
         """Test that valid request sizes pass validation."""
         mock_request = MagicMock()
         mock_request.headers.get.return_value = "1000"  # 1000 bytes
-        
+
         # Should not raise an exception
         validator.validate_request_size(mock_request)
 
@@ -123,17 +119,17 @@ class TestRequestValidator:
         """Test that oversized requests fail validation."""
         mock_request = MagicMock()
         mock_request.headers.get.return_value = str(2 * 1024 * 1024)  # 2MB
-        
+
         with pytest.raises(HTTPException) as exc_info:
             validator.validate_request_size(mock_request)
-        
+
         assert exc_info.value.status_code == 413
 
     def test_required_headers_validation_passes(self, validator):
         """Test that requests with required headers pass validation."""
         mock_request = MagicMock()
         mock_request.headers.keys.return_value = ["x-api-key", "content-type"]
-        
+
         # Should not raise an exception
         validator.validate_headers(mock_request)
 
@@ -141,17 +137,17 @@ class TestRequestValidator:
         """Test that requests missing required headers fail validation."""
         mock_request = MagicMock()
         mock_request.headers.keys.return_value = ["content-type"]
-        
+
         with pytest.raises(HTTPException) as exc_info:
             validator.validate_headers(mock_request)
-        
+
         assert exc_info.value.status_code == 400
 
     def test_user_agent_validation_passes(self, validator):
         """Test that allowed user agents pass validation."""
         mock_request = MagicMock()
         mock_request.headers.get.return_value = "Mozilla/5.0 (compatible; goodbot)"
-        
+
         # Should not raise an exception
         validator.validate_user_agent(mock_request)
 
@@ -159,10 +155,10 @@ class TestRequestValidator:
         """Test that blocked user agents fail validation."""
         mock_request = MagicMock()
         mock_request.headers.get.return_value = "badbot/1.0"
-        
+
         with pytest.raises(HTTPException) as exc_info:
             validator.validate_user_agent(mock_request)
-        
+
         assert exc_info.value.status_code == 403
 
     def test_input_sanitization(self, validator):
@@ -204,7 +200,7 @@ class TestAuditLogger:
             status_code=200,
             response_time=0.1,
         )
-        
+
         log_entries = audit_logger.get_audit_log(limit=10)
         assert len(log_entries) == 1
         assert log_entries[0].request_id == "test-123"
@@ -223,7 +219,7 @@ class TestAuditLogger:
             response_time=0.5,
             error_message="Internal server error",
         )
-        
+
         log_entries = audit_logger.get_audit_log(limit=10)
         assert len(log_entries) == 1
         assert log_entries[0].status_code == 500
@@ -235,9 +231,9 @@ class TestAuditLogger:
         audit_logger.log_request("req1", "GET", "/api/test", "agent", "127.0.0.1", 200, 0.1)
         audit_logger.log_request("req2", "POST", "/api/test", "agent", "127.0.0.1", 400, 0.2)
         audit_logger.log_request("req3", "GET", "/api/other", "agent", "192.168.1.1", 500, 0.3)
-        
+
         summary = audit_logger.get_security_summary()
-        
+
         assert "total_requests" in summary
         assert "status_code_distribution" in summary
         assert "error_rate" in summary
@@ -264,19 +260,19 @@ class TestSecurityMiddleware:
         mock_request = MagicMock()
         mock_request.headers.get.side_effect = lambda key: {
             "x-forwarded-for": "192.168.1.1, 10.0.0.1",
-            "x-real-ip": None
+            "x-real-ip": None,
         }.get(key)
         mock_request.client.host = "127.0.0.1"
-        
+
         ip = security_middleware.get_client_ip(mock_request)
         assert ip == "192.168.1.1"
 
         # Test with X-Real-IP header
         mock_request.headers.get.side_effect = lambda key: {
             "x-forwarded-for": None,
-            "x-real-ip": "192.168.1.2"
+            "x-real-ip": "192.168.1.2",
         }.get(key)
-        
+
         ip = security_middleware.get_client_ip(mock_request)
         assert ip == "192.168.1.2"
 
@@ -290,9 +286,9 @@ class TestSecurityMiddleware:
         """Test security headers addition."""
         mock_response = MagicMock()
         mock_response.headers = {}
-        
+
         security_middleware.add_security_headers(mock_response)
-        
+
         assert "Content-Security-Policy" in mock_response.headers
         assert "X-Frame-Options" in mock_response.headers
         assert "X-Content-Type-Options" in mock_response.headers
@@ -305,7 +301,7 @@ class TestSecurityMiddleware:
         mock_request.method = "GET"
         mock_request.headers.get.side_effect = lambda key, default="": {
             "content-length": "100",
-            "user-agent": "test-agent"
+            "user-agent": "test-agent",
         }.get(key, default)
         mock_request.headers.keys.return_value = []
         mock_request.client.host = "127.0.0.1"
@@ -317,9 +313,14 @@ class TestSecurityMiddleware:
     async def test_request_processing_rate_limit(self, security_middleware):
         """Test request processing with rate limiting."""
         # Create a security middleware with rate limiting forced on
-        from src.graphrag_api_service.security.middleware import SecurityMiddleware, RateLimiter, SecurityConfig
-        from unittest.mock import patch
         import os
+        from unittest.mock import patch
+
+        from src.graphrag_api_service.security.middleware import (
+            RateLimiter,
+            SecurityConfig,
+            SecurityMiddleware,
+        )
 
         # Create a config with rate limiting enabled
         config = SecurityConfig()
@@ -330,20 +331,16 @@ class TestSecurityMiddleware:
         # Create middleware and manually set the rate limiter to bypass environment checks
         rate_limited_middleware = SecurityMiddleware(config)
         rate_limited_middleware.rate_limiter = RateLimiter(
-            config.requests_per_minute,
-            config.burst_limit
+            config.requests_per_minute, config.burst_limit
         )
 
         # Mock the environment check in process_request to always allow rate limiting
-        with patch.dict(os.environ, {
-            "TESTING": "false",
-            "RATE_LIMITING_ENABLED": "true"
-        }):
+        with patch.dict(os.environ, {"TESTING": "false", "RATE_LIMITING_ENABLED": "true"}):
             mock_request = MagicMock()
             mock_request.method = "GET"
             mock_request.headers.get.side_effect = lambda key, default="": {
                 "content-length": "100",
-                "user-agent": "test-agent"
+                "user-agent": "test-agent",
             }.get(key, default)
             mock_request.headers.keys.return_value = []
             mock_request.client.host = "127.0.0.1"

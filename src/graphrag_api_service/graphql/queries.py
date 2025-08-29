@@ -7,6 +7,7 @@
 
 
 import logging
+
 import strawberry
 from strawberry.types import Info
 
@@ -15,7 +16,7 @@ from ..graph.operations import GraphOperations
 from ..system.operations import SystemOperations
 from ..workspace.manager import WorkspaceManager
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
-from .optimization import get_field_selector, get_complexity_analyzer, get_query_cache
+from .optimization import get_complexity_analyzer, get_field_selector, get_query_cache
 from .types import (
     AdvancedQueryResult,
     AnomalyDetectionResult,
@@ -42,7 +43,6 @@ from .types import (
     IndexingStatistics,
     MultiHopQueryInput,
     PageInfo,
-    PerformanceMetrics,
     QueryResponse,
     QueryType,
     Relationship,
@@ -65,6 +65,7 @@ def convert_workspace_status(model_status: WorkspaceModelStatus) -> WorkspaceSta
         WorkspaceModelStatus.ARCHIVED: WorkspaceStatus.CREATED,  # Map ARCHIVED to CREATED
     }
     return status_map.get(model_status, WorkspaceStatus.CREATED)
+
 
 logger = logging.getLogger(__name__)
 
@@ -127,10 +128,10 @@ class Query:
             "limit": first,
             "offset": offset,
         }
-        optimized_query = field_selector.optimize_entity_query(info, base_query)
+        optimized_query = field_selector.optimize_entity_query(base_query, info)
 
         # Check cache first
-        selected_fields = field_selector.get_selected_fields(info, "Entity")
+        selected_fields = field_selector.get_selected_fields("Entity", info)
         cache_key = query_cache.generate_cache_key("entities", optimized_query, selected_fields)
 
         if not query_cache.is_expired(cache_key):
@@ -169,7 +170,9 @@ class Query:
             end_cursor=str(offset + len(edges) - 1) if edges else None,
         )
 
-        entity_connection = EntityConnection(edges=edges, page_info=page_info, total_count=result["total_count"])
+        entity_connection = EntityConnection(
+            edges=edges, page_info=page_info, total_count=result["total_count"]
+        )
 
         # Cache the result
         query_cache.set(cache_key, entity_connection, ttl=300)
@@ -178,12 +181,12 @@ class Query:
         return entity_connection
 
     @strawberry.field
-    async def entity(self, info: Info, id: str) -> Entity | None:
+    async def entity(self, id: str, info: Info) -> Entity | None:
         """Get a specific entity by ID with optimization.
 
         Args:
-            info: GraphQL context information
             id: Entity ID
+            info: GraphQL context information
 
         Returns:
             Entity if found, None otherwise
@@ -202,7 +205,7 @@ class Query:
             return None
 
         # Check cache first
-        selected_fields = field_selector.get_selected_fields(info, "Entity")
+        selected_fields = field_selector.get_selected_fields("Entity", info)
         cache_key = query_cache.generate_cache_key("entity", {"id": id}, selected_fields)
 
         if not query_cache.is_expired(cache_key):
@@ -213,7 +216,7 @@ class Query:
 
         # Optimize query based on selected fields
         base_query = {"entity_name": id, "limit": 1}
-        optimized_query = field_selector.optimize_entity_query(info, base_query)
+        optimized_query = field_selector.optimize_entity_query(base_query, info)
 
         result = await graph_ops.query_entities(
             data_path=settings.graphrag_data_path,
@@ -376,12 +379,12 @@ class Query:
         ]
 
     @strawberry.field
-    async def workspace(self, info: Info, id: str) -> Workspace | None:
+    async def workspace(self, id: str, info: Info) -> Workspace | None:
         """Get a specific workspace by ID.
 
         Args:
-            info: GraphQL context information
             id: Workspace ID
+            info: GraphQL context information
 
         Returns:
             Workspace if found, None otherwise
@@ -496,9 +499,9 @@ class Query:
         """Execute a GraphRAG query.
 
         Args:
-            info: GraphQL context information
             query: The query text
             query_type: Type of query (LOCAL or GLOBAL)
+            info: GraphQL context information
 
         Returns:
             QueryResponse if successful, None otherwise
@@ -540,10 +543,10 @@ class Query:
         """Generate graph visualization data.
 
         Args:
-            info: GraphQL context information
             entity_limit: Maximum number of entities
             relationship_limit: Maximum number of relationships
             layout: Layout algorithm
+            info: GraphQL context information
 
         Returns:
             GraphVisualization if available, None otherwise
@@ -605,10 +608,10 @@ class Query:
         """List indexing jobs with optional filtering and pagination.
 
         Args:
-            info: GraphQL context information
             status: Optional status filter
             first: Number of jobs to return
             after: Cursor for pagination
+            info: GraphQL context information
 
         Returns:
             IndexingJobConnection with jobs and pagination info
@@ -657,12 +660,12 @@ class Query:
         )
 
     @strawberry.field
-    async def indexing_job(self, info: Info, id: str) -> IndexingJobDetail | None:
+    async def indexing_job(self, id: str, info: Info) -> IndexingJobDetail | None:
         """Get detailed information about a specific indexing job.
 
         Args:
-            info: GraphQL context information
             id: Job ID
+            info: GraphQL context information
 
         Returns:
             IndexingJobDetail if found, None otherwise
@@ -828,14 +831,14 @@ class Query:
 
     @strawberry.field
     async def detect_communities(
-        self, algorithm: str = "louvain", resolution: float = 1.0, info: Info | None = None
+        self, info: Info, algorithm: str = "louvain", resolution: float = 1.0
     ) -> CommunityDetectionResult:
         """Detect communities in the knowledge graph.
 
         Args:
+            info: GraphQL context information
             algorithm: Community detection algorithm
             resolution: Resolution parameter for community detection
-            info: GraphQL context information
 
         Returns:
             CommunityDetectionResult with detected communities
@@ -870,7 +873,7 @@ class Query:
 
     @strawberry.field
     async def calculate_centrality(
-        self, node_ids: list[str] | None = None, info: Info | None = None
+        self, info: Info, node_ids: list[str] | None = None
     ) -> list[CentralityMeasures]:
         """Calculate centrality measures for graph nodes.
 
@@ -903,7 +906,7 @@ class Query:
 
     @strawberry.field
     async def perform_clustering(
-        self, algorithm: str = "kmeans", num_clusters: int | None = None, info: Info | None = None
+        self, info: Info, algorithm: str = "kmeans", num_clusters: int | None = None
     ) -> ClusteringResult:
         """Perform graph clustering analysis.
 
@@ -944,7 +947,7 @@ class Query:
 
     @strawberry.field
     async def detect_anomalies(
-        self, method: str = "isolation_forest", threshold: float = 0.1, info: Info | None = None
+        self, info: Info, method: str = "isolation_forest", threshold: float = 0.1
     ) -> AnomalyDetectionResult:
         """Detect anomalies in the knowledge graph.
 

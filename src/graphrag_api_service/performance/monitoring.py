@@ -7,11 +7,12 @@
 
 import asyncio
 import logging
-import psutil
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any
 
+import psutil
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -39,8 +40,8 @@ class RequestMetrics(BaseModel):
     status_code: int
     response_time: float
     timestamp: float
-    user_agent: Optional[str] = None
-    ip_address: Optional[str] = None
+    user_agent: str | None = None
+    ip_address: str | None = None
 
 
 class AlertConfig(BaseModel):
@@ -56,20 +57,20 @@ class AlertConfig(BaseModel):
 class PerformanceMonitor:
     """Performance monitoring system with real-time metrics collection."""
 
-    def __init__(self, alert_config: Optional[AlertConfig] = None):
+    def __init__(self, alert_config: AlertConfig | None = None):
         """Initialize the performance monitor.
 
         Args:
             alert_config: Alert configuration
         """
         self.alert_config = alert_config or AlertConfig()
-        self._metrics_history: List[PerformanceMetrics] = []
-        self._request_history: List[RequestMetrics] = []
-        self._monitoring_task: Optional[asyncio.Task] = None
-        self._active_requests: Dict[str, float] = {}
+        self._metrics_history: list[PerformanceMetrics] = []
+        self._request_history: list[RequestMetrics] = []
+        self._monitoring_task: asyncio.Task | None = None
+        self._active_requests: dict[str, float] = {}
         self._request_count = 0
         self._error_count = 0
-        self._response_times: List[float] = []
+        self._response_times: list[float] = []
         self._lock = asyncio.Lock()
 
     async def start_monitoring(self, interval: float = 30.0) -> None:
@@ -98,8 +99,8 @@ class PerformanceMonitor:
         self,
         endpoint: str,
         method: str,
-        user_agent: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        user_agent: str | None = None,
+        ip_address: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """Track a request's performance.
 
@@ -121,7 +122,7 @@ class PerformanceMonitor:
 
         try:
             yield request_id
-        except Exception as e:
+        except Exception:
             async with self._lock:
                 self._error_count += 1
             raise
@@ -190,7 +191,7 @@ class PerformanceMonitor:
             # System metrics
             cpu_usage = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
 
             # Application metrics
             async with self._lock:
@@ -266,7 +267,7 @@ class PerformanceMonitor:
         for alert in alerts:
             logger.warning(f"PERFORMANCE ALERT: {alert}")
 
-    async def get_current_metrics(self) -> Optional[PerformanceMetrics]:
+    async def get_current_metrics(self) -> PerformanceMetrics | None:
         """Get the most recent performance metrics.
 
         Returns:
@@ -277,7 +278,7 @@ class PerformanceMonitor:
                 return self._metrics_history[-1]
         return None
 
-    async def get_metrics_history(self, limit: int = 100) -> List[PerformanceMetrics]:
+    async def get_metrics_history(self, limit: int = 100) -> list[PerformanceMetrics]:
         """Get historical performance metrics.
 
         Args:
@@ -289,7 +290,7 @@ class PerformanceMonitor:
         async with self._lock:
             return self._metrics_history[-limit:].copy()
 
-    async def get_request_metrics(self, limit: int = 100) -> List[RequestMetrics]:
+    async def get_request_metrics(self, limit: int = 100) -> list[RequestMetrics]:
         """Get recent request metrics.
 
         Args:
@@ -301,7 +302,7 @@ class PerformanceMonitor:
         async with self._lock:
             return self._request_history[-limit:].copy()
 
-    async def get_performance_summary(self) -> Dict[str, Any]:
+    async def get_performance_summary(self) -> dict[str, Any]:
         """Get a summary of performance metrics.
 
         Returns:
@@ -357,7 +358,7 @@ class PerformanceMonitor:
 
 
 # Global performance monitor instance
-_performance_monitor: Optional[PerformanceMonitor] = None
+_performance_monitor: PerformanceMonitor | None = None
 
 
 async def get_performance_monitor() -> PerformanceMonitor:

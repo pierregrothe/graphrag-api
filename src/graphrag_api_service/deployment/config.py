@@ -5,12 +5,12 @@
 
 """Production deployment configuration with environment management and validation."""
 
-import os
 import logging
+import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class DatabaseConfig(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-        populate_by_name=True  # Allow both field name and alias
+        populate_by_name=True,  # Allow both field name and alias
     )
 
 
@@ -44,7 +44,7 @@ class RedisConfig(BaseSettings):
     host: str = "localhost"
     port: int = 6379
     database: int = 0
-    password: Optional[str] = Field(None, alias="REDIS_PASSWORD")
+    password: str | None = Field(None, alias="REDIS_PASSWORD")
     max_connections: int = 20
     socket_timeout: int = 5
     socket_connect_timeout: int = 5
@@ -54,7 +54,7 @@ class RedisConfig(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-        populate_by_name=True
+        populate_by_name=True,
     )
 
 
@@ -70,10 +70,10 @@ class SecurityConfig(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-        populate_by_name=True
+        populate_by_name=True,
     )
-    cors_origins: List[str] = ["*"]
-    cors_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    cors_origins: list[str] = ["*"]
+    cors_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     rate_limit_per_minute: int = 100
     max_request_size_mb: int = 10
 
@@ -102,7 +102,7 @@ class PerformanceConfig(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-        populate_by_name=True
+        populate_by_name=True,
     )
 
 
@@ -111,7 +111,7 @@ class LoggingConfig(BaseSettings):
 
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    file_path: Optional[str] = None
+    file_path: str | None = None
     max_file_size_mb: int = 100
     backup_count: int = 5
     json_format: bool = False
@@ -121,7 +121,7 @@ class LoggingConfig(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-        populate_by_name=True
+        populate_by_name=True,
     )
 
 
@@ -145,7 +145,7 @@ class MonitoringConfig(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-        populate_by_name=True
+        populate_by_name=True,
     )
 
 
@@ -157,22 +157,22 @@ class DeploymentSettings(BaseSettings):
     debug: bool = Field(False, alias="DEBUG")
     host: str = Field("0.0.0.0", alias="HOST")
     port: int = Field(8000, alias="PORT")
-    
+
     # Application
     app_name: str = "GraphRAG API"
     app_version: str = "1.0.0"
     api_prefix: str = "/api"
     docs_url: str = "/docs"
     redoc_url: str = "/redoc"
-    
+
     # Data paths
     data_path: str = Field("./data", alias="DATA_PATH")
     workspace_path: str = Field("./workspaces", alias="WORKSPACE_PATH")
-    
+
     # Component configurations
-    database: DatabaseConfig = Field(default_factory=lambda: DatabaseConfig())
-    redis: RedisConfig = Field(default_factory=lambda: RedisConfig())
-    security: SecurityConfig = Field(default_factory=lambda: SecurityConfig())
+    database: DatabaseConfig = Field(default_factory=lambda: DatabaseConfig())  # type: ignore
+    redis: RedisConfig = Field(default_factory=lambda: RedisConfig())  # type: ignore
+    security: SecurityConfig = Field(default_factory=lambda: SecurityConfig())  # type: ignore
     performance: PerformanceConfig = Field(default_factory=lambda: PerformanceConfig())
     logging: LoggingConfig = Field(default_factory=lambda: LoggingConfig())
     monitoring: MonitoringConfig = Field(default_factory=lambda: MonitoringConfig())
@@ -181,24 +181,24 @@ class DeploymentSettings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore"  # Ignore extra environment variables
+        extra="ignore",  # Ignore extra environment variables
     )
 
     def __init__(self, **kwargs):
         """Initialize with environment variable support for nested configs."""
         # Create nested configs with current environment variables
-        if 'database' not in kwargs:
-            kwargs['database'] = DatabaseConfig()
-        if 'redis' not in kwargs:
-            kwargs['redis'] = RedisConfig()
-        if 'security' not in kwargs:
-            kwargs['security'] = SecurityConfig()
-        if 'performance' not in kwargs:
-            kwargs['performance'] = PerformanceConfig()
-        if 'logging' not in kwargs:
-            kwargs['logging'] = LoggingConfig()
-        if 'monitoring' not in kwargs:
-            kwargs['monitoring'] = MonitoringConfig()
+        if "database" not in kwargs:
+            kwargs["database"] = DatabaseConfig()  # type: ignore
+        if "redis" not in kwargs:
+            kwargs["redis"] = RedisConfig()  # type: ignore
+        if "security" not in kwargs:
+            kwargs["security"] = SecurityConfig()  # type: ignore
+        if "performance" not in kwargs:
+            kwargs["performance"] = PerformanceConfig()
+        if "logging" not in kwargs:
+            kwargs["logging"] = LoggingConfig()
+        if "monitoring" not in kwargs:
+            kwargs["monitoring"] = MonitoringConfig()
 
         super().__init__(**kwargs)
 
@@ -243,14 +243,14 @@ class DeploymentSettings(BaseSettings):
 class ConfigManager:
     """Configuration manager for deployment settings."""
 
-    def __init__(self, config_file: Optional[str] = None):
+    def __init__(self, config_file: str | None = None):
         """Initialize the configuration manager.
 
         Args:
             config_file: Optional configuration file path
         """
         self.config_file = config_file
-        self._settings: Optional[DeploymentSettings] = None
+        self._settings: DeploymentSettings | None = None
 
     def load_settings(self) -> DeploymentSettings:
         """Load deployment settings.
@@ -269,7 +269,7 @@ class ConfigManager:
                         env_file_encoding="utf-8",
                         case_sensitive=False,
                         extra="ignore",
-                        populate_by_name=True
+                        populate_by_name=True,
                     )
 
                 class RedisConfigWithFile(RedisConfig):
@@ -278,7 +278,7 @@ class ConfigManager:
                         env_file_encoding="utf-8",
                         case_sensitive=False,
                         extra="ignore",
-                        populate_by_name=True
+                        populate_by_name=True,
                     )
 
                 class SecurityConfigWithFile(SecurityConfig):
@@ -287,7 +287,7 @@ class ConfigManager:
                         env_file_encoding="utf-8",
                         case_sensitive=False,
                         extra="ignore",
-                        populate_by_name=True
+                        populate_by_name=True,
                     )
 
                 class PerformanceConfigWithFile(PerformanceConfig):
@@ -296,7 +296,7 @@ class ConfigManager:
                         env_file_encoding="utf-8",
                         case_sensitive=False,
                         extra="ignore",
-                        populate_by_name=True
+                        populate_by_name=True,
                     )
 
                 class LoggingConfigWithFile(LoggingConfig):
@@ -305,7 +305,7 @@ class ConfigManager:
                         env_file_encoding="utf-8",
                         case_sensitive=False,
                         extra="ignore",
-                        populate_by_name=True
+                        populate_by_name=True,
                     )
 
                 class MonitoringConfigWithFile(MonitoringConfig):
@@ -314,7 +314,7 @@ class ConfigManager:
                         env_file_encoding="utf-8",
                         case_sensitive=False,
                         extra="ignore",
-                        populate_by_name=True
+                        populate_by_name=True,
                     )
 
                 class ConfigWithFile(DeploymentSettings):
@@ -322,24 +322,24 @@ class ConfigManager:
                         env_file=config_file_path,
                         env_file_encoding="utf-8",
                         case_sensitive=False,
-                        extra="ignore"
+                        extra="ignore",
                     )
 
                     def __init__(self, **kwargs):
                         """Initialize with file-based nested configs."""
                         # Create nested configs with file-based configuration
-                        if 'database' not in kwargs:
-                            kwargs['database'] = DatabaseConfigWithFile()
-                        if 'redis' not in kwargs:
-                            kwargs['redis'] = RedisConfigWithFile()
-                        if 'security' not in kwargs:
-                            kwargs['security'] = SecurityConfigWithFile()
-                        if 'performance' not in kwargs:
-                            kwargs['performance'] = PerformanceConfigWithFile()
-                        if 'logging' not in kwargs:
-                            kwargs['logging'] = LoggingConfigWithFile()
-                        if 'monitoring' not in kwargs:
-                            kwargs['monitoring'] = MonitoringConfigWithFile()
+                        if "database" not in kwargs:
+                            kwargs["database"] = DatabaseConfigWithFile()  # type: ignore
+                        if "redis" not in kwargs:
+                            kwargs["redis"] = RedisConfigWithFile()  # type: ignore
+                        if "security" not in kwargs:
+                            kwargs["security"] = SecurityConfigWithFile()  # type: ignore
+                        if "performance" not in kwargs:
+                            kwargs["performance"] = PerformanceConfigWithFile()
+                        if "logging" not in kwargs:
+                            kwargs["logging"] = LoggingConfigWithFile()
+                        if "monitoring" not in kwargs:
+                            kwargs["monitoring"] = MonitoringConfigWithFile()
 
                         super().__init__(**kwargs)
 
@@ -352,7 +352,7 @@ class ConfigManager:
 
         return self._settings
 
-    def validate_production_config(self, settings: DeploymentSettings) -> List[str]:
+    def validate_production_config(self, settings: DeploymentSettings) -> list[str]:
         """Validate production configuration.
 
         Args:
@@ -388,7 +388,7 @@ class ConfigManager:
 
         return errors
 
-    def get_gunicorn_config(self, settings: DeploymentSettings) -> Dict[str, Any]:
+    def get_gunicorn_config(self, settings: DeploymentSettings) -> dict[str, Any]:
         """Get Gunicorn configuration.
 
         Args:
@@ -551,7 +551,7 @@ http {{
 
 
 # Global configuration manager
-_config_manager: Optional[ConfigManager] = None
+_config_manager: ConfigManager | None = None
 
 
 def get_config_manager() -> ConfigManager:

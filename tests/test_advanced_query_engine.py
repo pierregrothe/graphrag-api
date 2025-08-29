@@ -24,52 +24,56 @@ from src.graphrag_api_service.graph.operations import GraphOperationsError
 @pytest.fixture
 def sample_entities_data():
     """Sample entities data for testing."""
-    return pd.DataFrame([
-        {
-            "id": "entity_1",
-            "title": "Entity 1",
-            "type": "PERSON",
-            "description": "Test entity 1",
-            "created_at": "2023-01-01T00:00:00Z",
-        },
-        {
-            "id": "entity_2",
-            "title": "Entity 2",
-            "type": "ORGANIZATION",
-            "description": "Test entity 2",
-            "created_at": "2023-06-01T00:00:00Z",
-        },
-        {
-            "id": "entity_3",
-            "title": "Entity 3",
-            "type": "PERSON",
-            "description": "Test entity 3",
-            "created_at": "2023-12-01T00:00:00Z",
-        },
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "id": "entity_1",
+                "title": "Entity 1",
+                "type": "PERSON",
+                "description": "Test entity 1",
+                "created_at": "2023-01-01T00:00:00Z",
+            },
+            {
+                "id": "entity_2",
+                "title": "Entity 2",
+                "type": "ORGANIZATION",
+                "description": "Test entity 2",
+                "created_at": "2023-06-01T00:00:00Z",
+            },
+            {
+                "id": "entity_3",
+                "title": "Entity 3",
+                "type": "PERSON",
+                "description": "Test entity 3",
+                "created_at": "2023-12-01T00:00:00Z",
+            },
+        ]
+    )
 
 
 @pytest.fixture
 def sample_relationships_data():
     """Sample relationships data for testing."""
-    return pd.DataFrame([
-        {
-            "id": "rel_1",
-            "source": "entity_1",
-            "target": "entity_2",
-            "description": "works for",
-            "weight": 0.8,
-            "created_at": "2023-02-01T00:00:00Z",
-        },
-        {
-            "id": "rel_2",
-            "source": "entity_2",
-            "target": "entity_3",
-            "description": "collaborates with",
-            "weight": 0.6,
-            "created_at": "2023-07-01T00:00:00Z",
-        },
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "id": "rel_1",
+                "source": "entity_1",
+                "target": "entity_2",
+                "description": "works for",
+                "weight": 0.8,
+                "created_at": "2023-02-01T00:00:00Z",
+            },
+            {
+                "id": "rel_2",
+                "source": "entity_2",
+                "target": "entity_3",
+                "description": "collaborates with",
+                "weight": 0.6,
+                "created_at": "2023-07-01T00:00:00Z",
+            },
+        ]
+    )
 
 
 @pytest.fixture
@@ -82,10 +86,14 @@ class TestAdvancedQueryEngine:
     """Test cases for the AdvancedQueryEngine class."""
 
     @pytest.mark.asyncio
-    async def test_load_data_success(self, advanced_query_engine, sample_entities_data, sample_relationships_data):
+    async def test_load_data_success(
+        self, advanced_query_engine, sample_entities_data, sample_relationships_data
+    ):
         """Test successful data loading."""
-        with patch("os.path.exists", return_value=True), \
-             patch("pandas.read_parquet") as mock_read_parquet:
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("pandas.read_parquet") as mock_read_parquet,
+        ):
 
             mock_read_parquet.side_effect = [sample_entities_data, sample_relationships_data]
 
@@ -108,14 +116,18 @@ class TestAdvancedQueryEngine:
     @pytest.mark.asyncio
     async def test_load_data_exception(self, advanced_query_engine):
         """Test data loading with exception."""
-        with patch("os.path.exists", return_value=True), \
-             patch("pandas.read_parquet", side_effect=Exception("Read error")):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("pandas.read_parquet", side_effect=Exception("Read error")),
+        ):
 
             with pytest.raises(GraphOperationsError, match="Data loading failed"):
                 await advanced_query_engine.load_data()
 
     @pytest.mark.asyncio
-    async def test_multi_hop_query_success(self, advanced_query_engine, sample_entities_data, sample_relationships_data):
+    async def test_multi_hop_query_success(
+        self, advanced_query_engine, sample_entities_data, sample_relationships_data
+    ):
         """Test successful multi-hop query execution."""
         # Setup mock data
         advanced_query_engine._entities_cache = sample_entities_data
@@ -125,7 +137,7 @@ class TestAdvancedQueryEngine:
             start_entities=["entity_1"],
             target_entities=["entity_3"],
             max_hops=2,
-            scoring_algorithm="pagerank"
+            scoring_algorithm="pagerank",
         )
 
         result = await advanced_query_engine.multi_hop_query(query)
@@ -151,7 +163,9 @@ class TestAdvancedQueryEngine:
             assert len(result.relationships) == 0
 
     @pytest.mark.asyncio
-    async def test_temporal_query_success(self, advanced_query_engine, sample_entities_data, sample_relationships_data):
+    async def test_temporal_query_success(
+        self, advanced_query_engine, sample_entities_data, sample_relationships_data
+    ):
         """Test successful temporal query execution."""
         # Setup mock data
         advanced_query_engine._entities_cache = sample_entities_data
@@ -161,7 +175,7 @@ class TestAdvancedQueryEngine:
             start_time=datetime(2023, 1, 1),
             end_time=datetime(2023, 6, 30),
             time_field="created_at",
-            temporal_operator="within"
+            temporal_operator="within",
         )
 
         result = await advanced_query_engine.temporal_query({}, temporal_constraints)
@@ -184,8 +198,7 @@ class TestAdvancedQueryEngine:
         advanced_query_engine._relationships_cache = pd.DataFrame()
 
         temporal_constraints = TemporalQuery(
-            start_time=datetime(2023, 1, 1),
-            time_field="nonexistent_field"
+            start_time=datetime(2023, 1, 1), time_field="nonexistent_field"
         )
 
         result = await advanced_query_engine.temporal_query({}, temporal_constraints)
@@ -200,7 +213,7 @@ class TestAdvancedQueryEngine:
             start_entities=["entity_1"],
             target_entities=["entity_2"],
             max_hops=2,
-            relationship_types=None
+            relationship_types=None,
         )
 
         assert len(paths) > 0
@@ -211,8 +224,20 @@ class TestAdvancedQueryEngine:
     async def test_score_paths_pagerank(self, advanced_query_engine):
         """Test path scoring with PageRank algorithm."""
         paths = [
-            QueryPath(entities=["e1", "e2"], relationships=["r1"], score=0.0, confidence=0.8, path_length=1),
-            QueryPath(entities=["e1", "e2", "e3"], relationships=["r1", "r2"], score=0.0, confidence=0.6, path_length=2),
+            QueryPath(
+                entities=["e1", "e2"],
+                relationships=["r1"],
+                score=0.0,
+                confidence=0.8,
+                path_length=1,
+            ),
+            QueryPath(
+                entities=["e1", "e2", "e3"],
+                relationships=["r1", "r2"],
+                score=0.0,
+                confidence=0.6,
+                path_length=2,
+            ),
         ]
 
         scored_paths = await advanced_query_engine._score_paths(paths, "pagerank")
@@ -227,7 +252,13 @@ class TestAdvancedQueryEngine:
         """Test path scoring with betweenness algorithm."""
         paths = [
             QueryPath(entities=["e1"], relationships=[], score=0.0, confidence=1.0, path_length=0),
-            QueryPath(entities=["e1", "e2"], relationships=["r1"], score=0.0, confidence=0.8, path_length=1),
+            QueryPath(
+                entities=["e1", "e2"],
+                relationships=["r1"],
+                score=0.0,
+                confidence=0.8,
+                path_length=1,
+            ),
         ]
 
         scored_paths = await advanced_query_engine._score_paths(paths, "betweenness")
@@ -236,12 +267,12 @@ class TestAdvancedQueryEngine:
         assert all(path.score > 0 for path in scored_paths)
 
     @pytest.mark.asyncio
-    async def test_apply_temporal_filter_with_constraints(self, advanced_query_engine, sample_entities_data):
+    async def test_apply_temporal_filter_with_constraints(
+        self, advanced_query_engine, sample_entities_data
+    ):
         """Test temporal filtering with start and end time constraints."""
         temporal_constraints = TemporalQuery(
-            start_time=datetime(2023, 5, 1),
-            end_time=datetime(2023, 11, 1),
-            time_field="created_at"
+            start_time=datetime(2023, 5, 1), end_time=datetime(2023, 11, 1), time_field="created_at"
         )
 
         filtered_data = await advanced_query_engine._apply_temporal_filter(
@@ -253,11 +284,12 @@ class TestAdvancedQueryEngine:
         assert filtered_data.iloc[0]["id"] == "entity_2"
 
     @pytest.mark.asyncio
-    async def test_apply_temporal_filter_start_only(self, advanced_query_engine, sample_entities_data):
+    async def test_apply_temporal_filter_start_only(
+        self, advanced_query_engine, sample_entities_data
+    ):
         """Test temporal filtering with only start time constraint."""
         temporal_constraints = TemporalQuery(
-            start_time=datetime(2023, 6, 1),
-            time_field="created_at"
+            start_time=datetime(2023, 6, 1), time_field="created_at"
         )
 
         filtered_data = await advanced_query_engine._apply_temporal_filter(
@@ -289,7 +321,9 @@ class TestAdvancedQueryEngine:
         assert details == []
 
     @pytest.mark.asyncio
-    async def test_get_relationships_details(self, advanced_query_engine, sample_relationships_data):
+    async def test_get_relationships_details(
+        self, advanced_query_engine, sample_relationships_data
+    ):
         """Test getting detailed relationship information."""
         advanced_query_engine._relationships_cache = sample_relationships_data
 
@@ -305,7 +339,9 @@ class TestAdvancedQueryEngine:
         """Test multi-hop query exception handling."""
         query = MultiHopQuery(start_entities=["entity_1"])
 
-        with patch.object(advanced_query_engine, "_find_paths", side_effect=Exception("Path finding error")):
+        with patch.object(
+            advanced_query_engine, "_find_paths", side_effect=Exception("Path finding error")
+        ):
             with pytest.raises(GraphOperationsError, match="Multi-hop query execution failed"):
                 await advanced_query_engine.multi_hop_query(query)
 
@@ -318,6 +354,8 @@ class TestAdvancedQueryEngine:
         advanced_query_engine._entities_cache = pd.DataFrame()
         advanced_query_engine._relationships_cache = pd.DataFrame()
 
-        with patch.object(advanced_query_engine, "_apply_temporal_filter", side_effect=Exception("Filter error")):
+        with patch.object(
+            advanced_query_engine, "_apply_temporal_filter", side_effect=Exception("Filter error")
+        ):
             with pytest.raises(GraphOperationsError, match="Temporal query execution failed"):
                 await advanced_query_engine.temporal_query({}, temporal_constraints)

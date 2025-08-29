@@ -17,6 +17,9 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .auth.api_keys import get_api_key_manager
+from .auth.jwt_auth import AuthenticationService, JWTConfig
+from .caching.redis_cache import RedisCacheConfig, get_redis_cache, initialize_redis_cache
 from .config import API_PREFIX, GRAPHQL_PREFIX, settings
 from .graph import (
     EntityQueryResponse,
@@ -31,12 +34,7 @@ from .graph import (
 from .graph.advanced_query_engine import AdvancedQueryEngine, MultiHopQuery, TemporalQuery
 from .graph.analytics import GraphAnalytics
 from .graph.operations import GraphOperationsError
-from .performance.cache_manager import cleanup_cache_manager, get_cache_manager
-from .performance.compression import get_performance_middleware
-from .performance.connection_pool import cleanup_connection_pool, get_connection_pool
-from .performance.memory_optimizer import get_memory_optimizer
-from .performance.monitoring import cleanup_performance_monitor, get_performance_monitor
-from .security.middleware import get_security_middleware
+from .graphql.subscriptions import get_subscription_manager
 from .graphrag_integration import GraphRAGError, GraphRAGIntegration
 from .indexing import IndexingManager
 from .indexing.models import (
@@ -47,16 +45,18 @@ from .indexing.models import (
     IndexingStats,
 )
 from .logging_config import get_logger, setup_logging
-from .providers import register_providers
 
 # Phase 11 imports - Advanced Monitoring & GraphQL Enhancement
 from .monitoring.prometheus import get_metrics
-from .monitoring.tracing import initialize_tracing, TracingConfig, shutdown_tracing
-from .auth.jwt_auth import AuthenticationService, JWTConfig
-from .auth.api_keys import get_api_key_manager
-from .caching.redis_cache import initialize_redis_cache, RedisCacheConfig, get_redis_cache
-from .graphql.subscriptions import get_subscription_manager
+from .monitoring.tracing import TracingConfig, initialize_tracing, shutdown_tracing
+from .performance.cache_manager import cleanup_cache_manager, get_cache_manager
+from .performance.compression import get_performance_middleware
+from .performance.connection_pool import cleanup_connection_pool, get_connection_pool
+from .performance.memory_optimizer import get_memory_optimizer
+from .performance.monitoring import cleanup_performance_monitor, get_performance_monitor
+from .providers import register_providers
 from .providers.factory import LLMProviderFactory
+from .security.middleware import get_security_middleware
 from .system import (
     AdvancedHealthResponse,
     ConfigValidationRequest,
@@ -128,18 +128,18 @@ async def lifespan(app: FastAPI):
                 service_name=settings.app_name,
                 service_version=settings.app_version,
                 environment=settings.environment,
-                jaeger_endpoint=getattr(settings, 'jaeger_endpoint', None),
-                otlp_endpoint=getattr(settings, 'otlp_endpoint', None),
+                jaeger_endpoint=getattr(settings, "jaeger_endpoint", None),
+                otlp_endpoint=getattr(settings, "otlp_endpoint", None),
             )
             initialize_tracing(tracing_config)
             logger.info("Distributed tracing initialized")
 
         # Initialize Redis cache if configured
-        if getattr(settings, 'redis_enabled', False):
+        if getattr(settings, "redis_enabled", False):
             redis_config = RedisCacheConfig(
-                host=getattr(settings, 'redis_host', 'localhost'),
-                port=getattr(settings, 'redis_port', 6379),
-                password=getattr(settings, 'redis_password', None),
+                host=getattr(settings, "redis_host", "localhost"),
+                port=getattr(settings, "redis_port", 6379),
+                password=getattr(settings, "redis_password", None),
             )
             await initialize_redis_cache(redis_config)
             logger.info("Redis distributed cache initialized")
@@ -149,10 +149,10 @@ async def lifespan(app: FastAPI):
         logger.info("GraphQL subscription manager initialized")
 
         # Initialize authentication service
-        if getattr(settings, 'auth_enabled', True):
+        if getattr(settings, "auth_enabled", True):
             jwt_config = JWTConfig(
                 secret_key=settings.secret_key,
-                access_token_expire_minutes=getattr(settings, 'access_token_expire_minutes', 30),
+                access_token_expire_minutes=getattr(settings, "access_token_expire_minutes", 30),
             )
             auth_service = AuthenticationService(jwt_config)
 
@@ -161,7 +161,7 @@ async def lifespan(app: FastAPI):
                 await auth_service.create_user(
                     username="admin",
                     email="admin@graphrag.local",
-                    password=getattr(settings, 'default_admin_password', 'admin123'),
+                    password=getattr(settings, "default_admin_password", "admin123"),
                     roles=["admin"],
                 )
                 logger.info("Default admin user created")
@@ -254,10 +254,8 @@ performance_middleware = get_performance_middleware()
 # Add CORS middleware (configured through security middleware)
 cors_config = security_middleware.get_cors_config()
 if cors_config:
-    app.add_middleware(
-        CORSMiddleware,
-        **cors_config
-    )
+    app.add_middleware(CORSMiddleware, **cors_config)
+
 
 # Add custom middleware for performance monitoring and security
 @app.middleware("http")
@@ -267,6 +265,7 @@ async def performance_security_middleware(request: Request, call_next):
 
     # Security checks - skip in testing mode
     import os
+
     testing_env = os.getenv("TESTING", "false").lower()
     rate_limiting_env = os.getenv("RATE_LIMITING_ENABLED", "true").lower()
     is_testing = testing_env == "true" or rate_limiting_env == "false"
@@ -1355,7 +1354,9 @@ async def get_entity_by_id(entity_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Entity retrieval failed: {e}") from e
     except Exception as e:
         logger.error(f"Unexpected error during entity retrieval: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error during entity retrieval") from e
+        raise HTTPException(
+            status_code=500, detail="Internal server error during entity retrieval"
+        ) from e
 
 
 @api_router.get("/graph/relationships", response_model=RelationshipQueryResponse, tags=["Graph"])
@@ -1458,7 +1459,9 @@ async def get_relationship_by_id(relationship_id: str) -> dict[str, Any]:
                     "text_unit_ids": relationship.get("text_unit_ids", []),
                 }
 
-        raise HTTPException(status_code=404, detail=f"Relationship with ID '{relationship_id}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"Relationship with ID '{relationship_id}' not found"
+        )
 
     except HTTPException:
         raise
@@ -1467,7 +1470,9 @@ async def get_relationship_by_id(relationship_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Relationship retrieval failed: {e}") from e
     except Exception as e:
         logger.error(f"Unexpected error during relationship retrieval: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error during relationship retrieval") from e
+        raise HTTPException(
+            status_code=500, detail="Internal server error during relationship retrieval"
+        ) from e
 
 
 @api_router.get("/graph/stats", response_model=GraphStatsResponse, tags=["Graph"])
@@ -1922,9 +1927,7 @@ async def temporal_query(
 
 # Graph Analytics API endpoints
 @api_router.post("/graph/analytics/communities", tags=["Graph Analytics"])
-async def detect_communities(
-    algorithm: str = "louvain", resolution: float = 1.0
-) -> dict[str, Any]:
+async def detect_communities(algorithm: str = "louvain", resolution: float = 1.0) -> dict[str, Any]:
     """Detect communities in the knowledge graph.
 
     This endpoint performs community detection using various algorithms
@@ -2094,6 +2097,7 @@ async def detect_anomalies(
 
 # Phase 11: Advanced Monitoring & Authentication Endpoints
 
+
 @api_router.get("/metrics", tags=["Monitoring"])
 async def get_prometheus_metrics():
     """Get Prometheus metrics in text format.
@@ -2104,10 +2108,7 @@ async def get_prometheus_metrics():
     from fastapi.responses import Response
 
     metrics = get_metrics()
-    return Response(
-        content=metrics.get_metrics(),
-        media_type=metrics.get_content_type()
-    )
+    return Response(content=metrics.get_metrics(), media_type=metrics.get_content_type())
 
 
 @api_router.get("/metrics/performance/detailed", tags=["Monitoring"])
@@ -2133,7 +2134,7 @@ async def get_performance_metrics_detailed() -> dict[str, Any]:
                 "total": 0,
                 "rate_per_second": 0.0,
                 "average_response_time": 0.0,
-            }
+            },
         }
 
         # Add Redis cache stats if available
@@ -2162,8 +2163,7 @@ async def login(credentials: dict[str, str]) -> dict[str, Any]:
         from .auth.jwt_auth import UserCredentials
 
         user_creds = UserCredentials(
-            username=credentials["username"],
-            password=credentials["password"]
+            username=credentials["username"], password=credentials["password"]
         )
 
         # TODO: Get auth service from global state
@@ -2172,7 +2172,7 @@ async def login(credentials: dict[str, str]) -> dict[str, Any]:
             "access_token": "placeholder_token",
             "refresh_token": "placeholder_refresh",
             "token_type": "bearer",
-            "expires_in": 1800
+            "expires_in": 1800,
         }
 
     except Exception as e:
@@ -2199,7 +2199,7 @@ async def create_api_key(request: dict[str, Any]) -> dict[str, Any]:
             name=request["name"],
             permissions=request.get("permissions", []),
             rate_limit=request.get("rate_limit", 1000),
-            expires_in_days=request.get("expires_in_days")
+            expires_in_days=request.get("expires_in_days"),
         )
 
         # TODO: Get user_id from JWT token
@@ -2214,7 +2214,7 @@ async def create_api_key(request: dict[str, Any]) -> dict[str, Any]:
             "prefix": response.prefix,
             "permissions": response.permissions,
             "rate_limit": response.rate_limit,
-            "expires_at": response.expires_at.isoformat() if response.expires_at else None
+            "expires_at": response.expires_at.isoformat() if response.expires_at else None,
         }
 
     except Exception as e:

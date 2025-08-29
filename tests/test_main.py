@@ -20,7 +20,6 @@ from src.graphrag_api_service.config import (
     TEST_DATA_PATH,
     Settings,
 )
-from src.graphrag_api_service.main import app
 
 
 class TestHealthEndpoints:
@@ -106,7 +105,9 @@ class TestAPIDocumentation:
 class TestGraphRAGEndpoints:
     """Test GraphRAG-specific endpoints using fixtures."""
 
-    def test_graphrag_query_endpoint_without_data_path(self, test_client: TestClient, graphrag_query_request: dict):
+    def test_graphrag_query_endpoint_without_data_path(
+        self, test_client: TestClient, graphrag_query_request: dict
+    ):
         """Test GraphRAG query endpoint returns 503 when GraphRAG integration not available."""
         # Use test_client which has rate limiting disabled
         response = test_client.post("/api/query", json=graphrag_query_request)

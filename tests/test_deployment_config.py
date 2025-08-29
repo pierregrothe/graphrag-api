@@ -7,17 +7,18 @@
 
 import os
 import tempfile
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+from pydantic_settings import SettingsConfigDict
 
 from src.graphrag_api_service.deployment.config import (
-    DeploymentSettings,
     ConfigManager,
     DatabaseConfig,
-    SecurityConfig,
+    DeploymentSettings,
     PerformanceConfig,
+    SecurityConfig,
 )
-from pydantic_settings import SettingsConfigDict
 
 
 class TestDeploymentSettings:
@@ -26,13 +27,11 @@ class TestDeploymentSettings:
     @patch.dict(os.environ, {}, clear=True)
     def test_default_settings(self):
         """Test default deployment settings."""
+
         # Create a settings class that doesn't load from .env file
         class TestDeploymentSettings(DeploymentSettings):
             model_config = SettingsConfigDict(
-                env_file=None,
-                env_file_encoding="utf-8",
-                case_sensitive=False,
-                extra="ignore"
+                env_file=None, env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
             )
 
         settings = TestDeploymentSettings()
@@ -78,7 +77,7 @@ class TestDeploymentSettings:
         settings.database.host = "localhost"
         settings.database.port = 5432
         settings.database.database = "testdb"
-        
+
         url = settings.get_database_url()
         expected = "postgresql://testuser:testpass@localhost:5432/testdb"
         assert url == expected
@@ -90,7 +89,7 @@ class TestDeploymentSettings:
         settings.redis.port = 6379
         settings.redis.database = 0
         settings.redis.password = "testpass"
-        
+
         url = settings.get_redis_url()
         expected = "redis://:testpass@localhost:6379/0"
         assert url == expected
@@ -101,18 +100,21 @@ class TestDeploymentSettings:
         expected = "redis://localhost:6379/0"
         assert url == expected
 
-    @patch.dict(os.environ, {
-        "ENVIRONMENT": "production",
-        "DEBUG": "false",
-        "HOST": "0.0.0.0",
-        "PORT": "8080",
-        "SECRET_KEY": "test-secret-key",
-        "DB_PASSWORD": "db-password",
-    })
+    @patch.dict(
+        os.environ,
+        {
+            "ENVIRONMENT": "production",
+            "DEBUG": "false",
+            "HOST": "0.0.0.0",
+            "PORT": "8080",
+            "SECRET_KEY": "test-secret-key",
+            "DB_PASSWORD": "db-password",
+        },
+    )
     def test_environment_variable_loading(self):
         """Test loading settings from environment variables."""
         settings = DeploymentSettings()
-        
+
         assert settings.environment == "production"
         assert settings.debug is False
         assert settings.host == "0.0.0.0"
@@ -151,18 +153,18 @@ class TestConfigManager:
         settings.performance.max_workers = 4
         settings.database.host = "prod-db-host"
         settings.monitoring.metrics_enabled = True
-        
+
         errors = config_manager.validate_production_config(settings)
         assert len(errors) == 0
 
     @patch.dict(os.environ, {}, clear=True)
     def test_production_config_validation_failures(self, config_manager):
         """Test production configuration validation failures."""
-        with patch.dict(os.environ, {
-            "ENVIRONMENT": "production",
-            "DEBUG": "true",
-            "SECRET_KEY": "your-secret-key-here"
-        }, clear=True):
+        with patch.dict(
+            os.environ,
+            {"ENVIRONMENT": "production", "DEBUG": "true", "SECRET_KEY": "your-secret-key-here"},
+            clear=True,
+        ):
             settings = DeploymentSettings()
             settings.security.cors_origins = ["*"]  # Too permissive
             settings.performance.max_workers = 1  # Too few workers
@@ -178,10 +180,7 @@ class TestConfigManager:
     @patch.dict(os.environ, {}, clear=True)
     def test_gunicorn_config_generation(self, config_manager):
         """Test Gunicorn configuration generation."""
-        with patch.dict(os.environ, {
-            "HOST": "127.0.0.1",
-            "PORT": "8080"
-        }, clear=True):
+        with patch.dict(os.environ, {"HOST": "127.0.0.1", "PORT": "8080"}, clear=True):
             settings = DeploymentSettings()
             settings.performance.max_workers = 4
             settings.performance.worker_timeout = 300
@@ -199,22 +198,22 @@ class TestConfigManager:
             environment="production",
             port=8000,
         )
-        
+
         compose_config = config_manager.generate_docker_compose(settings)
-        
+
         assert "version: '3.8'" in compose_config
         assert "graphrag-api:" in compose_config
         assert "postgres:" in compose_config
         assert "redis:" in compose_config
         assert "nginx:" in compose_config
-        assert f"- \"{settings.port}:{settings.port}\"" in compose_config
+        assert f'- "{settings.port}:{settings.port}"' in compose_config
 
     def test_nginx_config_generation(self, config_manager):
         """Test Nginx configuration generation."""
         settings = DeploymentSettings(port=8000)
-        
+
         nginx_config = config_manager.generate_nginx_config(settings)
-        
+
         assert "upstream graphrag_api" in nginx_config
         assert f"server graphrag-api:{settings.port}" in nginx_config
         assert "listen 80" in nginx_config
@@ -235,7 +234,7 @@ class TestComponentConfigs:
             password="testpass",
             pool_size=20,
         )
-        
+
         assert config.host == "db-host"
         assert config.port == 5432
         assert config.pool_size == 20
@@ -248,7 +247,7 @@ class TestComponentConfigs:
             cors_origins=["https://example.com"],
             rate_limit_per_minute=200,
         )
-        
+
         assert config.secret_key == "test-key"
         assert config.jwt_algorithm == "HS256"
         assert config.rate_limit_per_minute == 200
@@ -261,7 +260,7 @@ class TestComponentConfigs:
             max_memory_usage_percent=85.0,
             cache_size_mb=1024,
         )
-        
+
         assert config.max_workers == 8
         assert config.worker_timeout == 600
         assert config.max_memory_usage_percent == 85.0
@@ -282,21 +281,21 @@ PORT=9000
 SECRET_KEY=file-secret-key
 DB_PASSWORD=file-db-password
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as f:
             f.write(config_content)
             config_file = f.name
-        
+
         try:
             config_manager = ConfigManager(config_file)
             settings = config_manager.load_settings()
-            
+
             assert settings.environment == "staging"
             assert settings.debug is False
             assert settings.port == 9000
             assert settings.security.secret_key == "file-secret-key"
             assert settings.database.password == "file-db-password"
-            
+
         finally:
             os.unlink(config_file)
 
@@ -304,32 +303,35 @@ DB_PASSWORD=file-db-password
         """Test handling of missing configuration file."""
         config_manager = ConfigManager("nonexistent.env")
         settings = config_manager.load_settings()
-        
+
         # Should fall back to environment variables and defaults
         assert isinstance(settings, DeploymentSettings)
 
-    @patch.dict(os.environ, {
-        "ENVIRONMENT": "production",
-        "SECRET_KEY": "env-secret-key",
-    })
+    @patch.dict(
+        os.environ,
+        {
+            "ENVIRONMENT": "production",
+            "SECRET_KEY": "env-secret-key",
+        },
+    )
     def test_environment_override(self):
         """Test that environment variables override file settings."""
         config_content = """
 ENVIRONMENT=development
 SECRET_KEY=file-secret-key
 """
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as f:
             f.write(config_content)
             config_file = f.name
-        
+
         try:
             config_manager = ConfigManager(config_file)
             settings = config_manager.load_settings()
-            
+
             # Environment variables should take precedence
             assert settings.environment == "production"
             assert settings.security.secret_key == "env-secret-key"
-            
+
         finally:
             os.unlink(config_file)

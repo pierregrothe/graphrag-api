@@ -7,16 +7,15 @@
 
 import logging
 import time
-from typing import Dict, List, Optional
 
 from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    CollectorRegistry,
     Counter,
     Gauge,
     Histogram,
     Info,
-    CollectorRegistry,
     generate_latest,
-    CONTENT_TYPE_LATEST,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 class PrometheusMetrics:
     """Prometheus metrics collector for GraphRAG API."""
 
-    def __init__(self, registry: Optional[CollectorRegistry] = None):
+    def __init__(self, registry: CollectorRegistry | None = None):
         """Initialize Prometheus metrics.
 
         Args:
@@ -36,182 +35,174 @@ class PrometheusMetrics:
 
     def _setup_metrics(self) -> None:
         """Set up all Prometheus metrics."""
-        
+
         # Request metrics
         self.request_count = Counter(
-            'graphrag_requests_total',
-            'Total number of requests',
-            ['method', 'endpoint', 'status'],
-            registry=self.registry
+            "graphrag_requests_total",
+            "Total number of requests",
+            ["method", "endpoint", "status"],
+            registry=self.registry,
         )
-        
+
         self.request_duration = Histogram(
-            'graphrag_request_duration_seconds',
-            'Request duration in seconds',
-            ['method', 'endpoint'],
+            "graphrag_request_duration_seconds",
+            "Request duration in seconds",
+            ["method", "endpoint"],
             buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
-            registry=self.registry
+            registry=self.registry,
         )
-        
+
         # GraphQL metrics
         self.graphql_query_count = Counter(
-            'graphrag_graphql_queries_total',
-            'Total number of GraphQL queries',
-            ['operation_type', 'operation_name'],
-            registry=self.registry
+            "graphrag_graphql_queries_total",
+            "Total number of GraphQL queries",
+            ["operation_type", "operation_name"],
+            registry=self.registry,
         )
-        
+
         self.graphql_query_duration = Histogram(
-            'graphrag_graphql_query_duration_seconds',
-            'GraphQL query duration in seconds',
-            ['operation_type', 'operation_name'],
+            "graphrag_graphql_query_duration_seconds",
+            "GraphQL query duration in seconds",
+            ["operation_type", "operation_name"],
             buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
-            registry=self.registry
+            registry=self.registry,
         )
-        
+
         self.graphql_query_complexity = Histogram(
-            'graphrag_graphql_query_complexity',
-            'GraphQL query complexity score',
-            ['operation_type'],
+            "graphrag_graphql_query_complexity",
+            "GraphQL query complexity score",
+            ["operation_type"],
             buckets=[10, 50, 100, 250, 500, 1000, 2500],
-            registry=self.registry
+            registry=self.registry,
         )
-        
+
         # Cache metrics
         self.cache_hits = Counter(
-            'graphrag_cache_hits_total',
-            'Total number of cache hits',
-            ['cache_type'],
-            registry=self.registry
+            "graphrag_cache_hits_total",
+            "Total number of cache hits",
+            ["cache_type"],
+            registry=self.registry,
         )
-        
+
         self.cache_misses = Counter(
-            'graphrag_cache_misses_total',
-            'Total number of cache misses',
-            ['cache_type'],
-            registry=self.registry
+            "graphrag_cache_misses_total",
+            "Total number of cache misses",
+            ["cache_type"],
+            registry=self.registry,
         )
-        
+
         self.cache_size = Gauge(
-            'graphrag_cache_size_bytes',
-            'Current cache size in bytes',
-            ['cache_type'],
-            registry=self.registry
+            "graphrag_cache_size_bytes",
+            "Current cache size in bytes",
+            ["cache_type"],
+            registry=self.registry,
         )
-        
+
         self.cache_entries = Gauge(
-            'graphrag_cache_entries_total',
-            'Current number of cache entries',
-            ['cache_type'],
-            registry=self.registry
+            "graphrag_cache_entries_total",
+            "Current number of cache entries",
+            ["cache_type"],
+            registry=self.registry,
         )
-        
+
         # Database metrics
         self.db_connections_active = Gauge(
-            'graphrag_db_connections_active',
-            'Number of active database connections',
-            registry=self.registry
+            "graphrag_db_connections_active",
+            "Number of active database connections",
+            registry=self.registry,
         )
-        
+
         self.db_connections_idle = Gauge(
-            'graphrag_db_connections_idle',
-            'Number of idle database connections',
-            registry=self.registry
+            "graphrag_db_connections_idle",
+            "Number of idle database connections",
+            registry=self.registry,
         )
-        
+
         self.db_query_duration = Histogram(
-            'graphrag_db_query_duration_seconds',
-            'Database query duration in seconds',
-            ['query_type'],
+            "graphrag_db_query_duration_seconds",
+            "Database query duration in seconds",
+            ["query_type"],
             buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5],
-            registry=self.registry
+            registry=self.registry,
         )
-        
+
         # System metrics
         self.memory_usage = Gauge(
-            'graphrag_memory_usage_bytes',
-            'Current memory usage in bytes',
-            ['type'],
-            registry=self.registry
+            "graphrag_memory_usage_bytes",
+            "Current memory usage in bytes",
+            ["type"],
+            registry=self.registry,
         )
-        
+
         self.cpu_usage = Gauge(
-            'graphrag_cpu_usage_percent',
-            'Current CPU usage percentage',
-            registry=self.registry
+            "graphrag_cpu_usage_percent", "Current CPU usage percentage", registry=self.registry
         )
-        
+
         self.active_sessions = Gauge(
-            'graphrag_active_sessions',
-            'Number of active user sessions',
-            registry=self.registry
+            "graphrag_active_sessions", "Number of active user sessions", registry=self.registry
         )
-        
+
         # GraphRAG specific metrics
         self.entities_total = Gauge(
-            'graphrag_entities_total',
-            'Total number of entities in the graph',
-            ['workspace'],
-            registry=self.registry
+            "graphrag_entities_total",
+            "Total number of entities in the graph",
+            ["workspace"],
+            registry=self.registry,
         )
-        
+
         self.relationships_total = Gauge(
-            'graphrag_relationships_total',
-            'Total number of relationships in the graph',
-            ['workspace'],
-            registry=self.registry
+            "graphrag_relationships_total",
+            "Total number of relationships in the graph",
+            ["workspace"],
+            registry=self.registry,
         )
-        
+
         self.communities_total = Gauge(
-            'graphrag_communities_total',
-            'Total number of communities in the graph',
-            ['workspace'],
-            registry=self.registry
+            "graphrag_communities_total",
+            "Total number of communities in the graph",
+            ["workspace"],
+            registry=self.registry,
         )
-        
+
         self.indexing_jobs_active = Gauge(
-            'graphrag_indexing_jobs_active',
-            'Number of active indexing jobs',
-            registry=self.registry
+            "graphrag_indexing_jobs_active",
+            "Number of active indexing jobs",
+            registry=self.registry,
         )
-        
+
         self.indexing_duration = Histogram(
-            'graphrag_indexing_duration_seconds',
-            'Indexing job duration in seconds',
-            ['workspace', 'status'],
+            "graphrag_indexing_duration_seconds",
+            "Indexing job duration in seconds",
+            ["workspace", "status"],
             buckets=[60, 300, 600, 1800, 3600, 7200, 14400],
-            registry=self.registry
+            registry=self.registry,
         )
-        
+
         # Error metrics
         self.errors_total = Counter(
-            'graphrag_errors_total',
-            'Total number of errors',
-            ['error_type', 'component'],
-            registry=self.registry
+            "graphrag_errors_total",
+            "Total number of errors",
+            ["error_type", "component"],
+            registry=self.registry,
         )
-        
+
         # Security metrics
         self.rate_limit_hits = Counter(
-            'graphrag_rate_limit_hits_total',
-            'Total number of rate limit hits',
-            ['client_ip'],
-            registry=self.registry
+            "graphrag_rate_limit_hits_total",
+            "Total number of rate limit hits",
+            ["client_ip"],
+            registry=self.registry,
         )
-        
+
         self.authentication_attempts = Counter(
-            'graphrag_authentication_attempts_total',
-            'Total number of authentication attempts',
-            ['status'],
-            registry=self.registry
+            "graphrag_authentication_attempts_total",
+            "Total number of authentication attempts",
+            ["status"],
+            registry=self.registry,
         )
-        
+
         # Application info
-        self.app_info = Info(
-            'graphrag_app_info',
-            'Application information',
-            registry=self.registry
-        )
+        self.app_info = Info("graphrag_app_info", "Application information", registry=self.registry)
 
     def record_request(self, method: str, endpoint: str, status: int, duration: float) -> None:
         """Record HTTP request metrics.
@@ -226,11 +217,7 @@ class PrometheusMetrics:
         self.request_duration.labels(method=method, endpoint=endpoint).observe(duration)
 
     def record_graphql_query(
-        self, 
-        operation_type: str, 
-        operation_name: str, 
-        duration: float, 
-        complexity: int
+        self, operation_type: str, operation_name: str, duration: float, complexity: int
     ) -> None:
         """Record GraphQL query metrics.
 
@@ -241,15 +228,13 @@ class PrometheusMetrics:
             complexity: Query complexity score
         """
         self.graphql_query_count.labels(
-            operation_type=operation_type, 
-            operation_name=operation_name
+            operation_type=operation_type, operation_name=operation_name
         ).inc()
-        
+
         self.graphql_query_duration.labels(
-            operation_type=operation_type, 
-            operation_name=operation_name
+            operation_type=operation_type, operation_name=operation_name
         ).observe(duration)
-        
+
         self.graphql_query_complexity.labels(operation_type=operation_type).observe(complexity)
 
     def record_cache_hit(self, cache_type: str) -> None:
@@ -298,7 +283,9 @@ class PrometheusMetrics:
         """
         self.db_query_duration.labels(query_type=query_type).observe(duration)
 
-    def update_system_metrics(self, memory_bytes: int, cpu_percent: float, active_sessions: int) -> None:
+    def update_system_metrics(
+        self, memory_bytes: int, cpu_percent: float, active_sessions: int
+    ) -> None:
         """Update system metrics.
 
         Args:
@@ -311,11 +298,7 @@ class PrometheusMetrics:
         self.active_sessions.set(active_sessions)
 
     def update_graph_metrics(
-        self, 
-        workspace: str, 
-        entities: int, 
-        relationships: int, 
-        communities: int
+        self, workspace: str, entities: int, relationships: int, communities: int
     ) -> None:
         """Update graph-specific metrics.
 
@@ -354,11 +337,13 @@ class PrometheusMetrics:
             environment: Environment (dev, staging, prod)
             build_date: Build date
         """
-        self.app_info.info({
-            'version': version,
-            'environment': environment,
-            'build_date': build_date,
-        })
+        self.app_info.info(
+            {
+                "version": version,
+                "environment": environment,
+                "build_date": build_date,
+            }
+        )
 
     def get_metrics(self) -> str:
         """Get metrics in Prometheus format.
@@ -366,7 +351,7 @@ class PrometheusMetrics:
         Returns:
             Metrics in Prometheus text format
         """
-        return generate_latest(self.registry).decode('utf-8')
+        return generate_latest(self.registry).decode("utf-8")
 
     def get_content_type(self) -> str:
         """Get the content type for metrics endpoint.
@@ -378,7 +363,7 @@ class PrometheusMetrics:
 
 
 # Global metrics instance
-_metrics: Optional[PrometheusMetrics] = None
+_metrics: PrometheusMetrics | None = None
 
 
 def get_metrics() -> PrometheusMetrics:
@@ -388,15 +373,13 @@ def get_metrics() -> PrometheusMetrics:
         PrometheusMetrics instance
     """
     global _metrics
-    
+
     if _metrics is None:
         _metrics = PrometheusMetrics()
-        
+
         # Set application info
         _metrics.set_app_info(
-            version="1.0.0",
-            environment="production",
-            build_date=time.strftime("%Y-%m-%d %H:%M:%S")
+            version="1.0.0", environment="production", build_date=time.strftime("%Y-%m-%d %H:%M:%S")
         )
-    
+
     return _metrics

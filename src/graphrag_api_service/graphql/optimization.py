@@ -6,10 +6,11 @@
 """GraphQL query optimization with field selection and performance enhancements."""
 
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from strawberry.types import Info
-from graphql import FieldNode, SelectionSetNode
+
+from graphql import FieldNode, SelectionNode, SelectionSetNode
 
 logger = logging.getLogger(__name__)
 
@@ -50,34 +51,36 @@ class FieldSelector:
             },
         }
 
-    def get_selected_fields(self, info: Info, type_name: str) -> Set[str]:
+    def get_selected_fields(self, type_name: str, info: Info) -> set[str]:
         """Get the fields selected in the GraphQL query.
 
         Args:
-            info: GraphQL resolver info
             type_name: Type name to get fields for
+            info: GraphQL resolver info
 
         Returns:
             Set of selected field names
         """
-        if not info.field_nodes:
+        if not info.selected_fields:
             return set()
 
         selected_fields = set()
-        
-        for field_node in info.field_nodes:
-            if field_node.selection_set:
-                selected_fields.update(
-                    self._extract_fields_from_selection_set(
-                        field_node.selection_set, type_name
-                    )
-                )
+
+        for field in info.selected_fields:
+            # Extract field name from selection
+            if hasattr(field, "name"):
+                selected_fields.add(field.name)
+            # Handle nested selections if available
+            if hasattr(field, "selections") and field.selections:
+                for selection in field.selections:
+                    if hasattr(selection, "name"):
+                        selected_fields.add(selection.name)
 
         return selected_fields
 
     def _extract_fields_from_selection_set(
         self, selection_set: SelectionSetNode, type_name: str
-    ) -> Set[str]:
+    ) -> set[str]:
         """Extract field names from a GraphQL selection set.
 
         Args:
@@ -88,11 +91,11 @@ class FieldSelector:
             Set of field names
         """
         fields = set()
-        
+
         for selection in selection_set.selections:
             if isinstance(selection, FieldNode):
                 field_name = selection.name.value
-                
+
                 # Map GraphQL field to database field
                 if type_name in self._field_mappings:
                     db_field = self._field_mappings[type_name].get(field_name, field_name)
@@ -102,54 +105,54 @@ class FieldSelector:
 
         return fields
 
-    def optimize_entity_query(self, info: Info, base_query: Dict[str, Any]) -> Dict[str, Any]:
+    def optimize_entity_query(self, base_query: dict[str, Any], info: Info) -> dict[str, Any]:
         """Optimize entity query based on selected fields.
 
         Args:
-            info: GraphQL resolver info
             base_query: Base query parameters
+            info: GraphQL resolver info
 
         Returns:
             Optimized query parameters
         """
-        selected_fields = self.get_selected_fields(info, "Entity")
-        
+        selected_fields = self.get_selected_fields("Entity", info)
+
         if not selected_fields:
             return base_query
 
         # Add field selection to query
         optimized_query = base_query.copy()
         optimized_query["fields"] = list(selected_fields)
-        
+
         # Optimize based on specific field requirements
         if "degree" in selected_fields:
             optimized_query["include_degree"] = True
-        
+
         if "community_ids" in selected_fields:
             optimized_query["include_communities"] = True
 
         logger.debug(f"Optimized entity query with fields: {selected_fields}")
         return optimized_query
 
-    def optimize_relationship_query(self, info: Info, base_query: Dict[str, Any]) -> Dict[str, Any]:
+    def optimize_relationship_query(self, base_query: dict[str, Any], info: Info) -> dict[str, Any]:
         """Optimize relationship query based on selected fields.
 
         Args:
-            info: GraphQL resolver info
             base_query: Base query parameters
+            info: GraphQL resolver info
 
         Returns:
             Optimized query parameters
         """
-        selected_fields = self.get_selected_fields(info, "Relationship")
-        
+        selected_fields = self.get_selected_fields("Relationship", info)
+
         if not selected_fields:
             return base_query
 
         # Add field selection to query
         optimized_query = base_query.copy()
         optimized_query["fields"] = list(selected_fields)
-        
+
         # Optimize based on specific field requirements
         if "weight" in selected_fields:
             optimized_query["include_weights"] = True
@@ -174,17 +177,14 @@ class QueryComplexityAnalyzer:
             "title": 1,
             "type": 1,
             "description": 2,
-            
             # Computed fields
             "degree": 5,
             "community_ids": 10,
             "text_unit_ids": 5,
-            
             # Relationship fields
             "source": 1,
             "target": 1,
             "weight": 3,
-            
             # Complex operations
             "entities": 20,
             "relationships": 20,
@@ -200,38 +200,37 @@ class QueryComplexityAnalyzer:
         Returns:
             Query complexity score
         """
-        if not info.field_nodes:
+        if not info.selected_fields:
             return 0
 
         total_complexity = 0
-        
-        for field_node in info.field_nodes:
-            total_complexity += self._calculate_field_complexity(field_node)
+
+        for field in info.selected_fields:
+            total_complexity += self._calculate_field_complexity(field)
 
         return total_complexity
 
-    def _calculate_field_complexity(self, field_node: FieldNode, depth: int = 0) -> int:
+    def _calculate_field_complexity(self, field: SelectionNode, depth: int = 0) -> int:
         """Calculate complexity for a single field.
 
         Args:
-            field_node: GraphQL field node
+            field: GraphQL field selection node
             depth: Current nesting depth
 
         Returns:
             Field complexity score
         """
-        field_name = field_node.name.value
+        field_name = getattr(field, "name", "unknown")
         base_cost = self._field_costs.get(field_name, 1)
-        
+
         # Apply depth penalty
         depth_penalty = depth * 2
         field_cost = base_cost + depth_penalty
-        
+
         # Calculate nested field costs
-        if field_node.selection_set:
-            for selection in field_node.selection_set.selections:
-                if isinstance(selection, FieldNode):
-                    field_cost += self._calculate_field_complexity(selection, depth + 1)
+        if hasattr(field, "selections") and field.selections:
+            for nested_selection in field.selections:
+                field_cost += self._calculate_field_complexity(nested_selection, depth + 1)
 
         return field_cost
 
@@ -245,7 +244,7 @@ class QueryComplexityAnalyzer:
             Exception: If query complexity exceeds limits
         """
         complexity = self.analyze_complexity(info)
-        
+
         if complexity > self.max_complexity:
             raise Exception(
                 f"Query complexity {complexity} exceeds maximum allowed {self.max_complexity}"
@@ -259,9 +258,9 @@ class QueryCache:
 
     def __init__(self):
         """Initialize the query cache."""
-        self._cache: Dict[str, Any] = {}
+        self._cache: dict[str, Any] = {}
 
-    def generate_cache_key(self, query_type: str, params: Dict[str, Any], fields: Set[str]) -> str:
+    def generate_cache_key(self, query_type: str, params: dict[str, Any], fields: set[str]) -> str:
         """Generate a cache key for a query.
 
         Args:
@@ -280,11 +279,11 @@ class QueryCache:
             "params": params,
             "fields": sorted(list(fields)),
         }
-        
+
         cache_string = json.dumps(cache_data, sort_keys=True)
         return hashlib.sha256(cache_string.encode()).hexdigest()[:16]
 
-    def get(self, cache_key: str) -> Optional[Any]:
+    def get(self, cache_key: str) -> Any | None:
         """Get cached result.
 
         Args:
@@ -304,7 +303,7 @@ class QueryCache:
             ttl: Time to live in seconds
         """
         import time
-        
+
         self._cache[cache_key] = {
             "result": result,
             "expires_at": time.time() + ttl,
@@ -320,31 +319,30 @@ class QueryCache:
             True if expired
         """
         import time
-        
+
         cached_item = self._cache.get(cache_key)
         if not cached_item:
             return True
-            
+
         return time.time() > cached_item["expires_at"]
 
     def cleanup_expired(self) -> None:
         """Remove expired cache entries."""
         import time
-        
+
         current_time = time.time()
         expired_keys = [
-            key for key, item in self._cache.items()
-            if current_time > item["expires_at"]
+            key for key, item in self._cache.items() if current_time > item["expires_at"]
         ]
-        
+
         for key in expired_keys:
             del self._cache[key]
 
 
 # Global instances
-_field_selector: Optional[FieldSelector] = None
-_complexity_analyzer: Optional[QueryComplexityAnalyzer] = None
-_query_cache: Optional[QueryCache] = None
+_field_selector: FieldSelector | None = None
+_complexity_analyzer: QueryComplexityAnalyzer | None = None
+_query_cache: QueryCache | None = None
 
 
 def get_field_selector() -> FieldSelector:
@@ -354,10 +352,10 @@ def get_field_selector() -> FieldSelector:
         Field selector instance
     """
     global _field_selector
-    
+
     if _field_selector is None:
         _field_selector = FieldSelector()
-    
+
     return _field_selector
 
 
@@ -368,10 +366,10 @@ def get_complexity_analyzer() -> QueryComplexityAnalyzer:
         Complexity analyzer instance
     """
     global _complexity_analyzer
-    
+
     if _complexity_analyzer is None:
         _complexity_analyzer = QueryComplexityAnalyzer()
-    
+
     return _complexity_analyzer
 
 
@@ -382,8 +380,8 @@ def get_query_cache() -> QueryCache:
         Query cache instance
     """
     global _query_cache
-    
+
     if _query_cache is None:
         _query_cache = QueryCache()
-    
+
     return _query_cache
