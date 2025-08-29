@@ -16,6 +16,17 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import API_PREFIX, GRAPHQL_PREFIX, settings
+from .graph import (
+    EntityQueryResponse,
+    GraphExportRequest,
+    GraphExportResponse,
+    GraphOperations,
+    GraphStatsResponse,
+    GraphVisualizationRequest,
+    GraphVisualizationResponse,
+    RelationshipQueryResponse,
+)
+from .graph.operations import GraphOperationsError
 from .graphrag_integration import GraphRAGError, GraphRAGIntegration
 from .indexing import IndexingManager
 from .indexing.models import (
@@ -40,10 +51,11 @@ from .workspace.models import (
 setup_logging()
 logger = get_logger(__name__)
 
-# Initialize workspace manager, indexing manager, and GraphRAG integration
+# Initialize workspace manager, indexing manager, GraphRAG integration, and graph operations
 workspace_manager = WorkspaceManager(settings)
 indexing_manager = IndexingManager(settings)
 graphrag_integration: GraphRAGIntegration | None = None
+graph_operations = GraphOperations(settings)
 
 
 @asynccontextmanager
@@ -796,6 +808,250 @@ async def get_indexing_stats() -> IndexingStats:
 
     stats = indexing_manager.get_indexing_stats()
     return stats
+
+
+# Graph Operations API endpoints
+@api_router.get("/graph/entities", response_model=EntityQueryResponse, tags=["Graph"])
+async def query_entities(
+    entity_name: str | None = None,
+    entity_type: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> EntityQueryResponse:
+    """Query entities from the knowledge graph.
+
+    This endpoint allows you to search and filter entities in the knowledge graph
+    with pagination support.
+
+    Args:
+        request: Entity query parameters
+
+    Returns:
+        EntityQueryResponse containing entities and metadata
+
+    Raises:
+        HTTPException: If querying fails or data path not configured
+    """
+    logger.info(f"Querying entities with filters: name={entity_name}, type={entity_type}")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        result = await graph_operations.query_entities(
+            data_path=settings.graphrag_data_path,
+            entity_name=entity_name,
+            entity_type=entity_type,
+            limit=limit,
+            offset=offset,
+        )
+
+        return EntityQueryResponse(**result)
+
+    except GraphOperationsError as e:
+        logger.error(f"Entity querying failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Entity querying failed: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error during entity querying: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error during entity querying"
+        ) from e
+
+
+@api_router.get("/graph/relationships", response_model=RelationshipQueryResponse, tags=["Graph"])
+async def query_relationships(
+    source_entity: str | None = None,
+    target_entity: str | None = None,
+    relationship_type: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> RelationshipQueryResponse:
+    """Query relationships from the knowledge graph.
+
+    This endpoint allows you to search and filter relationships in the knowledge graph
+    with pagination support.
+
+    Args:
+        request: Relationship query parameters
+
+    Returns:
+        RelationshipQueryResponse containing relationships and metadata
+
+    Raises:
+        HTTPException: If querying fails or data path not configured
+    """
+    logger.info(f"Querying relationships with filters: source={source_entity}, target={target_entity}")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        result = await graph_operations.query_relationships(
+            data_path=settings.graphrag_data_path,
+            source_entity=source_entity,
+            target_entity=target_entity,
+            relationship_type=relationship_type,
+            limit=limit,
+            offset=offset,
+        )
+
+        return RelationshipQueryResponse(**result)
+
+    except GraphOperationsError as e:
+        logger.error(f"Relationship querying failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Relationship querying failed: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error during relationship querying: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error during relationship querying"
+        ) from e
+
+
+@api_router.get("/graph/stats", response_model=GraphStatsResponse, tags=["Graph"])
+async def get_graph_statistics() -> GraphStatsResponse:
+    """Get comprehensive statistics about the knowledge graph.
+
+    This endpoint provides detailed statistics including entity counts, relationship counts,
+    community information, and graph metrics.
+
+    Returns:
+        GraphStatsResponse containing comprehensive graph statistics
+
+    Raises:
+        HTTPException: If statistics calculation fails or data path not configured
+    """
+    logger.info("Getting graph statistics")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        result = await graph_operations.get_graph_statistics(data_path=settings.graphrag_data_path)
+
+        return GraphStatsResponse(**result)
+
+    except GraphOperationsError as e:
+        logger.error(f"Graph statistics calculation failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Graph statistics calculation failed: {e}"
+        ) from e
+    except Exception as e:
+        logger.error(f"Unexpected error during graph statistics calculation: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error during graph statistics calculation"
+        ) from e
+
+
+@api_router.post("/graph/visualization", response_model=GraphVisualizationResponse, tags=["Graph"])
+async def generate_graph_visualization(
+    request: GraphVisualizationRequest,
+) -> GraphVisualizationResponse:
+    """Generate graph visualization data.
+
+    This endpoint generates data for visualizing the knowledge graph including nodes,
+    edges, and layout information.
+
+    Args:
+        request: Visualization parameters
+
+    Returns:
+        GraphVisualizationResponse containing visualization data
+
+    Raises:
+        HTTPException: If visualization generation fails or data path not configured
+    """
+    logger.info(f"Generating graph visualization with {request.entity_limit} entities")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        result = await graph_operations.generate_visualization(
+            data_path=settings.graphrag_data_path,
+            entity_limit=request.entity_limit,
+            relationship_limit=request.relationship_limit,
+            community_level=request.community_level,
+            layout_algorithm=request.layout_algorithm,
+            include_node_labels=request.include_node_labels,
+            include_edge_labels=request.include_edge_labels,
+        )
+
+        return GraphVisualizationResponse(**result)
+
+    except GraphOperationsError as e:
+        logger.error(f"Graph visualization generation failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Graph visualization generation failed: {e}"
+        ) from e
+    except Exception as e:
+        logger.error(f"Unexpected error during graph visualization generation: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error during graph visualization generation"
+        ) from e
+
+
+@api_router.post("/graph/export", response_model=GraphExportResponse, tags=["Graph"])
+async def export_graph(request: GraphExportRequest) -> GraphExportResponse:
+    """Export graph data in various formats.
+
+    This endpoint exports the knowledge graph data in different formats for analysis
+    or integration with other tools.
+
+    Args:
+        request: Export parameters
+
+    Returns:
+        GraphExportResponse containing export information and download URL
+
+    Raises:
+        HTTPException: If export fails or data path not configured
+    """
+    logger.info(f"Exporting graph data in {request.format} format")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        result = await graph_operations.export_graph(
+            data_path=settings.graphrag_data_path,
+            format=request.format,
+            include_entities=request.include_entities,
+            include_relationships=request.include_relationships,
+            include_communities=request.include_communities,
+            entity_limit=request.entity_limit,
+            relationship_limit=request.relationship_limit,
+        )
+
+        return GraphExportResponse(**result)
+
+    except GraphOperationsError as e:
+        logger.error(f"Graph export failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Graph export failed: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error during graph export: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error during graph export"
+        ) from e
 
 
 # Register routers with the main app
