@@ -7,12 +7,18 @@
 
 import strawberry
 from strawberry.fastapi import GraphQLRouter
+from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 
 from .mutations import Mutation
 from .queries import Query
+from .subscriptions import Subscription
 
-# Create the GraphQL schema
-schema = strawberry.Schema(query=Query, mutation=Mutation)
+# Create the GraphQL schema with subscriptions
+schema = strawberry.Schema(
+    query=Query,
+    mutation=Mutation,
+    subscription=Subscription
+)
 
 
 def create_graphql_router(
@@ -45,11 +51,15 @@ def create_graphql_router(
             "indexing_manager": indexing_manager,
         }
 
-    # Create the main GraphQL router
+    # Create the main GraphQL router with subscription support
     graphql_router = GraphQLRouter(
         schema,
         context_getter=get_context,
         graphql_ide="graphiql",  # Enable GraphiQL playground
+        subscription_protocols=[
+            GRAPHQL_TRANSPORT_WS_PROTOCOL,
+            GRAPHQL_WS_PROTOCOL,
+        ],
     )
 
     # Return the GraphQL router directly

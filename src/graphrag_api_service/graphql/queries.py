@@ -6,6 +6,7 @@
 """GraphQL query resolvers for GraphRAG operations."""
 
 
+import logging
 import strawberry
 from strawberry.types import Info
 
@@ -14,6 +15,7 @@ from ..graph.operations import GraphOperations
 from ..system.operations import SystemOperations
 from ..workspace.manager import WorkspaceManager
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
+from .optimization import get_field_selector, get_complexity_analyzer, get_query_cache
 from .types import (
     AdvancedQueryResult,
     AnomalyDetectionResult,
@@ -40,6 +42,7 @@ from .types import (
     IndexingStatistics,
     MultiHopQueryInput,
     PageInfo,
+    PerformanceMetrics,
     QueryResponse,
     QueryType,
     Relationship,
@@ -63,6 +66,8 @@ def convert_workspace_status(model_status: WorkspaceModelStatus) -> WorkspaceSta
     }
     return status_map.get(model_status, WorkspaceStatus.CREATED)
 
+logger = logging.getLogger(__name__)
+
 
 @strawberry.type
 class Query:
@@ -78,7 +83,7 @@ class Query:
         first: int = 50,
         after: str | None = None,
     ) -> EntityConnection:
-        """Query entities from the knowledge graph.
+        """Query entities from the knowledge graph with optimization.
 
         Args:
             info: GraphQL context information
@@ -90,6 +95,14 @@ class Query:
         Returns:
             EntityConnection with entities and pagination info
         """
+        # Validate query complexity
+        complexity_analyzer = get_complexity_analyzer()
+        complexity_analyzer.validate_complexity(info)
+
+        # Get field selector for optimization
+        field_selector = get_field_selector()
+        query_cache = get_query_cache()
+
         graph_ops: GraphOperations = info.context["graph_operations"]
 
         if not settings.graphrag_data_path:
@@ -107,12 +120,28 @@ class Query:
         # Convert cursor to offset
         offset = int(after) if after else 0
 
+        # Optimize query based on selected fields
+        base_query = {
+            "entity_name": name,
+            "entity_type": type,
+            "limit": first,
+            "offset": offset,
+        }
+        optimized_query = field_selector.optimize_entity_query(info, base_query)
+
+        # Check cache first
+        selected_fields = field_selector.get_selected_fields(info, "Entity")
+        cache_key = query_cache.generate_cache_key("entities", optimized_query, selected_fields)
+
+        if not query_cache.is_expired(cache_key):
+            cached_result = query_cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for entity query: {cache_key}")
+                return cached_result["result"]
+
         result = await graph_ops.query_entities(
             data_path=settings.graphrag_data_path,
-            entity_name=name,
-            entity_type=type,
-            limit=first,
-            offset=offset,
+            **optimized_query,
         )
 
         # Convert to GraphQL types
@@ -140,11 +169,17 @@ class Query:
             end_cursor=str(offset + len(edges) - 1) if edges else None,
         )
 
-        return EntityConnection(edges=edges, page_info=page_info, total_count=result["total_count"])
+        entity_connection = EntityConnection(edges=edges, page_info=page_info, total_count=result["total_count"])
+
+        # Cache the result
+        query_cache.set(cache_key, entity_connection, ttl=300)
+        logger.debug(f"Cached entity query result: {cache_key}")
+
+        return entity_connection
 
     @strawberry.field
     async def entity(self, info: Info, id: str) -> Entity | None:
-        """Get a specific entity by ID.
+        """Get a specific entity by ID with optimization.
 
         Args:
             info: GraphQL context information
@@ -153,20 +188,41 @@ class Query:
         Returns:
             Entity if found, None otherwise
         """
+        # Validate query complexity
+        complexity_analyzer = get_complexity_analyzer()
+        complexity_analyzer.validate_complexity(info)
+
+        # Get optimization tools
+        field_selector = get_field_selector()
+        query_cache = get_query_cache()
+
         graph_ops: GraphOperations = info.context["graph_operations"]
 
         if not settings.graphrag_data_path:
             return None
 
+        # Check cache first
+        selected_fields = field_selector.get_selected_fields(info, "Entity")
+        cache_key = query_cache.generate_cache_key("entity", {"id": id}, selected_fields)
+
+        if not query_cache.is_expired(cache_key):
+            cached_result = query_cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for entity query: {cache_key}")
+                return cached_result["result"]
+
+        # Optimize query based on selected fields
+        base_query = {"entity_name": id, "limit": 1}
+        optimized_query = field_selector.optimize_entity_query(info, base_query)
+
         result = await graph_ops.query_entities(
             data_path=settings.graphrag_data_path,
-            entity_name=id,
-            limit=1,
+            **optimized_query,
         )
 
         if result["entities"]:
             e = result["entities"][0]
-            return Entity(
+            entity = Entity(
                 id=e["id"],
                 title=e["title"],
                 type=e["type"],
@@ -175,6 +231,12 @@ class Query:
                 community_ids=e.get("community_ids", []),
                 text_unit_ids=e.get("text_unit_ids", []),
             )
+
+            # Cache the result
+            query_cache.set(cache_key, entity, ttl=600)
+            logger.debug(f"Cached entity result: {cache_key}")
+
+            return entity
         return None
 
     # Relationship Queries

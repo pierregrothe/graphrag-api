@@ -7,7 +7,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import strawberry
 
@@ -550,3 +550,41 @@ class AnomalyDetectionResult:
     anomalous_relationships: list[Relationship]
     anomaly_scores: JSONType
     detection_method: str
+
+
+@strawberry.type
+class SystemStatus:
+    """GraphQL type for system status."""
+
+    status: str
+    uptime: float
+    version: str
+    active_workspaces: int
+    total_entities: int
+    total_relationships: int
+
+
+@strawberry.type
+class PerformanceMetrics:
+    """GraphQL type for performance metrics."""
+
+    timestamp: float
+    cpu_usage_percent: float
+    memory_usage_mb: float
+    active_connections: int
+    requests_per_second: float
+    average_response_time: float
+    cache_hit_rate: float
+
+
+@strawberry.type
+class IndexingStatus:
+    """GraphQL type for indexing status."""
+
+    workspace_id: str
+    status: str
+    progress: float
+    message: str
+    error: Optional[str] = None
+    started_at: Optional[float] = None
+    completed_at: Optional[float] = None

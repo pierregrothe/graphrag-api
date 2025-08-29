@@ -48,6 +48,14 @@ from .indexing.models import (
 )
 from .logging_config import get_logger, setup_logging
 from .providers import register_providers
+
+# Phase 11 imports - Advanced Monitoring & GraphQL Enhancement
+from .monitoring.prometheus import get_metrics
+from .monitoring.tracing import initialize_tracing, TracingConfig, shutdown_tracing
+from .auth.jwt_auth import AuthenticationService, JWTConfig
+from .auth.api_keys import get_api_key_manager
+from .caching.redis_cache import initialize_redis_cache, RedisCacheConfig, get_redis_cache
+from .graphql.subscriptions import get_subscription_manager
 from .providers.factory import LLMProviderFactory
 from .system import (
     AdvancedHealthResponse,
@@ -112,6 +120,60 @@ async def lifespan(app: FastAPI):
     await indexing_manager.start()
     logger.info("Indexing manager started successfully")
 
+    # Phase 11: Initialize advanced monitoring and authentication
+    try:
+        # Initialize distributed tracing
+        if settings.tracing_enabled:
+            tracing_config = TracingConfig(
+                service_name=settings.app_name,
+                service_version=settings.app_version,
+                environment=settings.environment,
+                jaeger_endpoint=getattr(settings, 'jaeger_endpoint', None),
+                otlp_endpoint=getattr(settings, 'otlp_endpoint', None),
+            )
+            initialize_tracing(tracing_config)
+            logger.info("Distributed tracing initialized")
+
+        # Initialize Redis cache if configured
+        if getattr(settings, 'redis_enabled', False):
+            redis_config = RedisCacheConfig(
+                host=getattr(settings, 'redis_host', 'localhost'),
+                port=getattr(settings, 'redis_port', 6379),
+                password=getattr(settings, 'redis_password', None),
+            )
+            await initialize_redis_cache(redis_config)
+            logger.info("Redis distributed cache initialized")
+
+        # Initialize subscription manager
+        subscription_manager = await get_subscription_manager()
+        logger.info("GraphQL subscription manager initialized")
+
+        # Initialize authentication service
+        if getattr(settings, 'auth_enabled', True):
+            jwt_config = JWTConfig(
+                secret_key=settings.secret_key,
+                access_token_expire_minutes=getattr(settings, 'access_token_expire_minutes', 30),
+            )
+            auth_service = AuthenticationService(jwt_config)
+
+            # Create default admin user if none exists
+            try:
+                await auth_service.create_user(
+                    username="admin",
+                    email="admin@graphrag.local",
+                    password=getattr(settings, 'default_admin_password', 'admin123'),
+                    roles=["admin"],
+                )
+                logger.info("Default admin user created")
+            except Exception:
+                logger.debug("Admin user already exists or creation failed")
+
+        logger.info("Phase 11 advanced features initialized successfully")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize Phase 11 features: {e}")
+        # Continue without advanced features
+
     # Initialize performance components
     try:
         # Initialize connection pool
@@ -144,6 +206,25 @@ async def lifespan(app: FastAPI):
         logger.info("Performance components shut down successfully")
     except Exception as e:
         logger.error(f"Error shutting down performance components: {e}")
+
+    # Phase 11: Shutdown advanced features
+    try:
+        # Shutdown distributed tracing
+        shutdown_tracing()
+
+        # Shutdown Redis cache
+        redis_cache = await get_redis_cache()
+        if redis_cache:
+            await redis_cache.disconnect()
+
+        # Shutdown subscription manager
+        subscription_manager = await get_subscription_manager()
+        if subscription_manager:
+            await subscription_manager.stop()
+
+        logger.info("Phase 11 advanced features shut down successfully")
+    except Exception as e:
+        logger.error(f"Error shutting down Phase 11 features: {e}")
 
     # Shutdown indexing manager
     await indexing_manager.stop()
@@ -2003,6 +2084,136 @@ async def detect_anomalies(
     except Exception as e:
         logger.error(f"Anomaly detection failed: {e}")
         raise HTTPException(status_code=500, detail=f"Anomaly detection failed: {e}") from e
+
+
+# Phase 11: Advanced Monitoring & Authentication Endpoints
+
+@api_router.get("/metrics", tags=["Monitoring"])
+async def get_prometheus_metrics():
+    """Get Prometheus metrics in text format.
+
+    Returns:
+        Prometheus metrics in text format
+    """
+    from fastapi.responses import Response
+
+    metrics = get_metrics()
+    return Response(
+        content=metrics.get_metrics(),
+        media_type=metrics.get_content_type()
+    )
+
+
+@api_router.get("/metrics/performance", tags=["Monitoring"])
+async def get_performance_metrics() -> dict[str, Any]:
+    """Get detailed performance metrics.
+
+    Returns:
+        Dict containing performance metrics
+    """
+    try:
+        metrics = get_metrics()
+        redis_cache = await get_redis_cache()
+
+        performance_data = {
+            "timestamp": time.time(),
+            "system": {
+                "cpu_usage_percent": 0.0,  # Would be populated by actual system monitoring
+                "memory_usage_mb": 0.0,
+                "active_connections": 0,
+            },
+            "cache": {},
+            "requests": {
+                "total": 0,
+                "rate_per_second": 0.0,
+                "average_response_time": 0.0,
+            }
+        }
+
+        # Add Redis cache stats if available
+        if redis_cache:
+            cache_stats = await redis_cache.get_stats()
+            performance_data["cache"] = cache_stats
+
+        return performance_data
+
+    except Exception as e:
+        logger.error(f"Failed to get performance metrics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve performance metrics")
+
+
+@api_router.post("/auth/login", tags=["Authentication"])
+async def login(credentials: dict[str, str]) -> dict[str, Any]:
+    """Authenticate user and return JWT tokens.
+
+    Args:
+        credentials: User credentials (username, password)
+
+    Returns:
+        Dict containing access and refresh tokens
+    """
+    try:
+        from .auth.jwt_auth import UserCredentials
+
+        user_creds = UserCredentials(
+            username=credentials["username"],
+            password=credentials["password"]
+        )
+
+        # TODO: Get auth service from global state
+        # For now, return a placeholder response
+        return {
+            "access_token": "placeholder_token",
+            "refresh_token": "placeholder_refresh",
+            "token_type": "bearer",
+            "expires_in": 1800
+        }
+
+    except Exception as e:
+        logger.error(f"Login failed: {e}")
+        raise HTTPException(status_code=500, detail="Authentication failed")
+
+
+@api_router.post("/auth/api-keys", tags=["Authentication"])
+async def create_api_key(request: dict[str, Any]) -> dict[str, Any]:
+    """Create a new API key.
+
+    Args:
+        request: API key creation request
+
+    Returns:
+        Dict containing the new API key details
+    """
+    try:
+        from .auth.api_keys import APIKeyRequest
+
+        api_key_manager = get_api_key_manager()
+
+        key_request = APIKeyRequest(
+            name=request["name"],
+            permissions=request.get("permissions", []),
+            rate_limit=request.get("rate_limit", 1000),
+            expires_in_days=request.get("expires_in_days")
+        )
+
+        # TODO: Get user_id from JWT token
+        user_id = "admin"  # Placeholder
+
+        response = await api_key_manager.create_api_key(user_id, key_request)
+
+        return {
+            "id": response.id,
+            "name": response.name,
+            "key": response.key,  # Only returned once
+            "prefix": response.prefix,
+            "permissions": response.permissions,
+            "rate_limit": response.rate_limit,
+            "expires_at": response.expires_at.isoformat() if response.expires_at else None
+        }
+
+    except Exception as e:
+        logger.error(f"API key creation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create API key")
 
 
 # Register routers with the main app
