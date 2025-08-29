@@ -370,18 +370,19 @@ class TestGraphAPI:
     @patch("src.graphrag_api_service.main.graph_operations")
     async def test_query_entities_endpoint_success(self, mock_graph_ops, mock_settings):
         """Test successful entities query."""
-        import asyncio
         from unittest.mock import AsyncMock
-        
+
         mock_settings.graphrag_data_path = "/test/data"
-        mock_graph_ops.query_entities = AsyncMock(return_value={
-            "entities": [
-                {"id": "1", "title": "Test", "type": "Person", "description": "Test entity"}
-            ],
-            "total_count": 1,
-            "limit": 50,
-            "offset": 0,
-        })
+        mock_graph_ops.query_entities = AsyncMock(
+            return_value={
+                "entities": [
+                    {"id": "1", "title": "Test", "type": "Person", "description": "Test entity"}
+                ],
+                "total_count": 1,
+                "limit": 50,
+                "offset": 0,
+            }
+        )
 
         client = TestClient(app)
         response = client.get("/api/graph/entities?entity_name=Test")
@@ -396,18 +397,20 @@ class TestGraphAPI:
     async def test_graph_stats_endpoint_success(self, mock_graph_ops, mock_settings):
         """Test successful graph statistics endpoint."""
         from unittest.mock import AsyncMock
-        
+
         mock_settings.graphrag_data_path = "/test/data"
-        mock_graph_ops.get_graph_statistics = AsyncMock(return_value={
-            "total_entities": 100,
-            "total_relationships": 200,
-            "total_communities": 10,
-            "entity_types": {"Person": 50, "Organization": 50},
-            "relationship_types": {"WorksWith": 100, "KnowsAbout": 100},
-            "community_levels": {"0": 5, "1": 5},
-            "graph_density": 0.02,
-            "connected_components": 1,
-        })
+        mock_graph_ops.get_graph_statistics = AsyncMock(
+            return_value={
+                "total_entities": 100,
+                "total_relationships": 200,
+                "total_communities": 10,
+                "entity_types": {"Person": 50, "Organization": 50},
+                "relationship_types": {"WorksWith": 100, "KnowsAbout": 100},
+                "community_levels": {"0": 5, "1": 5},
+                "graph_density": 0.02,
+                "connected_components": 1,
+            }
+        )
 
         client = TestClient(app)
         response = client.get("/api/graph/stats")

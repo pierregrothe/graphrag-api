@@ -884,7 +884,9 @@ async def query_relationships(
     Raises:
         HTTPException: If querying fails or data path not configured
     """
-    logger.info(f"Querying relationships with filters: source={source_entity}, target={target_entity}")
+    logger.info(
+        f"Querying relationships with filters: source={source_entity}, target={target_entity}"
+    )
 
     # Check if GraphRAG data path is configured
     if not settings.graphrag_data_path:

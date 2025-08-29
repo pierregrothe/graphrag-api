@@ -358,7 +358,8 @@ class GraphOperations:
                     ),  # Scale node size by degree
                     "community": (
                         entity.get("community_ids", [None])[0]
-                        if entity.get("community_ids") is not None and len(entity.get("community_ids", [])) > 0
+                        if entity.get("community_ids") is not None
+                        and len(entity.get("community_ids", [])) > 0
                         else None
                     ),
                     "description": (
