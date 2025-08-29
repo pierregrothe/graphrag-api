@@ -1,0 +1,655 @@
+openapi: 3.0.3
+info:
+  title: GraphRAG API
+  description: |
+    Enterprise-grade GraphRAG (Graph Retrieval-Augmented Generation) API providing comprehensive knowledge graph operations, semantic search, and real-time analytics.
+    
+    ## Features
+    - **Knowledge Graph Operations**: Entity and relationship management with advanced graph algorithms
+    - **Semantic Search**: Vector-based search with embedding support
+    - **Real-time Analytics**: Community detection, centrality analysis, and anomaly detection
+    - **GraphQL Interface**: Complete GraphQL API with real-time subscriptions
+    - **Enterprise Security**: JWT authentication, API key management, and role-based access control
+    - **Advanced Monitoring**: Prometheus metrics, OpenTelemetry tracing, and Grafana dashboards
+    - **Production Ready**: Docker deployment, Redis caching, and horizontal scaling support
+    
+    ## Authentication
+    This API supports two authentication methods:
+    1. **JWT Tokens**: For user-based authentication with role-based access control
+    2. **API Keys**: For service-to-service authentication with configurable permissions
+    
+    ## Rate Limiting
+    - Default: 1000 requests per hour per API key
+    - Burst limit: 20 requests per minute
+    - Custom limits available for enterprise plans
+    
+    ## GraphQL Endpoint
+    GraphQL interface available at `/graphql` with real-time subscriptions via WebSocket
+  version: 1.0.0
+  contact:
+    name: GraphRAG API Support
+    url: https://github.com/pierregrothe/graphrag-api
+    email: pierre@grothe.ca
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.graphrag.example.com
+    description: Production server
+  - url: https://staging-api.graphrag.example.com
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  # Health and System Endpoints
+  /health:
+    get:
+      tags: [Health]
+      summary: Basic health check
+      description: Returns basic health status of the API
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: "healthy"
+                timestamp: 1640995200.0
+                uptime: 3600.5
+
+  /health/detailed:
+    get:
+      tags: [Health]
+      summary: Detailed health check
+      description: Returns detailed health status of all system components
+      responses:
+        '200':
+          description: Detailed health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthStatus'
+
+  # Authentication Endpoints
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticate user and return JWT tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: "admin"
+              password: "secure_password"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/api-keys:
+    post:
+      tags: [Authentication]
+      summary: Create API key
+      description: Generate a new API key with specified permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+      responses:
+        '201':
+          description: API key created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [Authentication]
+      summary: List API keys
+      description: Get list of user's API keys
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyListResponse'
+
+  # Entity Endpoints
+  /api/entities:
+    get:
+      tags: [Entities]
+      summary: List entities
+      description: Retrieve entities from the knowledge graph with optional filtering
+      parameters:
+        - name: name
+          in: query
+          description: Filter by entity name
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by entity type
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of entities to return
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+        - name: offset
+          in: query
+          description: Number of entities to skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: List of entities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityListResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/entities/{entity_id}:
+    get:
+      tags: [Entities]
+      summary: Get entity by ID
+      description: Retrieve a specific entity by its ID
+      parameters:
+        - name: entity_id
+          in: path
+          required: true
+          description: Unique identifier of the entity
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Entity details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entity'
+        '404':
+          description: Entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Relationship Endpoints
+  /api/relationships:
+    get:
+      tags: [Relationships]
+      summary: List relationships
+      description: Retrieve relationships from the knowledge graph
+      parameters:
+        - name: source
+          in: query
+          description: Filter by source entity
+          schema:
+            type: string
+        - name: target
+          in: query
+          description: Filter by target entity
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by relationship type
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of relationships to return
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: List of relationships
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationshipListResponse'
+
+  # Graph Operations
+  /api/graph/query:
+    post:
+      tags: [Graph Operations]
+      summary: Execute graph query
+      description: Execute complex graph queries with semantic search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphQueryRequest'
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphQueryResponse'
+
+  # Community Detection
+  /api/communities:
+    get:
+      tags: [Communities]
+      summary: List communities
+      description: Retrieve detected communities from the knowledge graph
+      responses:
+        '200':
+          description: List of communities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityListResponse'
+
+  # Monitoring Endpoints
+  /metrics:
+    get:
+      tags: [Monitoring]
+      summary: Prometheus metrics
+      description: Get Prometheus metrics in text format
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /metrics/performance:
+    get:
+      tags: [Monitoring]
+      summary: Performance metrics
+      description: Get detailed performance metrics
+      responses:
+        '200':
+          description: Performance metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceMetrics'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login endpoint
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key obtained from /auth/api-keys endpoint
+
+  schemas:
+    # Health Schemas
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        timestamp:
+          type: number
+          format: float
+        uptime:
+          type: number
+          format: float
+
+    DetailedHealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        timestamp:
+          type: number
+          format: float
+        components:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ComponentHealth'
+
+    ComponentHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        metrics:
+          type: object
+          additionalProperties: true
+
+    # Authentication Schemas
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: "admin"
+        password:
+          type: string
+          format: password
+          example: "secure_password"
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: "bearer"
+        expires_in:
+          type: integer
+
+    CreateApiKeyRequest:
+      type: object
+      required: [name, permissions]
+      properties:
+        name:
+          type: string
+          example: "Production API Key"
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["read:entities", "read:relationships"]
+        rate_limit:
+          type: integer
+          default: 1000
+        expires_in_days:
+          type: integer
+          nullable: true
+
+    ApiKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        key:
+          type: string
+          description: "API key (only returned once during creation)"
+        prefix:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        rate_limit:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ApiKeyListResponse:
+      type: object
+      properties:
+        api_keys:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              prefix:
+                type: string
+              permissions:
+                type: array
+                items:
+                  type: string
+              is_active:
+                type: boolean
+              created_at:
+                type: string
+                format: date-time
+              last_used_at:
+                type: string
+                format: date-time
+                nullable: true
+
+    # Entity Schemas
+    Entity:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        degree:
+          type: integer
+        community_ids:
+          type: array
+          items:
+            type: string
+        text_unit_ids:
+          type: array
+          items:
+            type: string
+
+    EntityListResponse:
+      type: object
+      properties:
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entity'
+        total_count:
+          type: integer
+        has_next_page:
+          type: boolean
+
+    # Relationship Schemas
+    Relationship:
+      type: object
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+        target:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        weight:
+          type: number
+          format: float
+        text_unit_ids:
+          type: array
+          items:
+            type: string
+
+    RelationshipListResponse:
+      type: object
+      properties:
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relationship'
+        total_count:
+          type: integer
+
+    # Graph Query Schemas
+    GraphQueryRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          description: "Natural language query"
+        limit:
+          type: integer
+          default: 10
+        include_embeddings:
+          type: boolean
+          default: false
+
+    GraphQueryResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+        total_count:
+          type: integer
+        query_time:
+          type: number
+          format: float
+
+    # Community Schemas
+    Community:
+      type: object
+      properties:
+        id:
+          type: string
+        level:
+          type: integer
+        title:
+          type: string
+        entity_ids:
+          type: array
+          items:
+            type: string
+        relationship_ids:
+          type: array
+          items:
+            type: string
+
+    CommunityListResponse:
+      type: object
+      properties:
+        communities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Community'
+
+    # Monitoring Schemas
+    PerformanceMetrics:
+      type: object
+      properties:
+        timestamp:
+          type: number
+          format: float
+        system:
+          type: object
+          properties:
+            cpu_usage_percent:
+              type: number
+              format: float
+            memory_usage_mb:
+              type: number
+              format: float
+            active_connections:
+              type: integer
+        cache:
+          type: object
+          properties:
+            hit_rate:
+              type: number
+              format: float
+            size_mb:
+              type: number
+              format: float
+        requests:
+          type: object
+          properties:
+            total:
+              type: integer
+            rate_per_second:
+              type: number
+              format: float
+            average_response_time:
+              type: number
+              format: float
+
+    # Error Schema
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+tags:
+  - name: Health
+    description: Health check and system status endpoints
+  - name: Authentication
+    description: User authentication and API key management
+  - name: Entities
+    description: Knowledge graph entity operations
+  - name: Relationships
+    description: Knowledge graph relationship operations
+  - name: Graph Operations
+    description: Complex graph queries and semantic search
+  - name: Communities
+    description: Community detection and analysis
+  - name: Monitoring
+    description: Performance metrics and system monitoring

@@ -1,0 +1,969 @@
+{
+  "info": {
+    "name": "GraphRAG API - Complete Collection",
+    "description": "Comprehensive Postman collection for GraphRAG API testing including REST endpoints, GraphQL queries, and authentication examples.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh JWT token if expired",
+          "const token = pm.environment.get('jwt_token');",
+          "const tokenExpiry = pm.environment.get('token_expiry');",
+          "",
+          "if (token && tokenExpiry) {",
+          "    const now = new Date().getTime();",
+          "    const expiry = new Date(tokenExpiry).getTime();",
+          "    ",
+          "    if (now >= expiry - 60000) { // Refresh 1 minute before expiry",
+          "        console.log('Token expired, attempting refresh...');",
+          "        pm.sendRequest({",
+          "            url: pm.environment.get('base_url') + '/auth/refresh',",
+          "            method: 'POST',",
+          "            header: {",
+          "                'Content-Type': 'application/json'",
+          "            },",
+          "            body: {",
+          "                mode: 'raw',",
+          "                raw: JSON.stringify({",
+          "                    refresh_token: pm.environment.get('refresh_token')",
+          "                })",
+          "            }",
+          "        }, function (err, response) {",
+          "            if (err) {",
+          "                console.log('Token refresh failed:', err);",
+          "            } else if (response.code === 200) {",
+          "                const data = response.json();",
+          "                pm.environment.set('jwt_token', data.access_token);",
+          "                pm.environment.set('token_expiry', new Date(Date.now() + data.expires_in * 1000).toISOString());",
+          "                console.log('Token refreshed successfully');",
+          "            }",
+          "        });",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login (JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('jwt_token', response.access_token);",
+                  "    pm.environment.set('refresh_token', response.refresh_token);",
+                  "    pm.environment.set('token_expiry', new Date(Date.now() + response.expires_in * 1000).toISOString());",
+                  "    console.log('JWT token stored in environment');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate user and receive JWT tokens"
+          }
+        },
+        {
+          "name": "Create API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('API key created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('api_key', response.key);",
+                  "    console.log('API key stored in environment');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test API Key\",\n  \"permissions\": [\n    \"read:entities\",\n    \"read:relationships\",\n    \"read:communities\",\n    \"graphql:query\"\n  ],\n  \"rate_limit\": 1000,\n  \"expires_in_days\": 30\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/api-keys",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "api-keys"]
+            },
+            "description": "Create a new API key with specified permissions"
+          }
+        },
+        {
+          "name": "List API Keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/api-keys",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "api-keys"]
+            },
+            "description": "List all API keys for the authenticated user"
+          }
+        }
+      ],
+      "description": "Authentication endpoints for JWT tokens and API key management"
+    },
+    {
+      "name": "Health & System",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Basic health check endpoint"
+          }
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/detailed",
+              "host": ["{{base_url}}"],
+              "path": ["health", "detailed"]
+            },
+            "description": "Detailed health check with component status"
+          }
+        },
+        {
+          "name": "Prometheus Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["metrics"]
+            },
+            "description": "Get Prometheus metrics in text format"
+          }
+        },
+        {
+          "name": "Performance Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metrics/performance",
+              "host": ["{{base_url}}"],
+              "path": ["metrics", "performance"]
+            },
+            "description": "Get detailed performance metrics"
+          }
+        }
+      ],
+      "description": "Health checks and system monitoring endpoints"
+    },
+    {
+      "name": "Entities",
+      "item": [
+        {
+          "name": "List Entities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Entities retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has entities array', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('entities');",
+                  "    pm.expect(response.entities).to.be.an('array');",
+                  "});",
+                  "",
+                  "// Store first entity ID for other tests",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.entities && response.entities.length > 0) {",
+                  "        pm.environment.set('sample_entity_id', response.entities[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/entities?limit={{entity_limit}}&offset={{entity_offset}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{entity_limit}}"
+                },
+                {
+                  "key": "offset",
+                  "value": "{{entity_offset}}"
+                },
+                {
+                  "key": "name",
+                  "value": "{{entity_name_filter}}",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "{{entity_type_filter}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve entities with optional filtering and pagination"
+          }
+        },
+        {
+          "name": "Get Entity by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Entity retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Entity has required fields', function () {",
+                  "    const entity = pm.response.json();",
+                  "    pm.expect(entity).to.have.property('id');",
+                  "    pm.expect(entity).to.have.property('title');",
+                  "    pm.expect(entity).to.have.property('type');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/entities/{{sample_entity_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities", "{{sample_entity_id}}"]
+            },
+            "description": "Get specific entity by ID"
+          }
+        },
+        {
+          "name": "Search Entities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/entities?name={{search_term}}&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "{{search_term}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search entities by name"
+          }
+        }
+      ],
+      "description": "Entity management and retrieval endpoints"
+    },
+    {
+      "name": "Relationships",
+      "item": [
+        {
+          "name": "List Relationships",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Relationships retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Store first relationship for other tests",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.relationships && response.relationships.length > 0) {",
+                  "        pm.environment.set('sample_relationship_id', response.relationships[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/relationships?limit={{relationship_limit}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "relationships"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{relationship_limit}}"
+                },
+                {
+                  "key": "source",
+                  "value": "{{source_entity}}",
+                  "disabled": true
+                },
+                {
+                  "key": "target",
+                  "value": "{{target_entity}}",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "{{relationship_type}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve relationships with optional filtering"
+          }
+        },
+        {
+          "name": "Get Entity Relationships",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/relationships?source={{sample_entity_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "relationships"],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "{{sample_entity_id}}"
+                }
+              ]
+            },
+            "description": "Get all relationships for a specific entity"
+          }
+        }
+      ],
+      "description": "Relationship management and retrieval endpoints"
+    },
+    {
+      "name": "Graph Operations",
+      "item": [
+        {
+          "name": "Semantic Search",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Search completed successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Search results have required structure', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('results');",
+                  "    pm.expect(response).to.have.property('total_count');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{{search_query}}\",\n  \"limit\": 10,\n  \"include_embeddings\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/graph/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "graph", "query"]
+            },
+            "description": "Execute semantic search query"
+          }
+        },
+        {
+          "name": "Multi-hop Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_entity\": \"{{sample_entity_id}}\",\n  \"hops\": 2,\n  \"relation_types\": [\"RELATED_TO\", \"PART_OF\"],\n  \"limit\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/graph/multi-hop",
+              "host": ["{{base_url}}"],
+              "path": ["api", "graph", "multi-hop"]
+            },
+            "description": "Execute multi-hop graph traversal"
+          }
+        }
+      ],
+      "description": "Advanced graph query and analysis operations"
+    },
+    {
+      "name": "Communities",
+      "item": [
+        {
+          "name": "List Communities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Communities retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Store first community for other tests",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.communities && response.communities.length > 0) {",
+                  "        pm.environment.set('sample_community_id', response.communities[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/communities?limit={{community_limit}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "communities"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{community_limit}}"
+                },
+                {
+                  "key": "level",
+                  "value": "{{community_level}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve detected communities"
+          }
+        },
+        {
+          "name": "Community Detection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"algorithm\": \"leiden\",\n  \"resolution\": 1.0,\n  \"max_levels\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/communities/detect",
+              "host": ["{{base_url}}"],
+              "path": ["api", "communities", "detect"]
+            },
+            "description": "Run community detection algorithm"
+          }
+        }
+      ],
+      "description": "Community detection and analysis endpoints"
+    },
+    {
+      "name": "GraphQL",
+      "item": [
+        {
+          "name": "GraphQL - Get Entities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GraphQL query successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('GraphQL response has data', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.have.property('entities');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetEntities($first: Int) { entities(first: $first) { edges { node { id title type description degree } cursor } pageInfo { hasNextPage hasPreviousPage startCursor endCursor } totalCount } }\",\n  \"variables\": {\n    \"first\": 10\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["graphql"]
+            },
+            "description": "GraphQL query to get entities with pagination"
+          }
+        },
+        {
+          "name": "GraphQL - Entity with Relationships",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetEntityWithRelationships($id: String!) { entity(id: $id) { id title type description relationships { id source target type weight } } }\",\n  \"variables\": {\n    \"id\": \"{{sample_entity_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["graphql"]
+            },
+            "description": "GraphQL query to get entity with its relationships"
+          }
+        },
+        {
+          "name": "GraphQL - Semantic Search",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SemanticSearch($query: String!, $limit: Int) { search(query: $query, limit: $limit) { entities { id title type description } relationships { id source target type } score } }\",\n  \"variables\": {\n    \"query\": \"{{search_query}}\",\n    \"limit\": 5\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["graphql"]
+            },
+            "description": "GraphQL semantic search query"
+          }
+        },
+        {
+          "name": "GraphQL - System Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SystemStatus { systemHealth { status uptime version activeWorkspaces totalEntities totalRelationships } performanceMetrics { timestamp cpuUsagePercent memoryUsageMb activeConnections requestsPerSecond averageResponseTime cacheHitRate } }\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["graphql"]
+            },
+            "description": "GraphQL query for system status and performance metrics"
+          }
+        }
+      ],
+      "description": "GraphQL queries and mutations"
+    },
+    {
+      "name": "API Key Authentication",
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "key",
+            "value": "X-API-Key",
+            "type": "string"
+          },
+          {
+            "key": "value",
+            "value": "{{api_key}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get Entities (API Key)",
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "key",
+                  "value": "X-API-Key",
+                  "type": "string"
+                },
+                {
+                  "key": "value",
+                  "value": "{{api_key}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/entities?limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Test API key authentication with entity retrieval"
+          }
+        },
+        {
+          "name": "GraphQL Query (API Key)",
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "key",
+                  "value": "X-API-Key",
+                  "type": "string"
+                },
+                {
+                  "key": "value",
+                  "value": "{{api_key}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { entities(first: 5) { edges { node { id title type } } } }\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["graphql"]
+            },
+            "description": "Test API key authentication with GraphQL query"
+          }
+        }
+      ],
+      "description": "Examples using API key authentication instead of JWT tokens"
+    },
+    {
+      "name": "Workspace Management",
+      "item": [
+        {
+          "name": "Create Workspace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Workspace created successfully', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('workspace_id', response.id);",
+                  "    console.log('Workspace ID stored:', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{workspace_name}}\",\n  \"description\": \"Test workspace for API testing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/workspaces",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workspaces"]
+            },
+            "description": "Create a new workspace"
+          }
+        },
+        {
+          "name": "List Workspaces",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/workspaces",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workspaces"]
+            },
+            "description": "List all accessible workspaces"
+          }
+        },
+        {
+          "name": "Start Indexing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workspace_id\": \"{{workspace_id}}\",\n  \"data_path\": \"{{data_path}}\",\n  \"config\": {\n    \"chunk_size\": 1000,\n    \"overlap\": 200\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/indexing/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "indexing", "start"]
+            },
+            "description": "Start indexing job for workspace"
+          }
+        }
+      ],
+      "description": "Workspace creation and management operations"
+    },
+    {
+      "name": "Performance Testing",
+      "item": [
+        {
+          "name": "Load Test - Entities",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Set random limit for load testing",
+                  "pm.environment.set('random_limit', Math.floor(Math.random() * 100) + 1);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response time is acceptable', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Log performance metrics",
+                  "console.log('Response time:', pm.response.responseTime + 'ms');",
+                  "console.log('Response size:', pm.response.responseSize + ' bytes');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/entities?limit={{random_limit}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{random_limit}}"
+                }
+              ]
+            },
+            "description": "Load test for entity retrieval with random limits"
+          }
+        },
+        {
+          "name": "Stress Test - GraphQL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GraphQL handles complex query', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response time under 5 seconds', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('No GraphQL errors', function () {",
+                  "    pm.expect(response).to.not.have.property('errors');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query ComplexQuery { entities(first: 100) { edges { node { id title type description degree relationships { id source target type weight } } } } communities(first: 50) { id level title entityIds } }\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["graphql"]
+            },
+            "description": "Stress test with complex GraphQL query"
+          }
+        }
+      ],
+      "description": "Performance and load testing scenarios"
+    }
+  ]
+}
