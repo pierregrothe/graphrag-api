@@ -9,6 +9,8 @@ from .mutations import Mutation
 from .queries import Query
 from .schema import create_graphql_router, schema
 from .types import (
+    CacheClearResult,
+    CacheStatistics,
     ConfigValidationResult,
     Entity,
     EntityConnection,
@@ -16,7 +18,11 @@ from .types import (
     GraphStatistics,
     GraphVisualization,
     IndexingJob,
+    IndexingJobConnection,
+    IndexingJobDetail,
     IndexingJobStatus,
+    IndexingJobSummary,
+    IndexingStatistics,
     IndexResponse,
     LLMProvider,
     ProviderSwitchResult,
@@ -48,7 +54,11 @@ __all__ = [
     "Workspace",
     "WorkspaceStatus",
     "IndexingJob",
+    "IndexingJobConnection",
+    "IndexingJobDetail",
     "IndexingJobStatus",
+    "IndexingJobSummary",
+    "IndexingStatistics",
     "IndexResponse",
     "QueryResponse",
     "QueryType",
@@ -57,4 +67,6 @@ __all__ = [
     "ProviderSwitchResult",
     "ConfigValidationResult",
     "LLMProvider",
+    "CacheStatistics",
+    "CacheClearResult",
 ]

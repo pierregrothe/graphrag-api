@@ -17,6 +17,7 @@ from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
 from .types import (
     ApplicationInfo,
     ApplicationInterfaces,
+    CacheStatistics,
     Entity,
     EntityConnection,
     EntityEdge,
@@ -24,6 +25,14 @@ from .types import (
     GraphNode,
     GraphStatistics,
     GraphVisualization,
+    GraphQLIndexingJobStatus,
+    GraphQLIndexingStage,
+    IndexingJobConnection,
+    IndexingJobDetail,
+    IndexingJobEdge,
+    IndexingJobProgress,
+    IndexingJobSummary,
+    IndexingStatistics,
     PageInfo,
     QueryResponse,
     QueryType,
@@ -515,3 +524,157 @@ class Query:
             )
         except Exception:
             return None
+
+    # Indexing Queries
+    @strawberry.field
+    async def indexing_jobs(
+        self,
+        info: Info,
+        status: GraphQLIndexingJobStatus | None = None,
+        first: int = 50,
+        after: str | None = None,
+    ) -> IndexingJobConnection:
+        """List indexing jobs with optional filtering and pagination.
+
+        Args:
+            info: GraphQL context information
+            status: Optional status filter
+            first: Number of jobs to return
+            after: Cursor for pagination
+
+        Returns:
+            IndexingJobConnection with jobs and pagination info
+        """
+        from ..indexing.manager import IndexingManager
+        from ..indexing.models import IndexingJobStatus as ModelJobStatus
+
+        indexing_manager: IndexingManager = info.context["indexing_manager"]
+
+        # Convert GraphQL enum to model enum if provided
+        model_status = None
+        if status:
+            model_status = ModelJobStatus(status.value)
+
+        # Get jobs from manager
+        job_summaries = indexing_manager.list_jobs(status=model_status, limit=first)
+
+        # Convert to GraphQL types
+        edges = []
+        for i, job in enumerate(job_summaries):
+            edge = IndexingJobEdge(
+                node=IndexingJobSummary(
+                    id=job.id,
+                    workspace_id=job.workspace_id,
+                    status=GraphQLIndexingJobStatus(job.status.value),
+                    created_at=job.created_at,
+                    started_at=job.started_at,
+                    completed_at=job.completed_at,
+                    overall_progress=job.overall_progress,
+                    current_stage=GraphQLIndexingStage(job.current_stage.value),
+                    error_message=job.error_message,
+                ),
+                cursor=str(i),  # Simple cursor implementation
+            )
+            edges.append(edge)
+
+        return IndexingJobConnection(
+            edges=edges,
+            page_info=PageInfo(
+                has_next_page=len(edges) == first,
+                has_previous_page=after is not None,
+                start_cursor=edges[0].cursor if edges else None,
+                end_cursor=edges[-1].cursor if edges else None,
+            ),
+            total_count=len(edges),
+        )
+
+    @strawberry.field
+    async def indexing_job(self, info: Info, id: str) -> IndexingJobDetail | None:
+        """Get detailed information about a specific indexing job.
+
+        Args:
+            info: GraphQL context information
+            id: Job ID
+
+        Returns:
+            IndexingJobDetail if found, None otherwise
+        """
+        from ..indexing.manager import IndexingManager
+
+        indexing_manager: IndexingManager = info.context["indexing_manager"]
+        job = indexing_manager.get_job(id)
+
+        if not job:
+            return None
+
+        return IndexingJobDetail(
+            id=job.id,
+            workspace_id=job.workspace_id,
+            status=GraphQLIndexingJobStatus(job.status.value),
+            created_at=job.created_at,
+            started_at=job.started_at,
+            completed_at=job.completed_at,
+            error_message=job.error_message,
+            retry_count=job.retry_count,
+            max_retries=job.max_retries,
+            priority=job.priority,
+            progress=IndexingJobProgress(
+                overall_progress=job.progress.overall_progress,
+                current_stage=GraphQLIndexingStage(job.progress.current_stage.value),
+                stage_progress=job.progress.stage_progress,
+                stage_details=job.progress.stage_details,
+            ),
+        )
+
+    @strawberry.field
+    async def indexing_statistics(self, info: Info) -> IndexingStatistics:
+        """Get comprehensive indexing statistics.
+
+        Args:
+            info: GraphQL context information
+
+        Returns:
+            IndexingStatistics with system metrics
+        """
+        from ..indexing.manager import IndexingManager
+
+        indexing_manager: IndexingManager = info.context["indexing_manager"]
+        stats = indexing_manager.get_indexing_stats()
+
+        return IndexingStatistics(
+            total_jobs=stats.total_jobs,
+            queued_jobs=stats.queued_jobs,
+            running_jobs=stats.running_jobs,
+            completed_jobs=stats.completed_jobs,
+            failed_jobs=stats.failed_jobs,
+            cancelled_jobs=stats.cancelled_jobs,
+            avg_completion_time=stats.avg_completion_time,
+            success_rate=stats.success_rate,
+            recent_jobs=stats.recent_jobs,
+            recent_completions=stats.recent_completions,
+        )
+
+    # Cache Queries
+    @strawberry.field
+    async def cache_statistics(self, info: Info) -> CacheStatistics:
+        """Get cache statistics.
+
+        Args:
+            info: GraphQL context information
+
+        Returns:
+            CacheStatistics with cache metrics
+        """
+        # For now, return basic cache statistics
+        # In a real implementation, this would query actual cache systems
+        return CacheStatistics(
+            total_size_bytes=0,
+            total_files=0,
+            cache_hit_rate=None,
+            last_cleared=None,
+            cache_types={
+                "graph_cache": {"enabled": True, "size": 0},
+                "embedding_cache": {"enabled": True, "size": 0},
+                "query_cache": {"enabled": True, "size": 0},
+            },
+        )

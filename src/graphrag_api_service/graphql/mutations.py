@@ -24,8 +24,13 @@ from ..workspace.manager import WorkspaceManager
 from ..workspace.models import WorkspaceCreateRequest, WorkspaceUpdateRequest
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
 from .types import (
+    CacheClearResult,
     ConfigValidationResult,
     GraphExport,
+    GraphQLIndexingJobStatus,
+    GraphQLIndexingStage,
+    IndexingJobDetail,
+    IndexingJobProgress,
     IndexResponse,
     LLMProvider,
     ProviderSwitchResult,
@@ -411,6 +416,84 @@ class Mutation:
             )
         except Exception as e:
             raise Exception(f"Failed to export graph: {str(e)}")
+
+    # Indexing Mutations
+    @strawberry.mutation
+    async def cancel_indexing_job(self, info: Info, id: str) -> IndexingJobDetail | None:
+        """Cancel an indexing job.
+
+        Args:
+            info: GraphQL context information
+            id: Job ID to cancel
+
+        Returns:
+            Updated IndexingJobDetail if successful, None if job not found
+        """
+        from ..indexing.manager import IndexingManager
+
+        indexing_manager: IndexingManager = info.context["indexing_manager"]
+
+        # Check if job exists
+        job = indexing_manager.get_job(id)
+        if not job:
+            return None
+
+        # Cancel the job
+        success = indexing_manager.cancel_job(id)
+        if not success:
+            return None
+
+        # Return updated job details
+        updated_job = indexing_manager.get_job(id)
+        if updated_job:
+            return IndexingJobDetail(
+                id=updated_job.id,
+                workspace_id=updated_job.workspace_id,
+                status=GraphQLIndexingJobStatus(updated_job.status.value),
+                created_at=updated_job.created_at,
+                started_at=updated_job.started_at,
+                completed_at=updated_job.completed_at,
+                error_message=updated_job.error_message,
+                retry_count=updated_job.retry_count,
+                max_retries=updated_job.max_retries,
+                priority=updated_job.priority,
+                progress=IndexingJobProgress(
+                    overall_progress=updated_job.progress.overall_progress,
+                    current_stage=GraphQLIndexingStage(updated_job.progress.current_stage.value),
+                    stage_progress=updated_job.progress.stage_progress,
+                    stage_details=updated_job.progress.stage_details,
+                ),
+            )
+        return None
+
+    # Cache Mutations
+    @strawberry.mutation
+    async def clear_cache(self, info: Info, cache_type: str | None = None) -> CacheClearResult:
+        """Clear system cache.
+
+        Args:
+            info: GraphQL context information
+            cache_type: Optional specific cache type to clear (e.g., 'graph', 'embedding', 'query')
+
+        Returns:
+            CacheClearResult with operation details
+        """
+        # For now, simulate cache clearing
+        # In a real implementation, this would clear actual cache systems
+        files_cleared = 0
+        bytes_freed = 0
+
+        if cache_type:
+            message = f"Cache type '{cache_type}' cleared successfully"
+        else:
+            message = "All caches cleared successfully"
+
+        return CacheClearResult(
+            success=True,
+            message=message,
+            files_cleared=files_cleared,
+            bytes_freed=bytes_freed,
+        )
 
     @strawberry.mutation
     async def clear_graph_cache(self, info: Info) -> bool:

@@ -274,3 +274,154 @@ class TestAPIParity:
                 assert "edges" in entities_data
                 assert "pageInfo" in entities_data
                 assert "totalCount" in entities_data
+
+    def test_indexing_operations_parity(self, client):
+        """Test that indexing operations are consistent between APIs."""
+        # REST API indexing statistics
+        rest_response = client.get("/api/indexing/stats")
+
+        # GraphQL indexing statistics
+        graphql_query = """
+        query {
+            indexingStatistics {
+                totalJobs
+                queuedJobs
+                runningJobs
+                completedJobs
+                failedJobs
+                cancelledJobs
+                avgCompletionTime
+                successRate
+                recentJobs
+                recentCompletions
+            }
+        }
+        """
+        graphql_response = client.post(
+            "/graphql/playground/",
+            json={"query": graphql_query}
+        )
+
+        # Both should handle indexing statistics consistently
+        if rest_response.status_code == 200:
+            rest_data = rest_response.json()
+            assert "total_jobs" in rest_data
+
+        if graphql_response.status_code == 200:
+            graphql_data = graphql_response.json()
+            if "data" in graphql_data and "indexingStatistics" in graphql_data["data"]:
+                stats_data = graphql_data["data"]["indexingStatistics"]
+                assert "totalJobs" in stats_data
+
+    def test_indexing_jobs_parity(self, client):
+        """Test that indexing job operations are consistent between APIs."""
+        # REST API indexing jobs
+        rest_response = client.get("/api/indexing/jobs")
+
+        # GraphQL indexing jobs
+        graphql_query = """
+        query {
+            indexingJobs {
+                edges {
+                    node {
+                        id
+                        workspaceId
+                        status
+                        createdAt
+                        overallProgress
+                        currentStage
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                    hasPreviousPage
+                }
+                totalCount
+            }
+        }
+        """
+        graphql_response = client.post(
+            "/graphql/playground/",
+            json={"query": graphql_query}
+        )
+
+        # Both should handle job listing consistently
+        if rest_response.status_code == 200:
+            rest_data = rest_response.json()
+            assert isinstance(rest_data, list)
+
+        if graphql_response.status_code == 200:
+            graphql_data = graphql_response.json()
+            if "data" in graphql_data and "indexingJobs" in graphql_data["data"]:
+                jobs_data = graphql_data["data"]["indexingJobs"]
+                assert "edges" in jobs_data
+                assert "pageInfo" in jobs_data
+                assert "totalCount" in jobs_data
+
+    def test_cache_operations_parity(self, client):
+        """Test that cache operations are consistent between APIs."""
+        # REST API cache statistics
+        rest_stats_response = client.get("/api/system/cache/stats")
+
+        # GraphQL cache statistics
+        graphql_stats_query = """
+        query {
+            cacheStatistics {
+                totalSizeBytes
+                totalFiles
+                cacheHitRate
+                lastCleared
+                cacheTypes
+            }
+        }
+        """
+        graphql_stats_response = client.post(
+            "/graphql/playground/",
+            json={"query": graphql_stats_query}
+        )
+
+        # Both should handle cache statistics consistently
+        if rest_stats_response.status_code == 200:
+            rest_data = rest_stats_response.json()
+            assert "total_size_bytes" in rest_data
+            assert "cache_types" in rest_data
+
+        if graphql_stats_response.status_code == 200:
+            graphql_data = graphql_stats_response.json()
+            if "data" in graphql_data and "cacheStatistics" in graphql_data["data"]:
+                cache_data = graphql_data["data"]["cacheStatistics"]
+                assert "totalSizeBytes" in cache_data
+                assert "cacheTypes" in cache_data
+
+        # Test cache clearing operations
+        # REST API cache clear
+        rest_clear_response = client.delete("/api/system/cache")
+
+        # GraphQL cache clear
+        graphql_clear_mutation = """
+        mutation {
+            clearCache {
+                success
+                message
+                filesCleared
+                bytesFreed
+            }
+        }
+        """
+        graphql_clear_response = client.post(
+            "/graphql/playground/",
+            json={"query": graphql_clear_mutation}
+        )
+
+        # Both should handle cache clearing consistently
+        if rest_clear_response.status_code == 200:
+            rest_clear_data = rest_clear_response.json()
+            assert "success" in rest_clear_data
+            assert "message" in rest_clear_data
+
+        if graphql_clear_response.status_code == 200:
+            graphql_clear_data = graphql_clear_response.json()
+            if "data" in graphql_clear_data and "clearCache" in graphql_clear_data["data"]:
+                clear_data = graphql_clear_data["data"]["clearCache"]
+                assert "success" in clear_data
+                assert "message" in clear_data

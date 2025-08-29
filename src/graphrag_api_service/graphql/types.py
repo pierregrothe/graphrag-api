@@ -30,6 +30,31 @@ class WorkspaceStatus(Enum):
 
 
 @strawberry.enum
+class GraphQLIndexingJobStatus(Enum):
+    """GraphQL indexing job status enumeration."""
+
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+@strawberry.enum
+class GraphQLIndexingStage(Enum):
+    """GraphQL indexing stage enumeration."""
+
+    INITIALIZATION = "initialization"
+    TEXT_EXTRACTION = "text_extraction"
+    CHUNKING = "chunking"
+    ENTITY_EXTRACTION = "entity_extraction"
+    RELATIONSHIP_EXTRACTION = "relationship_extraction"
+    COMMUNITY_DETECTION = "community_detection"
+    EMBEDDING_GENERATION = "embedding_generation"
+    FINALIZATION = "finalization"
+
+
+@strawberry.enum
 class IndexingJobStatus(Enum):
     """Indexing job status enumeration."""
 
@@ -106,6 +131,82 @@ class GraphStatistics:
     community_levels: JSONType
     graph_density: float
     connected_components: int
+
+
+# Indexing Types
+@strawberry.type
+class IndexingJobProgress:
+    """GraphQL type for indexing job progress."""
+
+    overall_progress: float
+    current_stage: GraphQLIndexingStage
+    stage_progress: float
+    stage_details: JSONType
+
+
+@strawberry.type
+class IndexingJobSummary:
+    """GraphQL type for indexing job summary."""
+
+    id: str
+    workspace_id: str
+    status: GraphQLIndexingJobStatus
+    created_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+    overall_progress: float
+    current_stage: GraphQLIndexingStage
+    error_message: str | None
+
+
+@strawberry.type
+class IndexingJobDetail:
+    """GraphQL type for detailed indexing job information."""
+
+    id: str
+    workspace_id: str
+    status: GraphQLIndexingJobStatus
+    created_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+    error_message: str | None
+    retry_count: int
+    max_retries: int
+    priority: int
+    progress: IndexingJobProgress
+
+
+@strawberry.type
+class IndexingStatistics:
+    """GraphQL type for indexing statistics."""
+
+    total_jobs: int
+    queued_jobs: int
+    running_jobs: int
+    completed_jobs: int
+    failed_jobs: int
+    cancelled_jobs: int
+    avg_completion_time: float | None
+    success_rate: float | None
+    recent_jobs: int
+    recent_completions: int
+
+
+@strawberry.type
+class IndexingJobConnection:
+    """GraphQL connection type for indexing jobs."""
+
+    edges: list["IndexingJobEdge"]
+    page_info: "PageInfo"
+    total_count: int
+
+
+@strawberry.type
+class IndexingJobEdge:
+    """GraphQL edge type for indexing jobs."""
+
+    node: IndexingJobSummary
+    cursor: str
 
 
 # Workspace Types
@@ -327,3 +428,25 @@ class GraphExport:
     entity_count: int
     relationship_count: int
     expires_at: datetime
+
+
+# Cache Types
+@strawberry.type
+class CacheStatistics:
+    """GraphQL type for cache statistics."""
+
+    total_size_bytes: int
+    total_files: int
+    cache_hit_rate: float | None
+    last_cleared: datetime | None
+    cache_types: JSONType
+
+
+@strawberry.type
+class CacheClearResult:
+    """GraphQL type for cache clear operation result."""
+
+    success: bool
+    message: str
+    files_cleared: int
+    bytes_freed: int
