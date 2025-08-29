@@ -162,7 +162,7 @@ class Subscription:
 
     @strawberry.subscription
     async def entity_updates(
-        self, workspace_id: str | None = None, info: Info = None
+        self, info: Info, workspace_id: str | None = None
     ) -> AsyncGenerator[Entity, None]:
         """Subscribe to entity updates.
 
@@ -192,7 +192,7 @@ class Subscription:
 
     @strawberry.subscription
     async def relationship_updates(
-        self, workspace_id: str | None = None, info: Info = None
+        self, info: Info, workspace_id: str | None = None
     ) -> AsyncGenerator[Relationship, None]:
         """Subscribe to relationship updates.
 
@@ -222,7 +222,7 @@ class Subscription:
 
     @strawberry.subscription
     async def community_updates(
-        self, workspace_id: str | None = None, info: Info = None
+        self, info: Info, workspace_id: str | None = None
     ) -> AsyncGenerator[Community, None]:
         """Subscribe to community updates.
 

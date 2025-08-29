@@ -176,7 +176,7 @@ class TracingManager:
         try:
             # FastAPI instrumentation
             if FastAPIInstrumentor:
-                FastAPIInstrumentor.instrument()
+                FastAPIInstrumentor().instrument()
                 logger.debug("FastAPI instrumentation enabled")
 
             # HTTP client instrumentation

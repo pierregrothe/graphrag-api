@@ -6,6 +6,7 @@
 """GraphQL schema combining queries and mutations."""
 
 import strawberry
+from typing import Any
 from strawberry.fastapi import GraphQLRouter
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 
@@ -23,7 +24,7 @@ def create_graphql_router(
     system_operations=None,
     graphrag_integration=None,
     indexing_manager=None,
-) -> GraphQLRouter:
+) -> GraphQLRouter[dict[str, Any], None]:
     """Create a GraphQL router with context.
 
     Args:

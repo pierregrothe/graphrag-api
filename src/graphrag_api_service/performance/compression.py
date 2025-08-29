@@ -5,6 +5,7 @@
 
 """Response compression and pagination for improved API performance."""
 
+import asyncio
 import gzip
 import json
 import logging

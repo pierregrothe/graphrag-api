@@ -157,6 +157,7 @@ class RedisDistributedCache:
 
         try:
             cache_key = self._make_key(namespace, key)
+            assert self.redis_client is not None  # Already checked _connected
             data = await self.redis_client.get(cache_key)
 
             if data is None:
@@ -194,6 +195,7 @@ class RedisDistributedCache:
 
             ttl = ttl or self.config.default_ttl
 
+            assert self.redis_client is not None  # Already checked _connected
             await self.redis_client.setex(cache_key, ttl, serialized_value)
             return True
 
@@ -216,6 +218,7 @@ class RedisDistributedCache:
 
         try:
             cache_key = self._make_key(namespace, key)
+            assert self.redis_client is not None  # Already checked _connected
             result = await self.redis_client.delete(cache_key)
             return result > 0
 
@@ -238,6 +241,7 @@ class RedisDistributedCache:
 
         try:
             cache_key = self._make_key(namespace, key)
+            assert self.redis_client is not None  # Already checked _connected
             result = await self.redis_client.exists(cache_key)
             return result > 0
 
@@ -260,6 +264,7 @@ class RedisDistributedCache:
 
         try:
             search_pattern = self._make_key(namespace, pattern)
+            assert self.redis_client is not None  # Already checked _connected
             keys = await self.redis_client.keys(search_pattern)
 
             if keys:
@@ -294,6 +299,7 @@ class RedisDistributedCache:
             return {"connected": False}
 
         try:
+            assert self.redis_client is not None  # Already checked _connected
             info = await self.redis_client.info()
 
             return {

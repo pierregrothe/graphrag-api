@@ -553,16 +553,6 @@ class AnomalyDetectionResult:
     detection_method: str
 
 
-@strawberry.type
-class SystemStatus:
-    """GraphQL type for system status."""
-
-    status: str
-    uptime: float
-    version: str
-    active_workspaces: int
-    total_entities: int
-    total_relationships: int
 
 
 @strawberry.type

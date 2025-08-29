@@ -9,6 +9,7 @@ import hashlib
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -227,7 +228,7 @@ class APIKeyManager:
         """
         return [key for key in self.api_keys.values() if key.user_id == user_id]
 
-    async def get_key_usage_stats(self, key_id: str) -> dict[str, any]:
+    async def get_key_usage_stats(self, key_id: str) -> dict[str, Any]:
         """Get usage statistics for an API key.
 
         Args:

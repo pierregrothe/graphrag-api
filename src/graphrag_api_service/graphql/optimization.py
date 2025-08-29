@@ -10,7 +10,7 @@ from typing import Any
 
 from strawberry.types import Info
 
-from graphql import FieldNode, SelectionNode, SelectionSetNode
+from graphql import FieldNode, FragmentSpreadNode, InlineFragmentNode, SelectionNode, SelectionSetNode
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +68,13 @@ class FieldSelector:
 
         for field in info.selected_fields:
             # Extract field name from selection
-            if hasattr(field, "name"):
-                selected_fields.add(field.name)
+            if isinstance(field, FieldNode) and hasattr(field, "name"):
+                selected_fields.add(field.name.value)
             # Handle nested selections if available
-            if hasattr(field, "selections") and field.selections:
-                for selection in field.selections:
-                    if hasattr(selection, "name"):
-                        selected_fields.add(selection.name)
+            if hasattr(field, "selection_set") and field.selection_set:
+                for selection in field.selection_set.selections:
+                    if isinstance(selection, FieldNode) and hasattr(selection, "name"):
+                        selected_fields.add(selection.name.value)
 
         return selected_fields
 
@@ -206,11 +206,12 @@ class QueryComplexityAnalyzer:
         total_complexity = 0
 
         for field in info.selected_fields:
-            total_complexity += self._calculate_field_complexity(field)
+            if isinstance(field, (FieldNode, InlineFragmentNode, FragmentSpreadNode)):
+                total_complexity += self._calculate_field_complexity(field)
 
         return total_complexity
 
-    def _calculate_field_complexity(self, field: SelectionNode, depth: int = 0) -> int:
+    def _calculate_field_complexity(self, field: SelectionNode | FieldNode | InlineFragmentNode | FragmentSpreadNode, depth: int = 0) -> int:
         """Calculate complexity for a single field.
 
         Args:
@@ -220,7 +221,10 @@ class QueryComplexityAnalyzer:
         Returns:
             Field complexity score
         """
-        field_name = getattr(field, "name", "unknown")
+        if isinstance(field, FieldNode) and hasattr(field, "name"):
+            field_name = field.name.value
+        else:
+            field_name = "unknown"
         base_cost = self._field_costs.get(field_name, 1)
 
         # Apply depth penalty
@@ -228,9 +232,10 @@ class QueryComplexityAnalyzer:
         field_cost = base_cost + depth_penalty
 
         # Calculate nested field costs
-        if hasattr(field, "selections") and field.selections:
-            for nested_selection in field.selections:
-                field_cost += self._calculate_field_complexity(nested_selection, depth + 1)
+        if hasattr(field, "selection_set") and field.selection_set:
+            for nested_selection in field.selection_set.selections:
+                if isinstance(nested_selection, (FieldNode, InlineFragmentNode, FragmentSpreadNode)):
+                    field_cost += self._calculate_field_complexity(nested_selection, depth + 1)
 
         return field_cost
 
