@@ -35,6 +35,7 @@ class GraphOperations:
             settings: Application settings
         """
         self.settings = settings
+        self.metrics = {"queries": 0, "exports": 0}
 
     def _load_parquet_file(self, data_path: str, filename: str) -> pd.DataFrame | None:
         """Load a parquet file from the GraphRAG output directory.
@@ -120,6 +121,7 @@ class GraphOperations:
                 }
                 entities.append(entity)
 
+            self.metrics["queries"] += 1
             return {
                 "entities": entities,
                 "total_count": total_count,
@@ -207,6 +209,7 @@ class GraphOperations:
                 }
                 relationships.append(relationship)
 
+            self.metrics["queries"] += 1
             return {
                 "relationships": relationships,
                 "total_count": total_count,
@@ -492,6 +495,7 @@ class GraphOperations:
             # For now, return file path as download URL (in production, this would be a proper URL)
             download_url = f"/api/graph/download/{Path(temp_file_path).name}"
 
+            self.metrics["exports"] += 1
             return {
                 "download_url": download_url,
                 "format": format,

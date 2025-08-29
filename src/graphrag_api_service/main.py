@@ -39,6 +39,15 @@ from .indexing.models import (
 from .logging_config import get_logger, setup_logging
 from .providers import register_providers
 from .providers.factory import LLMProviderFactory
+from .system import (
+    AdvancedHealthResponse,
+    ConfigValidationRequest,
+    ConfigValidationResponse,
+    EnhancedStatusResponse,
+    ProviderSwitchRequest,
+    ProviderSwitchResponse,
+    SystemOperations,
+)
 from .workspace import WorkspaceManager
 from .workspace.models import (
     Workspace,
@@ -56,6 +65,7 @@ workspace_manager = WorkspaceManager(settings)
 indexing_manager = IndexingManager(settings)
 graphrag_integration: GraphRAGIntegration | None = None
 graph_operations = GraphOperations(settings)
+system_operations: SystemOperations | None = None
 
 
 @asynccontextmanager
@@ -68,7 +78,7 @@ async def lifespan(app: FastAPI):
     logger.info("LLM providers registered successfully")
 
     # Initialize GraphRAG integration with provider
-    global graphrag_integration
+    global graphrag_integration, system_operations
     try:
         provider = LLMProviderFactory.create_provider(settings)
         graphrag_integration = GraphRAGIntegration(settings, provider)
@@ -76,6 +86,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize GraphRAG integration: {e}")
         graphrag_integration = None
+
+    # Initialize system operations
+    system_operations = SystemOperations(
+        settings=settings,
+        provider_factory=LLMProviderFactory(),
+        graphrag_integration=graphrag_integration,
+        workspace_manager=workspace_manager,
+        indexing_manager=indexing_manager,
+        graph_operations=graph_operations,
+    )
+    logger.info("System operations initialized successfully")
 
     # Start indexing manager
     await indexing_manager.start()
@@ -1054,6 +1075,136 @@ async def export_graph(request: GraphExportRequest) -> GraphExportResponse:
         raise HTTPException(
             status_code=500, detail="Internal server error during graph export"
         ) from e
+
+
+# System Management Endpoints
+
+
+@api_router.post("/system/provider/switch", response_model=ProviderSwitchResponse, tags=["System"])
+async def switch_provider(request: ProviderSwitchRequest) -> ProviderSwitchResponse:
+    """Switch the active LLM provider.
+
+    This endpoint allows switching between available LLM providers (Ollama and Google Gemini)
+    with optional connection validation.
+
+    Args:
+        request: Provider switch configuration
+
+    Returns:
+        ProviderSwitchResponse with switch operation results
+
+    Raises:
+        HTTPException: If provider switch fails
+    """
+    logger.info(f"Switching provider to: {request.provider}")
+
+    if not system_operations:
+        raise HTTPException(status_code=503, detail="System operations not available")
+
+    try:
+        result = await system_operations.switch_provider(
+            provider_name=request.provider,
+            validate_connection=request.validate_connection,
+        )
+        return ProviderSwitchResponse(**result)
+    except Exception as e:
+        logger.error(f"Provider switch failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Provider switch failed: {e}") from e
+
+
+@api_router.get("/system/health/advanced", response_model=AdvancedHealthResponse, tags=["System"])
+async def get_advanced_health() -> AdvancedHealthResponse:
+    """Get comprehensive system health status.
+
+    This endpoint provides detailed health information about all system components including
+    provider status, GraphRAG integration, workspace health, and system resources.
+
+    Returns:
+        AdvancedHealthResponse with detailed health information
+
+    Raises:
+        HTTPException: If health check fails
+    """
+    logger.info("Performing advanced health check")
+
+    if not system_operations:
+        raise HTTPException(status_code=503, detail="System operations not available")
+
+    try:
+        health_data = await system_operations.get_advanced_health()
+        return AdvancedHealthResponse(**health_data)
+    except Exception as e:
+        logger.error(f"Advanced health check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Health check failed: {e}") from e
+
+
+@api_router.get("/system/status/enhanced", response_model=EnhancedStatusResponse, tags=["System"])
+async def get_enhanced_status() -> EnhancedStatusResponse:
+    """Get enhanced system status with metrics.
+
+    This endpoint provides comprehensive status information including uptime, provider info,
+    graph metrics, indexing metrics, and recent operations.
+
+    Returns:
+        EnhancedStatusResponse with comprehensive status information
+
+    Raises:
+        HTTPException: If status generation fails
+    """
+    logger.info("Generating enhanced status report")
+
+    if not system_operations:
+        raise HTTPException(status_code=503, detail="System operations not available")
+
+    try:
+        # Update metrics for graph operations
+        if graph_operations:
+            system_operations.metrics["graph_queries"] = (
+                graph_operations.metrics.get("queries", 0)
+                if hasattr(graph_operations, "metrics")
+                else 0
+            )
+
+        status_data = await system_operations.get_enhanced_status()
+        return EnhancedStatusResponse(**status_data)
+    except Exception as e:
+        logger.error(f"Enhanced status generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Status generation failed: {e}") from e
+
+
+@api_router.post(
+    "/system/config/validate", response_model=ConfigValidationResponse, tags=["System"]
+)
+async def validate_configuration(request: ConfigValidationRequest) -> ConfigValidationResponse:
+    """Validate system configuration.
+
+    This endpoint validates various configuration aspects including provider settings,
+    GraphRAG parameters, and workspace configuration.
+
+    Args:
+        request: Configuration validation parameters
+
+    Returns:
+        ConfigValidationResponse with validation results
+
+    Raises:
+        HTTPException: If validation fails
+    """
+    logger.info(f"Validating configuration type: {request.config_type}")
+
+    if not system_operations:
+        raise HTTPException(status_code=503, detail="System operations not available")
+
+    try:
+        validation_result = await system_operations.validate_configuration(
+            config_type=request.config_type,
+            config_data=request.config_data,
+            strict_mode=request.strict_mode,
+        )
+        return ConfigValidationResponse(**validation_result)
+    except Exception as e:
+        logger.error(f"Configuration validation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Validation failed: {e}") from e
 
 
 # Register routers with the main app
