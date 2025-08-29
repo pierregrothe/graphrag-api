@@ -15,6 +15,8 @@ from ..system.operations import SystemOperations
 from ..workspace.manager import WorkspaceManager
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
 from .types import (
+    ApplicationInfo,
+    ApplicationInterfaces,
     Entity,
     EntityConnection,
     EntityEdge,
@@ -371,6 +373,42 @@ class Query:
             query_metrics=status.get("query_metrics", {}),
             workspace_metrics=status.get("workspace_metrics", {}),
             recent_operations=status.get("recent_operations", []),
+        )
+
+    # Application Info Query
+    @strawberry.field
+    async def application_info(self, info: Info) -> ApplicationInfo:
+        """Get application information and configuration.
+
+        Args:
+            info: GraphQL context information
+
+        Returns:
+            ApplicationInfo containing application information
+        """
+        return ApplicationInfo(
+            name=settings.app_name,
+            version=settings.app_version,
+            status="healthy",
+            interfaces=ApplicationInterfaces(
+                rest_api="/api",
+                graphql="/graphql/playground",
+                documentation={
+                    "swagger_ui": "/docs",
+                    "redoc": "/redoc",
+                    "openapi_json": "/openapi.json",
+                },
+            ),
+            endpoints={
+                "health": "/api/health",
+                "info": "/api/info",
+                "status": "/api/status",
+                "query": "/api/query",
+                "index": "/api/index",
+                "workspaces": "/api/workspaces",
+                "indexing_jobs": "/api/indexing/jobs",
+                "indexing_stats": "/api/indexing/stats",
+            },
         )
 
     # GraphRAG Query

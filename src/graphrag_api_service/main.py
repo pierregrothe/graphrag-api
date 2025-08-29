@@ -883,6 +883,62 @@ async def query_entities(
         ) from e
 
 
+@api_router.get("/graph/entities/{entity_id}", response_model=dict, tags=["Graph"])
+async def get_entity_by_id(entity_id: str) -> dict[str, Any]:
+    """Get a specific entity by ID.
+
+    This endpoint retrieves detailed information about a single entity
+    from the knowledge graph.
+
+    Args:
+        entity_id: The unique identifier of the entity
+
+    Returns:
+        Dict containing entity details
+
+    Raises:
+        HTTPException: If entity not found or data path not configured
+    """
+    logger.info(f"Getting entity by ID: {entity_id}")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        result = await graph_operations.query_entities(
+            data_path=settings.graphrag_data_path,
+            entity_name=entity_id,
+            limit=1,
+        )
+
+        if result["entities"]:
+            entity = result["entities"][0]
+            return {
+                "id": entity["id"],
+                "title": entity["title"],
+                "type": entity["type"],
+                "description": entity["description"],
+                "degree": entity["degree"],
+                "community_ids": entity.get("community_ids", []),
+                "text_unit_ids": entity.get("text_unit_ids", []),
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f"Entity with ID '{entity_id}' not found")
+
+    except HTTPException:
+        raise
+    except GraphOperationsError as e:
+        logger.error(f"Entity retrieval failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Entity retrieval failed: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error during entity retrieval: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during entity retrieval") from e
+
+
 @api_router.get("/graph/relationships", response_model=RelationshipQueryResponse, tags=["Graph"])
 async def query_relationships(
     source_entity: str | None = None,
@@ -936,6 +992,63 @@ async def query_relationships(
         raise HTTPException(
             status_code=500, detail="Internal server error during relationship querying"
         ) from e
+
+
+@api_router.get("/graph/relationships/{relationship_id}", response_model=dict, tags=["Graph"])
+async def get_relationship_by_id(relationship_id: str) -> dict[str, Any]:
+    """Get a specific relationship by ID.
+
+    This endpoint retrieves detailed information about a single relationship
+    from the knowledge graph.
+
+    Args:
+        relationship_id: The unique identifier of the relationship
+
+    Returns:
+        Dict containing relationship details
+
+    Raises:
+        HTTPException: If relationship not found or data path not configured
+    """
+    logger.info(f"Getting relationship by ID: {relationship_id}")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        # Query relationships and filter by ID
+        result = await graph_operations.query_relationships(
+            data_path=settings.graphrag_data_path,
+            limit=1000,  # Get more results to find the specific ID
+        )
+
+        # Find the specific relationship by ID
+        for relationship in result["relationships"]:
+            if relationship["id"] == relationship_id:
+                return {
+                    "id": relationship["id"],
+                    "source": relationship["source"],
+                    "target": relationship["target"],
+                    "type": relationship["type"],
+                    "description": relationship["description"],
+                    "weight": relationship["weight"],
+                    "text_unit_ids": relationship.get("text_unit_ids", []),
+                }
+
+        raise HTTPException(status_code=404, detail=f"Relationship with ID '{relationship_id}' not found")
+
+    except HTTPException:
+        raise
+    except GraphOperationsError as e:
+        logger.error(f"Relationship retrieval failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Relationship retrieval failed: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error during relationship retrieval: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during relationship retrieval") from e
 
 
 @api_router.get("/graph/stats", response_model=GraphStatsResponse, tags=["Graph"])

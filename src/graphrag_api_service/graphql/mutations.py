@@ -25,6 +25,7 @@ from ..workspace.models import WorkspaceCreateRequest, WorkspaceUpdateRequest
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
 from .types import (
     ConfigValidationResult,
+    GraphExport,
     IndexResponse,
     LLMProvider,
     ProviderSwitchResult,
@@ -347,6 +348,70 @@ class Mutation:
         )
 
     # Graph Data Mutations
+    @strawberry.mutation
+    async def export_graph(
+        self,
+        info: Info,
+        format: str = "json",
+        include_entities: bool = True,
+        include_relationships: bool = True,
+        include_communities: bool = True,
+        entity_limit: int | None = None,
+        relationship_limit: int | None = None,
+        workspace_id: str | None = None,
+    ) -> GraphExport:
+        """Export graph data in various formats.
+
+        Args:
+            info: GraphQL context information
+            format: Export format (json, csv)
+            include_entities: Include entities in export
+            include_relationships: Include relationships in export
+            include_communities: Include communities in export
+            entity_limit: Optional limit on entities
+            relationship_limit: Optional limit on relationships
+            workspace_id: Optional workspace ID for scoped export
+
+        Returns:
+            GraphExport with download information
+        """
+        from ..graph.operations import GraphOperations
+
+        graph_ops: GraphOperations = info.context["graph_operations"]
+
+        # Use workspace data path if workspace_id provided
+        data_path = settings.graphrag_data_path
+        if workspace_id:
+            workspace_manager: WorkspaceManager = info.context["workspace_manager"]
+            workspace = workspace_manager.get_workspace(workspace_id)
+            if workspace and workspace.config:
+                data_path = workspace.config.data_path
+
+        if not data_path:
+            raise Exception("No data path available for export")
+
+        try:
+            result = await graph_ops.export_graph(
+                data_path=data_path,
+                format=format,
+                include_entities=include_entities,
+                include_relationships=include_relationships,
+                include_communities=include_communities,
+                entity_limit=entity_limit,
+                relationship_limit=relationship_limit,
+            )
+
+            return GraphExport(
+                download_url=result["download_url"],
+                format=result["format"],
+                file_size=result["file_size"],
+                entity_count=result["entity_count"],
+                relationship_count=result["relationship_count"],
+                expires_at=result["expires_at"],
+            )
+        except Exception as e:
+            raise Exception(f"Failed to export graph: {str(e)}")
+
     @strawberry.mutation
     async def clear_graph_cache(self, info: Info) -> bool:
         """Clear the graph cache.

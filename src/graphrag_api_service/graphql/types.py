@@ -163,6 +163,27 @@ class IndexResponse:
     workspace_id: str | None
 
 
+# Application Info Types
+@strawberry.type
+class ApplicationInterfaces:
+    """GraphQL type for application interfaces."""
+
+    rest_api: str
+    graphql: str
+    documentation: JSONType
+
+
+@strawberry.type
+class ApplicationInfo:
+    """GraphQL type for application information."""
+
+    name: str
+    version: str
+    status: str
+    interfaces: ApplicationInterfaces
+    endpoints: JSONType
+
+
 # System Types
 @strawberry.type
 class SystemHealth:
