@@ -23,7 +23,7 @@ flowchart TD
         B(FastAPI Server)
         B1[Health Endpoints]
         B2[Info Endpoints]
-        B3[Placeholder GraphRAG Endpoints]
+        B3[GraphRAG Endpoints]
     end
 
     %% Configuration Layer
@@ -57,38 +57,55 @@ flowchart TD
         F3[API Key Management]
     end
 
-    %% Future Implementation - NOT YET BUILT
-    subgraph FutureLayer ["🚧 Future: GraphRAG Core (Phase 3 - Not Implemented)"]
+    %% Graph Operations Layer - NEWLY IMPLEMENTED
+    subgraph GraphOperationsLayer ["📊 Graph Operations (Implemented)"]
+        H[Entity Querying]
+        H1[Relationship Querying]
+        H2[Graph Statistics]
+        H3[Visualization Data]
+        H4[Graph Export]
+    end
+
+    %% GraphRAG Core Layer - PARTIALLY IMPLEMENTED
+    subgraph GraphRAGCoreLayer ["🚧 GraphRAG Core (Phase 3 - Partially Implemented)"]
         G[Document Indexing]
         G1[Knowledge Graph Creation]
         G2[Query Processing]
         G3[Vector Storage]
+        G4[Load GraphRAG Artifacts]
     end
 
     %% Current Implementation Flow
     ClientLayer --> ServerLayer
     ServerLayer --> ConfigLayer
     ConfigLayer --> FactoryLayer
+    ServerLayer --> GraphOperationsLayer
 
     FactoryLayer -->|Provider Selection| OllamaLayer
     FactoryLayer -->|Provider Selection| GeminiLayer
 
-    %% Placeholder connections (not functional yet)
-    ServerLayer -.->|Placeholder Only| FutureLayer
-    OllamaLayer -.->|Not Connected Yet| FutureLayer
-    GeminiLayer -.->|Not Connected Yet| FutureLayer
+    GraphOperationsLayer -->|Loads data from| GraphRAGCoreLayer
+    GraphRAGCoreLayer -->|Provides data to| GraphOperationsLayer
 
     %% Styling
     classDef implementedStyle fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
     classDef placeholderStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
     classDef futureStyle fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#666,stroke-dasharray: 5 5
     classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef newImplementedStyle fill:#e0f7fa,stroke:#00bcd4,
+    stroke-width:3px,color:#000
 
     %% Apply Classes
     class ClientLayer clientStyle
-    class ServerLayer,ConfigLayer,FactoryLayer,OllamaLayer,GeminiLayer implementedStyle
-    class B3 placeholderStyle
-    class FutureLayer,G,G1,G2,G3 futureStyle
+    class ServerLayer implementedStyle
+    class ConfigLayer implementedStyle
+    class FactoryLayer implementedStyle
+    class OllamaLayer implementedStyle
+    class GeminiLayer implementedStyle
+    class B3 implementedStyle
+    class GraphOperationsLayer newImplementedStyle
+    class GraphRAGCoreLayer futureStyle
+    class G,G1,G2,G3,G4 futureStyle
 ```
 
 ## Key Features
@@ -121,6 +138,14 @@ flowchart TD
 - **Querying**: Global and local search modes with configurable community levels
 - **Workspace Management**: Multi-project support with isolated configurations
 - **Real-time Status**: Progress tracking and health monitoring
+- **Graph Operations**:
+    - **Entity Querying**: Search and retrieve entities from the knowledge graph with filtering and pagination.
+    - **Relationship Querying**: Search and retrieve relationships between entities with filtering and pagination.
+    - **Graph Statistics**: Obtain comprehensive statistics about the knowledge graph, including
+      entity/relationship counts, type distributions, and density.
+    - **Visualization Data Generation**: Generate structured data (nodes and edges) suitable for
+      rendering interactive graph visualizations.
+    - **Graph Export**: Export graph data (entities, relationships, communities) to various formats like JSON and CSV.
 
 ## System Flow Diagrams
 
@@ -134,6 +159,7 @@ sequenceDiagram
     participant Factory as 🔄 Provider Factory
     participant Ollama as 🏠 Ollama Provider
     participant Gemini as ☁️ Gemini Provider
+    participant GraphOps as 📊 Graph Operations
 
     rect rgb(232, 245, 233)
         Note over Client,API: Health & Info Endpoints (✅ Implemented)
@@ -171,15 +197,38 @@ sequenceDiagram
         API-->>-Client: Complete System Status ✅
     end
 
-    rect rgb(255, 243, 224)
-        Note over Client,API: GraphRAG Endpoints (🚧 Placeholder Only - Not Functional)
-        Client->>+API: POST /graphrag/query
-        Note over API: No actual GraphRAG processing
-        API-->>-Client: "Placeholder response - not implemented"
+    rect rgb(224, 247, 250)
+        Note over Client,API: GraphRAG Endpoints (✅ Implemented - Graph Operations)
+        Client->>+API: POST /graphrag/graph/entities/query
+        API->>+GraphOps: query_entities(filters, pagination)
+        GraphOps->>GraphOps: Load entities.parquet
+        GraphOps-->>-API: EntityQueryResponse
+        API-->>-Client: Query Results ✅
 
-        Client->>+API: POST /graphrag/index
-        Note over API: No actual indexing logic
-        API-->>-Client: "Placeholder response - not implemented"
+        Client->>+API: POST /graphrag/graph/relationships/query
+        API->>+GraphOps: query_relationships(filters, pagination)
+        GraphOps->>GraphOps: Load relationships.parquet
+        GraphOps-->>-API: RelationshipQueryResponse
+        API-->>-Client: Query Results ✅
+
+        Client->>+API: GET /graphrag/graph/statistics
+        API->>+GraphOps: get_graph_statistics()
+        GraphOps->>GraphOps: Load all parquet files
+        GraphOps-->>-API: GraphStatsResponse
+        API-->>-Client: Statistics ✅
+
+        Client->>+API: POST /graphrag/graph/visualize
+        API->>+GraphOps: generate_visualization(limits, layout)
+        GraphOps->>GraphOps: Load entities/relationships.parquet
+        GraphOps-->>-API: GraphVisualizationResponse
+        API-->>-Client: Visualization Data ✅
+
+        Client->>+API: POST /graphrag/graph/export
+        API->>+GraphOps: export_graph(format, includes)
+        GraphOps->>GraphOps: Load selected parquet files
+        GraphOps->>GraphOps: Create temp export file
+        GraphOps-->>-API: GraphExportResponse
+        API-->>-Client: Export Details ✅
     end
 ```
 
@@ -230,12 +279,12 @@ stateDiagram-v2
         ServingRequests --> HealthCheck: GET health
         ServingRequests --> InfoRequest: GET info
         ServingRequests --> StatusRequest: GET graphrag status
-        ServingRequests --> PlaceholderRequest: GraphRAG Endpoints
+        ServingRequests --> GraphOperationsRequest: GraphRAG Graph Endpoints
 
         HealthCheck --> ServingRequests: OK Response
         InfoRequest --> ServingRequests: Configuration Info
         StatusRequest --> ServingRequests: Provider Status
-        PlaceholderRequest --> ServingRequests: Placeholder Response
+        GraphOperationsRequest --> ServingRequests: Graph Operations Response
     }
 
     OllamaProvider --> APIService: Provider Initialized
@@ -331,6 +380,11 @@ stateDiagram-v2
 - `POST /graphrag/index` - Index documents for knowledge graph creation
 - `POST /graphrag/query` - Query the knowledge graph
 - `GET /graphrag/status` - Get GraphRAG system status and configuration
+- `POST /graphrag/graph/entities/query` - Query entities from the knowledge graph
+- `POST /graphrag/graph/relationships/query` - Query relationships from the knowledge graph
+- `GET /graphrag/graph/statistics` - Get comprehensive statistics about the knowledge graph
+- `POST /graphrag/graph/visualize` - Generate data for graph visualization
+- `POST /graphrag/graph/export` - Export graph data in various formats
 
 ## Current Development Status
 
@@ -342,6 +396,8 @@ stateDiagram-v2
 - **Test Coverage**: 41 comprehensive tests across configuration, providers, and API endpoints
 - **Documentation**: Consistent formatting and linting across all project documentation
 - **Next Phase**: GraphRAG Core Implementation (indexing, querying, workspace management)
+- **Graph Operations Implemented**: Initial implementation of graph querying, statistics,
+  visualization data generation, and export.
 
 ## Project Documentation
 

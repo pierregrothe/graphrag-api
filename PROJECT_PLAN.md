@@ -403,7 +403,8 @@ Building a comprehensive FastAPI-based service for Microsoft GraphRAG with multi
 - **Phase 4.1**: [x] **COMPLETED** - Workspace management (full functionality)
 - **Phase 4.2-4.3**: [x] **INFRASTRUCTURE COMPLETED** - API endpoints and job management
 - **Phase 4.4**: [x] **COMPLETED** - GraphRAG core logic integration (CLI-based implementation)
-- **Phase 5.1**: [x] **COMPLETED** - Knowledge graph operations (entity/relationship querying, statistics, visualization, export)
+- **Phase 5.1**: [x] **COMPLETED** - Knowledge graph operations (entity/relationship querying,
+  statistics, visualization, export)
 
 **Technical Architecture**:
 
