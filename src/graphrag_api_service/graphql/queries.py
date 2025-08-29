@@ -15,24 +15,30 @@ from ..system.operations import SystemOperations
 from ..workspace.manager import WorkspaceManager
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
 from .types import (
+    AdvancedQueryResult,
+    AnomalyDetectionResult,
     ApplicationInfo,
     ApplicationInterfaces,
     CacheStatistics,
+    CentralityMeasures,
+    ClusteringResult,
+    CommunityDetectionResult,
     Entity,
     EntityConnection,
     EntityEdge,
     GraphEdge,
     GraphNode,
-    GraphStatistics,
-    GraphVisualization,
     GraphQLIndexingJobStatus,
     GraphQLIndexingStage,
+    GraphStatistics,
+    GraphVisualization,
     IndexingJobConnection,
     IndexingJobDetail,
     IndexingJobEdge,
     IndexingJobProgress,
     IndexingJobSummary,
     IndexingStatistics,
+    MultiHopQueryInput,
     PageInfo,
     QueryResponse,
     QueryType,
@@ -677,4 +683,255 @@ class Query:
                 "embedding_cache": {"enabled": True, "size": 0},
                 "query_cache": {"enabled": True, "size": 0},
             },
+        )
+
+    @strawberry.field
+    async def multi_hop_query(
+        self, query_input: MultiHopQueryInput, info: Info
+    ) -> AdvancedQueryResult:
+        """Execute a multi-hop query with path finding and scoring.
+
+        Args:
+            query_input: Multi-hop query configuration
+            info: GraphQL context information
+
+        Returns:
+            AdvancedQueryResult with paths and scoring information
+        """
+        from ..graph.advanced_query_engine import AdvancedQueryEngine, MultiHopQuery
+
+        if not settings.graphrag_data_path:
+            raise Exception("GraphRAG data path not configured")
+
+        # Convert GraphQL input to internal model
+        query = MultiHopQuery(
+            start_entities=query_input.start_entities,
+            target_entities=query_input.target_entities,
+            max_hops=query_input.max_hops,
+            relationship_types=query_input.relationship_types,
+            scoring_algorithm=query_input.scoring_algorithm,
+        )
+
+        advanced_engine = AdvancedQueryEngine(settings.graphrag_data_path)
+        result = await advanced_engine.multi_hop_query(query)
+
+        # Convert entities and relationships to GraphQL types
+        entities = [
+            Entity(
+                id=entity.get("id", ""),
+                title=entity.get("title", ""),
+                type=entity.get("type", ""),
+                description=entity.get("description", ""),
+                degree=entity.get("degree", 0),
+                community_ids=entity.get("community_ids", []),
+                text_unit_ids=entity.get("text_unit_ids", []),
+            )
+            for entity in result.entities
+        ]
+
+        relationships = [
+            Relationship(
+                id=rel.get("id", ""),
+                source=rel.get("source", ""),
+                target=rel.get("target", ""),
+                type=rel.get("type", ""),
+                description=rel.get("description", ""),
+                weight=rel.get("weight", 0.0),
+                text_unit_ids=rel.get("text_unit_ids", []),
+            )
+            for rel in result.relationships
+        ]
+
+        from .types import QueryPath
+
+        paths = [
+            QueryPath(
+                entities=path.entities,
+                relationships=path.relationships,
+                score=path.score,
+                confidence=path.confidence,
+                path_length=path.path_length,
+            )
+            for path in result.paths
+        ]
+
+        return AdvancedQueryResult(
+            entities=entities,
+            relationships=relationships,
+            paths=paths,
+            total_score=result.total_score,
+            execution_time_ms=result.execution_time_ms,
+            query_metadata=result.query_metadata,
+        )
+
+    @strawberry.field
+    async def detect_communities(
+        self, algorithm: str = "louvain", resolution: float = 1.0, info: Info | None = None
+    ) -> CommunityDetectionResult:
+        """Detect communities in the knowledge graph.
+
+        Args:
+            algorithm: Community detection algorithm
+            resolution: Resolution parameter for community detection
+            info: GraphQL context information
+
+        Returns:
+            CommunityDetectionResult with detected communities
+        """
+        from ..graph.analytics import GraphAnalytics
+
+        if not settings.graphrag_data_path:
+            raise Exception("GraphRAG data path not configured")
+
+        analytics_engine = GraphAnalytics(settings.graphrag_data_path)
+        result = await analytics_engine.detect_communities(algorithm, resolution)
+
+        from .types import Community
+
+        communities = [
+            Community(
+                id=community["id"],
+                level=0,  # Default level
+                title=community.get("type", "Unknown"),
+                entity_ids=community["entities"],
+                relationship_ids=[],  # Default empty list
+            )
+            for community in result.communities
+        ]
+
+        return CommunityDetectionResult(
+            communities=communities,
+            modularity_score=result.modularity_score,
+            algorithm_used=result.algorithm_used,
+            execution_time_ms=result.execution_time_ms,
+        )
+
+    @strawberry.field
+    async def calculate_centrality(
+        self, node_ids: list[str] | None = None, info: Info | None = None
+    ) -> list[CentralityMeasures]:
+        """Calculate centrality measures for graph nodes.
+
+        Args:
+            node_ids: Specific node IDs to analyze
+            info: GraphQL context information
+
+        Returns:
+            List of centrality measures for each node
+        """
+        from ..graph.analytics import GraphAnalytics
+
+        if not settings.graphrag_data_path:
+            raise Exception("GraphRAG data path not configured")
+
+        analytics_engine = GraphAnalytics(settings.graphrag_data_path)
+        results = await analytics_engine.calculate_centrality_measures(node_ids)
+
+        return [
+            CentralityMeasures(
+                node_id=result.node_id,
+                degree_centrality=result.degree_centrality,
+                betweenness_centrality=result.betweenness_centrality,
+                closeness_centrality=result.closeness_centrality,
+                eigenvector_centrality=result.eigenvector_centrality,
+                pagerank=result.pagerank,
+            )
+            for result in results
+        ]
+
+    @strawberry.field
+    async def perform_clustering(
+        self, algorithm: str = "kmeans", num_clusters: int | None = None, info: Info | None = None
+    ) -> ClusteringResult:
+        """Perform graph clustering analysis.
+
+        Args:
+            algorithm: Clustering algorithm
+            num_clusters: Number of clusters
+            info: GraphQL context information
+
+        Returns:
+            ClusteringResult with cluster assignments
+        """
+        from ..graph.analytics import GraphAnalytics
+
+        if not settings.graphrag_data_path:
+            raise Exception("GraphRAG data path not configured")
+
+        analytics_engine = GraphAnalytics(settings.graphrag_data_path)
+        result = await analytics_engine.perform_clustering(algorithm, num_clusters)
+
+        from .types import Cluster
+
+        clusters = [
+            Cluster(
+                cluster_id=cluster["cluster_id"],
+                entities=cluster["entities"],
+                size=cluster["size"],
+                centroid=cluster.get("centroid"),
+            )
+            for cluster in result.clusters
+        ]
+
+        return ClusteringResult(
+            clusters=clusters,
+            silhouette_score=result.silhouette_score,
+            algorithm_used=result.algorithm_used,
+            num_clusters=result.num_clusters,
+        )
+
+    @strawberry.field
+    async def detect_anomalies(
+        self, method: str = "isolation_forest", threshold: float = 0.1, info: Info | None = None
+    ) -> AnomalyDetectionResult:
+        """Detect anomalies in the knowledge graph.
+
+        Args:
+            method: Anomaly detection method
+            threshold: Anomaly threshold
+            info: GraphQL context information
+
+        Returns:
+            AnomalyDetectionResult with detected anomalies
+        """
+        from ..graph.analytics import GraphAnalytics
+
+        if not settings.graphrag_data_path:
+            raise Exception("GraphRAG data path not configured")
+
+        analytics_engine = GraphAnalytics(settings.graphrag_data_path)
+        result = await analytics_engine.detect_anomalies(method, threshold)
+
+        # Convert entities and relationships to GraphQL types
+        anomalous_entities = [
+            Entity(
+                id=entity.get("id", ""),
+                title=entity.get("title", ""),
+                type=entity.get("type", ""),
+                description=entity.get("description", ""),
+                degree=entity.get("degree", 0),
+                community_ids=entity.get("community_ids", []),
+                text_unit_ids=entity.get("text_unit_ids", []),
+            )
+            for entity in result.anomalous_entities
+        ]
+
+        anomalous_relationships = [
+            Relationship(
+                id=rel.get("id", ""),
+                source=rel.get("source", ""),
+                target=rel.get("target", ""),
+                type=rel.get("type", ""),
+                description=rel.get("description", ""),
+                weight=rel.get("weight", 0.0),
+                text_unit_ids=rel.get("text_unit_ids", []),
+            )
+            for rel in result.anomalous_relationships
+        ]
+
+        return AnomalyDetectionResult(
+            anomalous_entities=anomalous_entities,
+            anomalous_relationships=anomalous_relationships,
+            anomaly_scores=result.anomaly_scores,
+            detection_method=result.detection_method,
         )

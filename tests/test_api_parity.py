@@ -90,7 +90,6 @@ class TestAPIParity:
     def test_workspace_operations_parity(self, client):
         """Test that workspace operations are consistent between APIs."""
         import tempfile
-        import os
         import uuid
 
         # Create a temporary directory for the test
@@ -145,7 +144,7 @@ class TestAPIParity:
         """Test that graph statistics are consistent between APIs."""
         # REST API graph statistics
         rest_response = client.get("/api/graph/stats")
-        
+
         # GraphQL graph statistics
         graphql_query = """
         query {
@@ -168,7 +167,7 @@ class TestAPIParity:
             rest_data = rest_response.json()
             assert graphql_response.status_code == 200
             graphql_data = graphql_response.json()
-            
+
             if "data" in graphql_data and graphql_data["data"]["graphStatistics"]:
                 graphql_stats = graphql_data["data"]["graphStatistics"]
                 # Validate consistent statistics
@@ -180,7 +179,7 @@ class TestAPIParity:
         """Test that error handling is consistent between APIs."""
         # Test invalid workspace ID in REST
         rest_response = client.get("/api/workspaces/invalid-id")
-        
+
         # Test invalid workspace ID in GraphQL
         graphql_query = """
         query {
@@ -235,7 +234,7 @@ class TestAPIParity:
         """Test that pagination works consistently between APIs."""
         # REST API with pagination
         rest_response = client.get("/api/graph/entities?limit=10&offset=0")
-        
+
         # GraphQL with pagination
         graphql_query = """
         query {
@@ -266,7 +265,7 @@ class TestAPIParity:
             rest_data = rest_response.json()
             assert "entities" in rest_data
             assert "total_count" in rest_data
-            
+
         if graphql_response.status_code == 200:
             graphql_data = graphql_response.json()
             if "data" in graphql_data and "entities" in graphql_data["data"]:

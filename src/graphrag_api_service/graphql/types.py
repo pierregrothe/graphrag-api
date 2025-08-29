@@ -450,3 +450,103 @@ class CacheClearResult:
     message: str
     files_cleared: int
     bytes_freed: int
+
+
+# Advanced Query Engine Types
+@strawberry.type
+class QueryPath:
+    """GraphQL type for query path through the knowledge graph."""
+
+    entities: list[str]
+    relationships: list[str]
+    score: float
+    confidence: float
+    path_length: int
+
+
+@strawberry.input
+class MultiHopQueryInput:
+    """GraphQL input for multi-hop query configuration."""
+
+    start_entities: list[str]
+    target_entities: list[str] | None = None
+    max_hops: int = 3
+    relationship_types: list[str] | None = None
+    scoring_algorithm: str = "pagerank"
+
+
+@strawberry.input
+class TemporalQueryInput:
+    """GraphQL input for temporal query constraints."""
+
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    time_field: str = "created_at"
+    temporal_operator: str = "within"
+
+
+@strawberry.type
+class AdvancedQueryResult:
+    """GraphQL type for advanced query results."""
+
+    entities: list[Entity]
+    relationships: list[Relationship]
+    paths: list[QueryPath]
+    total_score: float
+    execution_time_ms: float
+    query_metadata: JSONType
+
+
+# Graph Analytics Types (using existing Community type from line 112)
+
+
+@strawberry.type
+class CommunityDetectionResult:
+    """GraphQL type for community detection results."""
+
+    communities: list[Community]
+    modularity_score: float
+    algorithm_used: str
+    execution_time_ms: float
+
+
+@strawberry.type
+class CentralityMeasures:
+    """GraphQL type for node centrality measures."""
+
+    node_id: str
+    degree_centrality: float
+    betweenness_centrality: float
+    closeness_centrality: float
+    eigenvector_centrality: float
+    pagerank: float
+
+
+@strawberry.type
+class Cluster:
+    """GraphQL type for graph cluster."""
+
+    cluster_id: int
+    entities: list[str]
+    size: int
+    centroid: str | None = None
+
+
+@strawberry.type
+class ClusteringResult:
+    """GraphQL type for clustering analysis results."""
+
+    clusters: list[Cluster]
+    silhouette_score: float
+    algorithm_used: str
+    num_clusters: int
+
+
+@strawberry.type
+class AnomalyDetectionResult:
+    """GraphQL type for anomaly detection results."""
+
+    anomalous_entities: list[Entity]
+    anomalous_relationships: list[Relationship]
+    anomaly_scores: JSONType
+    detection_method: str

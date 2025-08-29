@@ -27,6 +27,8 @@ from .graph import (
     GraphVisualizationResponse,
     RelationshipQueryResponse,
 )
+from .graph.advanced_query_engine import AdvancedQueryEngine, MultiHopQuery, TemporalQuery
+from .graph.analytics import GraphAnalytics
 from .graph.operations import GraphOperationsError
 from .graphrag_integration import GraphRAGError, GraphRAGIntegration
 from .indexing import IndexingManager
@@ -1412,6 +1414,266 @@ async def get_cache_statistics() -> dict[str, Any]:
     except Exception as e:
         logger.error(f"Cache statistics retrieval failed: {e}")
         raise HTTPException(status_code=500, detail=f"Cache statistics failed: {e}") from e
+
+
+# Advanced Graph Query API endpoints
+@api_router.post("/graph/query/multi-hop", tags=["Advanced Graph"])
+async def multi_hop_query(query: MultiHopQuery) -> dict[str, Any]:
+    """Execute a multi-hop query with path finding and scoring.
+
+    This endpoint performs advanced graph traversal to find paths between entities
+    with configurable hop limits and scoring algorithms.
+
+    Args:
+        query: Multi-hop query configuration
+
+    Returns:
+        Dict containing query results with paths and scoring information
+
+    Raises:
+        HTTPException: If query execution fails or data path not configured
+    """
+    logger.info(f"Executing multi-hop query: {query}")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        advanced_engine = AdvancedQueryEngine(settings.graphrag_data_path)
+        result = await advanced_engine.multi_hop_query(query)
+
+        return {
+            "entities": result.entities,
+            "relationships": result.relationships,
+            "paths": [path.dict() for path in result.paths],
+            "total_score": result.total_score,
+            "execution_time_ms": result.execution_time_ms,
+            "query_metadata": result.query_metadata,
+        }
+
+    except Exception as e:
+        logger.error(f"Multi-hop query failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Multi-hop query failed: {e}") from e
+
+
+@api_router.post("/graph/query/temporal", tags=["Advanced Graph"])
+async def temporal_query(
+    base_query: dict[str, Any], temporal_constraints: TemporalQuery
+) -> dict[str, Any]:
+    """Execute a temporal query with time-based filtering.
+
+    This endpoint performs graph queries with temporal constraints,
+    filtering entities and relationships by time ranges.
+
+    Args:
+        base_query: Base query parameters
+        temporal_constraints: Temporal filtering constraints
+
+    Returns:
+        Dict containing temporally filtered query results
+
+    Raises:
+        HTTPException: If query execution fails or data path not configured
+    """
+    logger.info(f"Executing temporal query with constraints: {temporal_constraints}")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        advanced_engine = AdvancedQueryEngine(settings.graphrag_data_path)
+        result = await advanced_engine.temporal_query(base_query, temporal_constraints)
+
+        return {
+            "entities": result.entities,
+            "relationships": result.relationships,
+            "execution_time_ms": result.execution_time_ms,
+            "query_metadata": result.query_metadata,
+        }
+
+    except Exception as e:
+        logger.error(f"Temporal query failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Temporal query failed: {e}") from e
+
+
+# Graph Analytics API endpoints
+@api_router.post("/graph/analytics/communities", tags=["Graph Analytics"])
+async def detect_communities(
+    algorithm: str = "louvain", resolution: float = 1.0
+) -> dict[str, Any]:
+    """Detect communities in the knowledge graph.
+
+    This endpoint performs community detection using various algorithms
+    to identify clusters of related entities.
+
+    Args:
+        algorithm: Community detection algorithm (louvain, leiden, modularity)
+        resolution: Resolution parameter for community detection
+
+    Returns:
+        Dict containing detected communities and analysis results
+
+    Raises:
+        HTTPException: If analysis fails or data path not configured
+    """
+    logger.info(f"Detecting communities using {algorithm} algorithm")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        analytics_engine = GraphAnalytics(settings.graphrag_data_path)
+        result = await analytics_engine.detect_communities(algorithm, resolution)
+
+        return {
+            "communities": result.communities,
+            "modularity_score": result.modularity_score,
+            "algorithm_used": result.algorithm_used,
+            "execution_time_ms": result.execution_time_ms,
+        }
+
+    except Exception as e:
+        logger.error(f"Community detection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Community detection failed: {e}") from e
+
+
+@api_router.get("/graph/analytics/centrality", tags=["Graph Analytics"])
+async def calculate_centrality(node_ids: list[str] | None = None) -> dict[str, Any]:
+    """Calculate centrality measures for graph nodes.
+
+    This endpoint computes various centrality measures including degree,
+    betweenness, closeness, eigenvector centrality, and PageRank.
+
+    Args:
+        node_ids: Specific node IDs to analyze (if None, analyze all nodes)
+
+    Returns:
+        Dict containing centrality measures for each node
+
+    Raises:
+        HTTPException: If analysis fails or data path not configured
+    """
+    logger.info(f"Calculating centrality measures for {len(node_ids) if node_ids else 'all'} nodes")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        analytics_engine = GraphAnalytics(settings.graphrag_data_path)
+        results = await analytics_engine.calculate_centrality_measures(node_ids)
+
+        return {
+            "centrality_measures": [result.dict() for result in results],
+            "nodes_analyzed": len(results),
+        }
+
+    except Exception as e:
+        logger.error(f"Centrality calculation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Centrality calculation failed: {e}") from e
+
+
+@api_router.post("/graph/analytics/clustering", tags=["Graph Analytics"])
+async def perform_clustering(
+    algorithm: str = "kmeans", num_clusters: int | None = None
+) -> dict[str, Any]:
+    """Perform graph clustering analysis.
+
+    This endpoint performs clustering analysis on the knowledge graph
+    to identify groups of similar entities.
+
+    Args:
+        algorithm: Clustering algorithm (kmeans, spectral, hierarchical)
+        num_clusters: Number of clusters (if None, auto-determine)
+
+    Returns:
+        Dict containing cluster assignments and analysis results
+
+    Raises:
+        HTTPException: If analysis fails or data path not configured
+    """
+    logger.info(f"Performing clustering using {algorithm} algorithm")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        analytics_engine = GraphAnalytics(settings.graphrag_data_path)
+        result = await analytics_engine.perform_clustering(algorithm, num_clusters)
+
+        return {
+            "clusters": result.clusters,
+            "silhouette_score": result.silhouette_score,
+            "algorithm_used": result.algorithm_used,
+            "num_clusters": result.num_clusters,
+        }
+
+    except Exception as e:
+        logger.error(f"Graph clustering failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Graph clustering failed: {e}") from e
+
+
+@api_router.post("/graph/analytics/anomalies", tags=["Graph Analytics"])
+async def detect_anomalies(
+    method: str = "isolation_forest", threshold: float = 0.1
+) -> dict[str, Any]:
+    """Detect anomalies in the knowledge graph.
+
+    This endpoint identifies unusual patterns, outliers, and anomalous
+    entities or relationships in the graph structure.
+
+    Args:
+        method: Anomaly detection method (isolation_forest, local_outlier_factor)
+        threshold: Anomaly threshold (0.0 to 1.0)
+
+    Returns:
+        Dict containing detected anomalies and analysis results
+
+    Raises:
+        HTTPException: If analysis fails or data path not configured
+    """
+    logger.info(f"Detecting anomalies using {method} method")
+
+    # Check if GraphRAG data path is configured
+    if not settings.graphrag_data_path:
+        raise HTTPException(
+            status_code=400,
+            detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
+        )
+
+    try:
+        analytics_engine = GraphAnalytics(settings.graphrag_data_path)
+        result = await analytics_engine.detect_anomalies(method, threshold)
+
+        return {
+            "anomalous_entities": result.anomalous_entities,
+            "anomalous_relationships": result.anomalous_relationships,
+            "anomaly_scores": result.anomaly_scores,
+            "detection_method": result.detection_method,
+        }
+
+    except Exception as e:
+        logger.error(f"Anomaly detection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Anomaly detection failed: {e}") from e
 
 
 # Register routers with the main app

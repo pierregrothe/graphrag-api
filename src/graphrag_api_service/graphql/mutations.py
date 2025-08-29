@@ -415,7 +415,7 @@ class Mutation:
                 expires_at=result["expires_at"],
             )
         except Exception as e:
-            raise Exception(f"Failed to export graph: {str(e)}")
+            raise Exception(f"Failed to export graph: {str(e)}") from e
 
     # Indexing Mutations
     @strawberry.mutation
