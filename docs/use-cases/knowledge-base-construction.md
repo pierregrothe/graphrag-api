@@ -36,12 +36,14 @@ L --> N[Real-time Subscriptions]
 ### **1. Document Preparation**
 
 #### **Supported Document Types**
+
 - **Text Files**: .txt, .md, .rtf
 - **Office Documents**: .docx, .pdf, .pptx
 - **Web Content**: HTML, XML
 - **Structured Data**: JSON, CSV, YAML
 
 #### **Document Structure Optimization**
+
 ```python
 # Document preprocessing for optimal extraction
 def prepare_documents(file_paths):
@@ -107,6 +109,7 @@ return chunks
 ### **2. Workspace Creation and Configuration**
 
 #### **Create Workspace**
+
 ```python
 import requests
 
@@ -146,6 +149,7 @@ description="Comprehensive knowledge base for company documentation"
 ```
 
 #### **Configure Processing Parameters**
+
 ```python
 # Advanced configuration for different document types
 processing_configs = {
@@ -176,6 +180,7 @@ processing_configs = {
 ### **3. Document Indexing Process**
 
 #### **Start Indexing Job**
+
 ```python
 def start_indexing_job(workspace_id, data_path, config_type="technical_docs"):
 """Start document indexing with specific configuration"""
@@ -207,6 +212,7 @@ config_type="business_docs"
 ```
 
 #### **Monitor Indexing Progress**
+
 ```python
 import time
 
@@ -239,6 +245,7 @@ print(f"Indexing completed with status: {final_status['status']}")
 ```
 
 #### **Real-time Progress with GraphQL Subscriptions**
+
 ```javascript
 // WebSocket subscription for real-time indexing updates
 const ws = new WebSocket('ws://localhost:8000/graphql', 'graphql-ws');
@@ -288,6 +295,7 @@ console.log(`Relationships: ${update.relationshipsExtracted}`);
 ### **4. Knowledge Graph Analysis**
 
 #### **Entity Analysis**
+
 ```python
 def analyze_entities(workspace_id):
 """Analyze extracted entities"""
@@ -326,6 +334,7 @@ entity_stats, top_entities = analyze_entities(workspace["id"])
 ```
 
 #### **Relationship Analysis**
+
 ```python
 def analyze_relationships(workspace_id):
 """Analyze extracted relationships"""
@@ -364,6 +373,7 @@ rel_stats, strong_relationships = analyze_relationships(workspace["id"])
 ```
 
 #### **Community Detection**
+
 ```python
 def detect_communities(workspace_id, algorithm="leiden", resolution=1.0):
 """Detect communities in the knowledge graph"""
@@ -406,6 +416,7 @@ communities = detect_communities(workspace["id"])
 ### **5. Semantic Search Implementation**
 
 #### **Basic Semantic Search**
+
 ```python
 def semantic_search(query, workspace_id, limit=10):
 """Perform semantic search on knowledge base"""
@@ -450,6 +461,7 @@ workspace["id"]
 ```
 
 #### **Advanced Search with Filters**
+
 ```python
 def advanced_search(query, workspace_id, entity_types=None, date_range=None):
 """Advanced semantic search with filters"""
@@ -492,6 +504,7 @@ date_range={"start": "2024-01-01", "end": "2024-12-31"}
 ### **6. GraphQL Query Examples**
 
 #### **Complex Knowledge Graph Queries**
+
 ```graphql
 # Get comprehensive view of a topic
 query TopicAnalysis($query: String!, $workspaceId: String!) {
@@ -578,6 +591,7 @@ averageClustering
 ### **7. Performance Optimization**
 
 #### **Indexing Optimization**
+
 ```python
 # Optimize indexing for large document sets
 optimization_strategies = {
@@ -630,6 +644,7 @@ return {
 ```
 
 #### **Query Performance Optimization**
+
 ```python
 # Implement caching for frequent queries
 from functools import lru_cache
@@ -663,6 +678,7 @@ return expanded_query
 ## Best Practices
 
 ### **Document Preparation**
+
 1. **Clean and normalize** text before processing
 2. **Use consistent formatting** across documents
 3. **Include metadata** for better context
@@ -670,6 +686,7 @@ return expanded_query
 5. **Remove duplicates** to avoid redundant processing
 
 ### **Configuration Tuning**
+
 1. **Adjust parameters** based on document types
 2. **Monitor processing performance** and optimize
 3. **Use appropriate models** for your domain
@@ -677,6 +694,7 @@ return expanded_query
 5. **Configure community detection** parameters
 
 ### **Query Optimization**
+
 1. **Use specific queries** for better results
 2. **Implement caching** for frequent searches
 3. **Filter by entity types** when appropriate
@@ -684,6 +702,7 @@ return expanded_query
 5. **Monitor query performance** and optimize
 
 ### **Maintenance**
+
 1. **Regular reindexing** for updated documents
 2. **Monitor storage usage** and cleanup
 3. **Update models** for improved performance
@@ -693,6 +712,7 @@ return expanded_query
 ## Troubleshooting
 
 ### **Common Issues**
+
 - **Slow indexing**: Reduce batch size, increase workers
 - **Poor entity extraction**: Adjust confidence thresholds
 - **Memory issues**: Reduce chunk size, enable streaming
@@ -700,6 +720,7 @@ return expanded_query
 - **Performance**: Implement caching and optimization
 
 ### **Monitoring and Debugging**
+
 ```python
 # Monitor indexing performance
 def monitor_indexing_performance(job_id):

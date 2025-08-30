@@ -9,21 +9,25 @@ This guide provides comprehensive instructions for testing the GraphRAG API usin
 ### 1. Import Collection and Environment
 
 1. **Import Collection**:
+
 - Open Postman
 - Click "Import" → "Upload Files"
 - Select `postman/GraphRAG-API-Collection.json`
 
 2. **Import Environment**:
+
 - Import `postman/environments/Local-Development.postman_environment.json` for local testing
 - Import `postman/environments/Production.postman_environment.json` for production testing
 
 3. **Select Environment**:
+
 - Click the environment dropdown (top right)
 - Select "GraphRAG API - Local Development"
 
 ### 2. Initial Setup
 
 1. **Start Local Server**:
+
 ```bash
 cd /path/to/graphrag
 docker-compose up -d
@@ -32,6 +36,7 @@ python -m uvicorn src.graphrag_api_service.main:app --reload
 ```
 
 2. **Verify Health**:
+
 - Run "Health & System" → "Basic Health Check"
 - Should return `{"status": "healthy"}`
 
@@ -40,6 +45,7 @@ python -m uvicorn src.graphrag_api_service.main:app --reload
 ### JWT Token Authentication
 
 1. **Login to Get JWT Token**:
+
 - Go to "Authentication" → "Login (JWT)"
 - Update environment variables if needed:
 - `username`: Your username (default: "admin")
@@ -48,18 +54,21 @@ python -m uvicorn src.graphrag_api_service.main:app --reload
 - JWT token will be automatically stored in environment
 
 2. **Verify Token**:
+
 - Run any request in "Entities" folder
 - Should work without additional setup
 
 ### API Key Authentication
 
 1. **Create API Key**:
+
 - Ensure you're logged in with JWT token
 - Go to "Authentication" → "Create API Key"
 - Run the request
 - API key will be automatically stored in environment
 
 2. **Test API Key**:
+
 - Go to "API Key Authentication" folder
 - Run "Get Entities (API Key)"
 - Should work without JWT token
@@ -69,6 +78,7 @@ python -m uvicorn src.graphrag_api_service.main:app --reload
 ### 1. Entity Operations
 
 #### Basic Entity Retrieval
+
 ```
 Test Sequence:
 1. "Entities" → "List Entities"
@@ -82,6 +92,7 @@ Expected Results:
 ```
 
 #### Entity Filtering
+
 ```
 Test Parameters:
 - Set entity_name_filter: "technology"
@@ -96,6 +107,7 @@ Expected Results:
 ### 2. Relationship Operations
 
 #### Relationship Retrieval
+
 ```
 Test Sequence:
 1. "Relationships" → "List Relationships"
@@ -108,6 +120,7 @@ Expected Results:
 ```
 
 #### Relationship Filtering
+
 ```
 Test Parameters:
 - Set source_entity: {{sample_entity_id}}
@@ -122,6 +135,7 @@ Expected Results:
 ### 3. Graph Operations
 
 #### Semantic Search
+
 ```
 Test Sequence:
 1. "Graph Operations" → "Semantic Search"
@@ -134,6 +148,7 @@ Expected Results:
 ```
 
 #### Multi-hop Queries
+
 ```
 Test Parameters:
 - start_entity: {{sample_entity_id}}
@@ -149,6 +164,7 @@ Expected Results:
 ### 4. Community Detection
 
 #### Community Retrieval
+
 ```
 Test Sequence:
 1. "Communities" → "List Communities"
@@ -163,6 +179,7 @@ Expected Results:
 ### 5. GraphQL Testing
 
 #### Basic GraphQL Queries
+
 ```
 Test Sequence:
 1. "GraphQL" → "GraphQL - Get Entities"
@@ -176,6 +193,7 @@ Expected Results:
 ```
 
 #### Complex GraphQL Operations
+
 ```
 Test Query:
 query ComplexQuery {
@@ -209,6 +227,7 @@ Expected Results:
 ### 6. Workspace Management
 
 #### Workspace Lifecycle
+
 ```
 Test Sequence:
 1. "Workspace Management" → "Create Workspace"
@@ -226,6 +245,7 @@ Expected Results:
 ### Load Testing
 
 #### Entity Load Test
+
 ```
 Configuration:
 - Run "Performance Testing" → "Load Test - Entities"
@@ -239,6 +259,7 @@ Success Criteria:
 ```
 
 #### GraphQL Stress Test
+
 ```
 Configuration:
 - Run "Performance Testing" → "Stress Test - GraphQL"
@@ -254,6 +275,7 @@ Success Criteria:
 ### Rate Limiting Tests
 
 #### API Key Rate Limiting
+
 ```
 Test Procedure:
 1. Create API key with low rate limit (e.g., 10 requests/hour)
@@ -271,6 +293,7 @@ Expected Results:
 ### Authentication Errors
 
 #### Invalid Credentials
+
 ```
 Test Cases:
 1. Login with wrong password
@@ -284,6 +307,7 @@ Expected Results:
 ```
 
 #### Permission Errors
+
 ```
 Test Cases:
 1. Access restricted endpoints
@@ -299,6 +323,7 @@ Expected Results:
 ### Validation Errors
 
 #### Invalid Request Data
+
 ```
 Test Cases:
 1. Send malformed JSON
@@ -314,6 +339,7 @@ Expected Results:
 ### Server Errors
 
 #### Timeout Testing
+
 ```
 Test Cases:
 1. Very complex GraphQL queries
@@ -371,16 +397,19 @@ Expected Results:
 ### Collection Runner
 
 1. **Setup Runner**:
+
 - Click "Runner" in Postman
 - Select "GraphRAG API - Complete Collection"
 - Choose environment
 
 2. **Configure Run**:
+
 - Iterations: 1-10 (depending on test type)
 - Delay: 100ms between requests
 - Data file: Optional CSV for data-driven tests
 
 3. **Monitor Results**:
+
 - Pass/fail rates
 - Response times
 - Error patterns
@@ -407,6 +436,7 @@ newman run postman/GraphRAG-API-Collection.json \
 ## Sample Data Sets
 
 ### Entity Test Data
+
 ```csv
 entity_name,entity_type,search_term
 "artificial intelligence",CONCEPT,"AI technology"
@@ -416,6 +446,7 @@ entity_name,entity_type,search_term
 ```
 
 ### Search Test Data
+
 ```csv
 search_query,expected_results
 "artificial intelligence",5
@@ -429,6 +460,7 @@ search_query,expected_results
 ### Common Issues
 
 #### Authentication Failures
+
 ```
 Problem: 401 Unauthorized errors
 Solutions:
@@ -439,6 +471,7 @@ Solutions:
 ```
 
 #### Rate Limiting
+
 ```
 Problem: 429 Too Many Requests
 Solutions:
@@ -449,6 +482,7 @@ Solutions:
 ```
 
 #### Network Issues
+
 ```
 Problem: Connection timeouts
 Solutions:
@@ -459,6 +493,7 @@ Solutions:
 ```
 
 #### GraphQL Errors
+
 ```
 Problem: GraphQL validation errors
 Solutions:
@@ -471,16 +506,19 @@ Solutions:
 ### Debug Tips
 
 1. **Enable Console Logging**:
+
 - Open Postman Console (View → Show Postman Console)
 - Monitor request/response details
 - Check pre-request and test script logs
 
 2. **Use Test Scripts**:
+
 - Add console.log statements
 - Validate response structure
 - Store values for debugging
 
 3. **Monitor Network**:
+
 - Use browser dev tools for GraphQL playground
 - Check actual HTTP requests
 - Verify headers and payloads
@@ -488,24 +526,28 @@ Solutions:
 ## Best Practices
 
 ### Test Organization
+
 1. **Use Folders**: Group related tests logically
 2. **Naming Convention**: Clear, descriptive request names
 3. **Documentation**: Add descriptions to all requests
 4. **Variables**: Use environment variables for reusability
 
 ### Security
+
 1. **Credential Management**: Never commit credentials to version control
 2. **Environment Separation**: Use different environments for different stages
 3. **API Key Rotation**: Regularly rotate API keys
 4. **Permission Testing**: Test with minimal required permissions
 
 ### Performance
+
 1. **Response Time Monitoring**: Set reasonable thresholds
 2. **Load Testing**: Test with realistic data volumes
 3. **Caching Validation**: Verify cache hit rates
 4. **Resource Monitoring**: Monitor server resources during tests
 
 ### Maintenance
+
 1. **Regular Updates**: Keep collection updated with API changes
 2. **Test Data**: Maintain realistic test datasets
 3. **Environment Sync**: Keep environments synchronized

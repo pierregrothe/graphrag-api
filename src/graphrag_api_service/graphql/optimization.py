@@ -67,23 +67,16 @@ class FieldSelector:
         selected_fields = set()
 
         for field in info.selected_fields:
-            # Extract field name from selection
-            # Strawberry's selected_fields are different from GraphQL AST nodes
-            if hasattr(field, "name"):
-                field_name = field.name
-                if isinstance(field_name, str):
-                    selected_fields.add(field_name)
-                elif hasattr(field_name, "value"):
-                    selected_fields.add(field_name.value)
+            # Strawberry's selected_fields are SelectedField objects
+            # They have a 'name' attribute that is a string
+            if hasattr(field, "name") and field.name:
+                selected_fields.add(field.name)
+            
             # Handle nested selections if available  
             if hasattr(field, "selections"):
                 for selection in field.selections:
-                    if hasattr(selection, "name"):
-                        selection_name = selection.name
-                        if isinstance(selection_name, str):
-                            selected_fields.add(selection_name)
-                        elif hasattr(selection_name, "value"):
-                            selected_fields.add(selection_name.value)
+                    if hasattr(selection, "name") and selection.name:
+                        selected_fields.add(selection.name)
 
         return selected_fields
 

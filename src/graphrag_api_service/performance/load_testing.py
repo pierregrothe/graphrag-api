@@ -143,11 +143,17 @@ class BenchmarkSuite:
         # Wait for all users to complete
         user_results = await asyncio.gather(*tasks, return_exceptions=True)
 
+        # Filter out exceptions and keep only successful results
+        valid_results = [
+            result for result in user_results 
+            if not isinstance(result, BaseException)
+        ]
+
         # Aggregate results by scenario
         scenario_results = {}
         for scenario in self.scenarios:
             scenario_results[scenario.name] = self._aggregate_scenario_results(
-                scenario.name, user_results
+                scenario.name, valid_results
             )
 
         logger.info("Load test completed")

@@ -10,7 +10,7 @@ import logging
 import weakref
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Callable
 
 import pandas as pd
 import psutil
@@ -84,7 +84,7 @@ class DataFrameOptimizer:
         return optimized_df
 
     @staticmethod
-    def get_memory_usage(df: pd.DataFrame) -> dict[str, float]:
+    def get_memory_usage(df: pd.DataFrame) -> dict[str, Any]:
         """Get detailed memory usage of DataFrame.
 
         Args:
@@ -117,7 +117,7 @@ class ChunkedProcessor:
         self.chunk_size = chunk_size
 
     def process_dataframe_chunks(
-        self, df: pd.DataFrame, processor_func: callable, **kwargs
+        self, df: pd.DataFrame, processor_func: Callable, **kwargs
     ) -> list[Any]:
         """Process DataFrame in chunks.
 
@@ -148,7 +148,7 @@ class ChunkedProcessor:
         return results
 
     def aggregate_chunked_results(
-        self, results: list[Any], aggregation_func: callable = None
+        self, results: list[Any], aggregation_func: Callable | None = None
     ) -> Any:
         """Aggregate results from chunked processing.
 
@@ -355,7 +355,7 @@ class MemoryOptimizer:
 
         return optimized_df
 
-    def process_large_dataset(self, df: pd.DataFrame, processor_func: callable, **kwargs) -> Any:
+    def process_large_dataset(self, df: pd.DataFrame, processor_func: Callable, **kwargs) -> Any:
         """Process large dataset with memory optimization.
 
         Args:

@@ -22,15 +22,15 @@ chunks:
 input:
   type: file
   file_type: text
-  base_dir: C:\Users\pierre\AppData\Local\Temp\tmpfpanipx2
+  base_dir: C:\Users\pierre\AppData\Local\Temp\tmpqvn91fhz
   file_encoding: utf-8
   file_pattern: .*\.txt$
 cache:
   type: file
-  base_dir: workspaces\test-workspace-parity-abaaac39\output\cache
+  base_dir: workspaces\test-workspace-parity-82bd0671\output\cache
 storage:
   type: file
-  base_dir: workspaces\test-workspace-parity-abaaac39\output
+  base_dir: workspaces\test-workspace-parity-82bd0671\output
 entity_extraction:
   strategy:
     type: graph_intelligence
@@ -91,4 +91,4 @@ snapshots:
   top_level_nodes: true
 reporting:
   type: file
-  base_dir: workspaces\test-workspace-parity-abaaac39\output\reports
+  base_dir: workspaces\test-workspace-parity-82bd0671\output\reports
