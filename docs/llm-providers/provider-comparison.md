@@ -6,11 +6,11 @@ This document provides a comprehensive comparison of LLM providers supported by 
 
 ## Provider Summary
 
-| Provider | Type | Deployment | Privacy | Cost Model | Best For |
-|----------|------|------------|---------|------------|----------|
-| **Ollama** | Local | Self-hosted | Complete | Hardware only | Privacy, offline, development |
-| **Google Cloud AI** | Cloud | Managed | Managed | Pay-per-use | Enterprise, scale, reliability |
-| **OpenAI** | Cloud | Managed | External | Pay-per-use | Latest models, ease of use |
+| Provider            | Type  | Deployment  | Privacy  | Cost Model    | Best For                       |
+| ------------------- | ----- | ----------- | -------- | ------------- | ------------------------------ |
+| **Ollama**          | Local | Self-hosted | Complete | Hardware only | Privacy, offline, development  |
+| **Google Cloud AI** | Cloud | Managed     | Managed  | Pay-per-use   | Enterprise, scale, reliability |
+| **OpenAI**          | Cloud | Managed     | External | Pay-per-use   | Latest models, ease of use     |
 
 ## Detailed Comparison
 
@@ -18,20 +18,20 @@ This document provides a comprehensive comparison of LLM providers supported by 
 
 #### **Initial Setup Costs**
 
-| Provider | Hardware | Setup Time | Technical Expertise | Initial Investment |
-|----------|----------|------------|-------------------|-------------------|
-| **Ollama** | $2,000-10,000+ | 2-4 hours | Medium | High |
-| **Google Cloud** | $0 | 30 minutes | Low-Medium | Low |
-| **OpenAI** | $0 | 15 minutes | Low | Low |
+| Provider         | Hardware       | Setup Time | Technical Expertise | Initial Investment |
+| ---------------- | -------------- | ---------- | ------------------- | ------------------ |
+| **Ollama**       | $2,000-10,000+ | 2-4 hours  | Medium              | High               |
+| **Google Cloud** | $0             | 30 minutes | Low-Medium          | Low                |
+| **OpenAI**       | $0             | 15 minutes | Low                 | Low                |
 
 #### **Operational Costs (Monthly)**
 
-| Usage Level | Ollama | Google Cloud | OpenAI |
-|-------------|--------|--------------|--------|
-| **Development (1M tokens)** | $50 | $50 | $20 |
-| **Small Production (10M tokens)** | $100 | $500 | $200 |
-| **Medium Production (100M tokens)** | $300 | $5,000 | $2,000 |
-| **Large Production (1B tokens)** | $500 | $50,000 | $20,000 |
+| Usage Level                         | Ollama | Google Cloud | OpenAI  |
+| ----------------------------------- | ------ | ------------ | ------- |
+| **Development (1M tokens)**         | $50    | $50          | $20     |
+| **Small Production (10M tokens)**   | $100   | $500         | $200    |
+| **Medium Production (100M tokens)** | $300   | $5,000       | $2,000  |
+| **Large Production (1B tokens)**    | $500   | $50,000      | $20,000 |
 
 #### **Break-even Analysis**
 
@@ -51,120 +51,120 @@ Cost Factors:
 
 #### **Response Times (Average)**
 
-| Operation | Ollama (Local) | Google Cloud | OpenAI |
-|-----------|----------------|--------------|--------|
-| **Text Generation (500 tokens)** | 2-5s | 1-3s | 1-2s |
-| **Embeddings (1000 tokens)** | 0.5-1s | 0.2-0.5s | 0.3-0.7s |
-| **Batch Processing (100 items)** | 30-60s | 10-20s | 15-30s |
+| Operation                        | Ollama (Local) | Google Cloud | OpenAI   |
+| -------------------------------- | -------------- | ------------ | -------- |
+| **Text Generation (500 tokens)** | 2-5s           | 1-3s         | 1-2s     |
+| **Embeddings (1000 tokens)**     | 0.5-1s         | 0.2-0.5s     | 0.3-0.7s |
+| **Batch Processing (100 items)** | 30-60s         | 10-20s       | 15-30s   |
 
 #### **Throughput (Requests/minute)**
 
-| Provider | Single Model | Multiple Models | Concurrent Users |
-|----------|--------------|-----------------|------------------|
-| **Ollama** | 10-30 | 5-15 | 10-50 |
-| **Google Cloud** | 100-1000 | 500-5000 | 100-10000 |
-| **OpenAI** | 60-500 | 300-2500 | 50-5000 |
+| Provider         | Single Model | Multiple Models | Concurrent Users |
+| ---------------- | ------------ | --------------- | ---------------- |
+| **Ollama**       | 10-30        | 5-15            | 10-50            |
+| **Google Cloud** | 100-1000     | 500-5000        | 100-10000        |
+| **OpenAI**       | 60-500       | 300-2500        | 50-5000          |
 
 #### **Scalability**
 
-| Aspect | Ollama | Google Cloud | OpenAI |
-|--------|--------|--------------|--------|
-| **Horizontal Scaling** | Manual | Automatic | Automatic |
-| **Load Balancing** | Custom | Built-in | Built-in |
-| **Auto-scaling** | No | Yes | Yes |
-| **Global Distribution** | Manual | Yes | Yes |
+| Aspect                  | Ollama | Google Cloud | OpenAI    |
+| ----------------------- | ------ | ------------ | --------- |
+| **Horizontal Scaling**  | Manual | Automatic    | Automatic |
+| **Load Balancing**      | Custom | Built-in     | Built-in  |
+| **Auto-scaling**        | No     | Yes          | Yes       |
+| **Global Distribution** | Manual | Yes          | Yes       |
 
 ### **Model Capabilities**
 
 #### **Text Generation Models**
 
-| Provider | Latest Model | Context Length | Capabilities | Quality Score |
-|----------|--------------|----------------|--------------|---------------|
-| **Ollama** | Llama 2 70B | 4,096 | General, Code | 8/10 |
-| **Google Cloud** | Gemini Pro | 32,768 | Multimodal, Reasoning | 9/10 |
-| **OpenAI** | GPT-4 Turbo | 128,000 | Advanced reasoning | 10/10 |
+| Provider         | Latest Model | Context Length | Capabilities          | Quality Score |
+| ---------------- | ------------ | -------------- | --------------------- | ------------- |
+| **Ollama**       | Llama 2 70B  | 4,096          | General, Code         | 8/10          |
+| **Google Cloud** | Gemini Pro   | 32,768         | Multimodal, Reasoning | 9/10          |
+| **OpenAI**       | GPT-4 Turbo  | 128,000        | Advanced reasoning    | 10/10         |
 
 #### **Embedding Models**
 
-| Provider | Model | Dimensions | Max Input | Quality |
-|----------|-------|------------|-----------|---------|
-| **Ollama** | nomic-embed-text | 768 | 8,192 | Good |
-| **Google Cloud** | textembedding-gecko | 768 | 3,072 | Excellent |
-| **OpenAI** | text-embedding-3-large | 3,072 | 8,191 | Excellent |
+| Provider         | Model                  | Dimensions | Max Input | Quality   |
+| ---------------- | ---------------------- | ---------- | --------- | --------- |
+| **Ollama**       | nomic-embed-text       | 768        | 8,192     | Good      |
+| **Google Cloud** | textembedding-gecko    | 768        | 3,072     | Excellent |
+| **OpenAI**       | text-embedding-3-large | 3,072      | 8,191     | Excellent |
 
 #### **Specialized Capabilities**
 
-| Capability | Ollama | Google Cloud | OpenAI |
-|------------|--------|--------------|--------|
-| **Code Generation** | (CodeLlama) | (Codey) | (GPT-4) |
-| **Multimodal (Vision)** | | (Gemini Pro Vision) | (GPT-4V) |
-| **Function Calling** | | | |
-| **Fine-tuning** | | | |
-| **Custom Models** | | | |
+| Capability              | Ollama      | Google Cloud        | OpenAI   |
+| ----------------------- | ----------- | ------------------- | -------- |
+| **Code Generation**     | (CodeLlama) | (Codey)             | (GPT-4)  |
+| **Multimodal (Vision)** |             | (Gemini Pro Vision) | (GPT-4V) |
+| **Function Calling**    |             |                     |          |
+| **Fine-tuning**         |             |                     |          |
+| **Custom Models**       |             |                     |          |
 
 ### **Privacy & Security**
 
 #### **Data Privacy**
 
-| Aspect | Ollama | Google Cloud | OpenAI |
-|--------|--------|--------------|--------|
-| **Data Location** | Local only | Google servers | OpenAI servers |
-| **Data Retention** | User controlled | Configurable | 30 days default |
-| **Training Data Usage** | No | Opt-out available | Opt-out available |
-| **GDPR Compliance** | User responsibility | | |
-| **HIPAA Compliance** | User responsibility | (BAA required) | (BAA required) |
+| Aspect                  | Ollama              | Google Cloud      | OpenAI            |
+| ----------------------- | ------------------- | ----------------- | ----------------- |
+| **Data Location**       | Local only          | Google servers    | OpenAI servers    |
+| **Data Retention**      | User controlled     | Configurable      | 30 days default   |
+| **Training Data Usage** | No                  | Opt-out available | Opt-out available |
+| **GDPR Compliance**     | User responsibility |                   |                   |
+| **HIPAA Compliance**    | User responsibility | (BAA required)    | (BAA required)    |
 
 #### **Security Features**
 
-| Feature | Ollama | Google Cloud | OpenAI |
-|---------|--------|--------------|--------|
-| **Encryption in Transit** | User configured | TLS 1.3 | TLS 1.3 |
-| **Encryption at Rest** | User configured | AES-256 | AES-256 |
-| **Access Controls** | User configured | IAM | API keys |
-| **Audit Logging** | User configured | Cloud Audit Logs | Usage logs |
-| **VPC/Network Isolation** | User configured | VPC Service Controls | |
+| Feature                   | Ollama          | Google Cloud         | OpenAI     |
+| ------------------------- | --------------- | -------------------- | ---------- |
+| **Encryption in Transit** | User configured | TLS 1.3              | TLS 1.3    |
+| **Encryption at Rest**    | User configured | AES-256              | AES-256    |
+| **Access Controls**       | User configured | IAM                  | API keys   |
+| **Audit Logging**         | User configured | Cloud Audit Logs     | Usage logs |
+| **VPC/Network Isolation** | User configured | VPC Service Controls |            |
 
 ### **Operational Considerations**
 
 #### **Deployment Complexity**
 
-| Aspect | Ollama | Google Cloud | OpenAI |
-|--------|--------|--------------|--------|
-| **Setup Difficulty** | Medium | Low | Very Low |
-| **Maintenance Overhead** | High | Low | Very Low |
-| **Monitoring Required** | Custom | Built-in | Basic |
-| **Backup/Recovery** | User responsibility | Managed | N/A |
-| **Updates/Patches** | Manual | Automatic | Automatic |
+| Aspect                   | Ollama              | Google Cloud | OpenAI    |
+| ------------------------ | ------------------- | ------------ | --------- |
+| **Setup Difficulty**     | Medium              | Low          | Very Low  |
+| **Maintenance Overhead** | High                | Low          | Very Low  |
+| **Monitoring Required**  | Custom              | Built-in     | Basic     |
+| **Backup/Recovery**      | User responsibility | Managed      | N/A       |
+| **Updates/Patches**      | Manual              | Automatic    | Automatic |
 
 #### **Reliability & SLA**
 
-| Metric | Ollama | Google Cloud | OpenAI |
-|--------|--------|--------------|--------|
-| **Uptime SLA** | User dependent | 99.9% | 99.9% |
-| **Support Level** | Community | Enterprise | Standard/Enterprise |
-| **Disaster Recovery** | User responsibility | Multi-region | Multi-region |
-| **Failover** | Manual | Automatic | Automatic |
+| Metric                | Ollama              | Google Cloud | OpenAI              |
+| --------------------- | ------------------- | ------------ | ------------------- |
+| **Uptime SLA**        | User dependent      | 99.9%        | 99.9%               |
+| **Support Level**     | Community           | Enterprise   | Standard/Enterprise |
+| **Disaster Recovery** | User responsibility | Multi-region | Multi-region        |
+| **Failover**          | Manual              | Automatic    | Automatic           |
 
 ### **Development Experience**
 
 #### **Integration Ease**
 
-| Aspect | Ollama | Google Cloud | OpenAI |
-|--------|--------|--------------|--------|
-| **API Complexity** | Simple | Medium | Simple |
-| **Documentation Quality** | Good | Excellent | Excellent |
-| **SDK Availability** | Limited | Comprehensive | Comprehensive |
-| **Community Support** | Growing | Large | Very Large |
-| **Examples/Tutorials** | Good | Excellent | Excellent |
+| Aspect                    | Ollama  | Google Cloud  | OpenAI        |
+| ------------------------- | ------- | ------------- | ------------- |
+| **API Complexity**        | Simple  | Medium        | Simple        |
+| **Documentation Quality** | Good    | Excellent     | Excellent     |
+| **SDK Availability**      | Limited | Comprehensive | Comprehensive |
+| **Community Support**     | Growing | Large         | Very Large    |
+| **Examples/Tutorials**    | Good    | Excellent     | Excellent     |
 
 #### **Developer Tools**
 
-| Tool | Ollama | Google Cloud | OpenAI |
-|------|--------|--------------|--------|
-| **Web Interface** | Basic | Vertex AI Studio | Playground |
-| **CLI Tools** | | gcloud | |
-| **Monitoring Dashboard** | Custom | Cloud Console | Usage dashboard |
-| **Testing Tools** | Basic | Model Garden | Playground |
+| Tool                     | Ollama | Google Cloud     | OpenAI          |
+| ------------------------ | ------ | ---------------- | --------------- |
+| **Web Interface**        | Basic  | Vertex AI Studio | Playground      |
+| **CLI Tools**            |        | gcloud           |                 |
+| **Monitoring Dashboard** | Custom | Cloud Console    | Usage dashboard |
+| **Testing Tools**        | Basic  | Model Garden     | Playground      |
 
 ## Use Case Recommendations
 

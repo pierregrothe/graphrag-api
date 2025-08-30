@@ -94,7 +94,7 @@ production-ready API service that enables knowledge graph operations through bot
 - Maintained 0 mypy errors and perfect code quality
 - Established GraphQL playground for interactive development
 
-** KEY ACHIEVEMENTS:**
+**KEY ACHIEVEMENTS:**
 
 - **GraphQL Interface**: Fully functional with queries and mutations
 - **Type Safety**: Complete GraphQL schema with proper type definitions
@@ -428,12 +428,14 @@ production-ready API service that enables knowledge graph operations through bot
 ### GraphQL Framework Options
 
 1. **Strawberry** (Recommended)
+
 - Native Python with type hints
 - Async support
 - FastAPI integration
 - Active development
 
 2. **Ariadne**
+
 - Schema-first approach
 - Good FastAPI integration
 - Production proven

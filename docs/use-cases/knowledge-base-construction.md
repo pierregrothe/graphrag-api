@@ -248,22 +248,25 @@ print(f"Indexing completed with status: {final_status['status']}")
 
 ```javascript
 // WebSocket subscription for real-time indexing updates
-const ws = new WebSocket('ws://localhost:8000/graphql', 'graphql-ws');
+const ws = new WebSocket("ws://localhost:8000/graphql", "graphql-ws")
 
 // Initialize connection
-ws.send(JSON.stringify({
-type: 'connection_init',
-payload: {
-Authorization: 'Bearer YOUR_JWT_TOKEN'
-}
-}));
+ws.send(
+    JSON.stringify({
+        type: "connection_init",
+        payload: {
+            Authorization: "Bearer YOUR_JWT_TOKEN",
+        },
+    })
+)
 
 // Subscribe to indexing updates
-ws.send(JSON.stringify({
-id: '1',
-type: 'start',
-payload: {
-query: `
+ws.send(
+    JSON.stringify({
+        id: "1",
+        type: "start",
+        payload: {
+            query: `
 subscription IndexingUpdates {
 indexingUpdates {
 workspaceId
@@ -276,20 +279,21 @@ relationshipsExtracted
 documentsProcessed
 }
 }
-`
-}
-}));
+`,
+        },
+    })
+)
 
 // Handle updates
-ws.onmessage = function(event) {
-const message = JSON.parse(event.data);
-if (message.type === 'data') {
-const update = message.payload.data.indexingUpdates;
-console.log(`Progress: ${(update.progress * 100).toFixed(1)}%`);
-console.log(`Entities: ${update.entitiesProcessed}`);
-console.log(`Relationships: ${update.relationshipsExtracted}`);
+ws.onmessage = function (event) {
+    const message = JSON.parse(event.data)
+    if (message.type === "data") {
+        const update = message.payload.data.indexingUpdates
+        console.log(`Progress: ${(update.progress * 100).toFixed(1)}%`)
+        console.log(`Entities: ${update.entitiesProcessed}`)
+        console.log(`Relationships: ${update.relationshipsExtracted}`)
+    }
 }
-};
 ```
 
 ### **4. Knowledge Graph Analysis**
@@ -508,83 +512,83 @@ date_range={"start": "2024-01-01", "end": "2024-12-31"}
 ```graphql
 # Get comprehensive view of a topic
 query TopicAnalysis($query: String!, $workspaceId: String!) {
-search(query: $query, workspaceId: $workspaceId, limit: 10) {
-entities {
-id
-title
-type
-description
-degree
-communityIds
-relationships {
-id
-source
-target
-type
-weight
-description
-}
-}
-communities {
-id
-title
-level
-entityIds
-}
-score
-}
+    search(query: $query, workspaceId: $workspaceId, limit: 10) {
+        entities {
+            id
+            title
+            type
+            description
+            degree
+            communityIds
+            relationships {
+                id
+                source
+                target
+                type
+                weight
+                description
+            }
+        }
+        communities {
+            id
+            title
+            level
+            entityIds
+        }
+        score
+    }
 }
 
 # Multi-hop exploration
 query ExploreConnections($startEntity: String!, $hops: Int!) {
-multiHopQuery(startEntity: $startEntity, hops: $hops) {
-paths {
-entities {
-id
-title
-type
-}
-relationships {
-id
-type
-weight
-}
-pathLength
-totalWeight
-}
-summary {
-totalPaths
-averagePathLength
-strongestConnection
-}
-}
+    multiHopQuery(startEntity: $startEntity, hops: $hops) {
+        paths {
+            entities {
+                id
+                title
+                type
+            }
+            relationships {
+                id
+                type
+                weight
+            }
+            pathLength
+            totalWeight
+        }
+        summary {
+            totalPaths
+            averagePathLength
+            strongestConnection
+        }
+    }
 }
 
 # Community analysis
 query CommunityInsights($communityId: String!) {
-community(id: $communityId) {
-id
-title
-level
-entities {
-id
-title
-type
-centralityScore
-}
-relationships {
-id
-source
-target
-type
-weight
-}
-metrics {
-density
-modularity
-averageClustering
-}
-}
+    community(id: $communityId) {
+        id
+        title
+        level
+        entities {
+            id
+            title
+            type
+            centralityScore
+        }
+        relationships {
+            id
+            source
+            target
+            type
+            weight
+        }
+        metrics {
+            density
+            modularity
+            averageClustering
+        }
+    }
 }
 ```
 

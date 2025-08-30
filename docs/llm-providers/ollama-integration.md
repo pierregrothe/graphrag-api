@@ -113,20 +113,20 @@ OLLAMA_LOG_LEVEL=INFO
 
 ### **Text Generation Models**
 
-| Model | Size | RAM Required | Speed | Quality | Use Case |
-|-------|------|--------------|-------|---------|----------|
-| **llama2** | 7B | 8GB | Fast | Good | General purpose |
-| **llama2:13b** | 13B | 16GB | Medium | Better | High quality responses |
-| **mistral** | 7B | 8GB | Very Fast | Good | Quick responses |
-| **codellama** | 7B | 8GB | Fast | Code-focused | Code analysis |
-| **gemma:7b** | 7B | 8GB | Fast | Good | Balanced performance |
+| Model          | Size | RAM Required | Speed     | Quality      | Use Case               |
+| -------------- | ---- | ------------ | --------- | ------------ | ---------------------- |
+| **llama2**     | 7B   | 8GB          | Fast      | Good         | General purpose        |
+| **llama2:13b** | 13B  | 16GB         | Medium    | Better       | High quality responses |
+| **mistral**    | 7B   | 8GB          | Very Fast | Good         | Quick responses        |
+| **codellama**  | 7B   | 8GB          | Fast      | Code-focused | Code analysis          |
+| **gemma:7b**   | 7B   | 8GB          | Fast      | Good         | Balanced performance   |
 
 ### **Embedding Models**
 
-| Model | Dimensions | Performance | Use Case |
-|-------|------------|-------------|----------|
-| **nomic-embed-text** | 768 | Excellent | General text embeddings |
-| **all-minilm** | 384 | Good | Lightweight embeddings |
+| Model                | Dimensions | Performance | Use Case                |
+| -------------------- | ---------- | ----------- | ----------------------- |
+| **nomic-embed-text** | 768        | Excellent   | General text embeddings |
+| **all-minilm**       | 384        | Good        | Lightweight embeddings  |
 
 ### **Recommended Configurations**
 
@@ -505,20 +505,20 @@ claimName: ollama-pvc
 
 ### **Operational Costs**
 
-| Component | Development | Production | Enterprise |
-|-----------|-------------|------------|------------|
-| **Hardware** | $0 (existing) | $2,000-5,000 | $10,000+ |
-| **Electricity** | $20-50/month | $100-300/month | $500+/month |
-| **Maintenance** | $0 | $200-500/month | $1,000+/month |
-| **Total Monthly** | $20-50 | $300-800 | $1,500+ |
+| Component         | Development   | Production     | Enterprise    |
+| ----------------- | ------------- | -------------- | ------------- |
+| **Hardware**      | $0 (existing) | $2,000-5,000   | $10,000+      |
+| **Electricity**   | $20-50/month  | $100-300/month | $500+/month   |
+| **Maintenance**   | $0            | $200-500/month | $1,000+/month |
+| **Total Monthly** | $20-50        | $300-800       | $1,500+       |
 
 ### **Cost Comparison vs Cloud**
 
-| Usage Level | Ollama (Local) | OpenAI API | Google Cloud |
-|-------------|----------------|------------|--------------|
-| **1M tokens/month** | $50 | $200 | $150 |
-| **10M tokens/month** | $100 | $2,000 | $1,500 |
-| **100M tokens/month** | $300 | $20,000 | $15,000 |
+| Usage Level           | Ollama (Local) | OpenAI API | Google Cloud |
+| --------------------- | -------------- | ---------- | ------------ |
+| **1M tokens/month**   | $50            | $200       | $150         |
+| **10M tokens/month**  | $100           | $2,000     | $1,500       |
+| **100M tokens/month** | $300           | $20,000    | $15,000      |
 
 **Break-even Point**: ~5M tokens/month for production deployment
 

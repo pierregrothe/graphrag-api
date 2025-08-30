@@ -10,14 +10,14 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "ERROR_CODE",
-"message": "Human-readable error description",
-"details": {
-"field": "Additional context",
-"suggestion": "How to fix the issue"
-},
-"timestamp": "2024-01-15T10:30:00Z",
-"request_id": "req_abc123def456"
+    "error": "ERROR_CODE",
+    "message": "Human-readable error description",
+    "details": {
+        "field": "Additional context",
+        "suggestion": "How to fix the issue"
+    },
+    "timestamp": "2024-01-15T10:30:00Z",
+    "request_id": "req_abc123def456"
 }
 ```
 
@@ -25,12 +25,12 @@ All API errors return a consistent JSON structure:
 
 ### 2xx Success Codes
 
-| Code | Status | Description |
-|------|--------|-------------|
-| 200 | OK | Request successful |
-| 201 | Created | Resource created successfully |
-| 202 | Accepted | Request accepted for processing |
-| 204 | No Content | Request successful, no content returned |
+| Code | Status     | Description                             |
+| ---- | ---------- | --------------------------------------- |
+| 200  | OK         | Request successful                      |
+| 201  | Created    | Resource created successfully           |
+| 202  | Accepted   | Request accepted for processing         |
+| 204  | No Content | Request successful, no content returned |
 
 ### 4xx Client Error Codes
 
@@ -40,12 +40,12 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "INVALID_REQUEST_FORMAT",
-"message": "Request body must be valid JSON",
-"details": {
-"received_content_type": "text/plain",
-"expected_content_type": "application/json"
-}
+    "error": "INVALID_REQUEST_FORMAT",
+    "message": "Request body must be valid JSON",
+    "details": {
+        "received_content_type": "text/plain",
+        "expected_content_type": "application/json"
+    }
 }
 ```
 
@@ -56,12 +56,12 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "MISSING_REQUIRED_FIELD",
-"message": "Required field 'name' is missing",
-"details": {
-"missing_fields": ["name"],
-"required_fields": ["name", "permissions"]
-}
+    "error": "MISSING_REQUIRED_FIELD",
+    "message": "Required field 'name' is missing",
+    "details": {
+        "missing_fields": ["name"],
+        "required_fields": ["name", "permissions"]
+    }
 }
 ```
 
@@ -72,14 +72,14 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "INVALID_FIELD_VALUE",
-"message": "Field 'limit' must be between 1 and 1000",
-"details": {
-"field": "limit",
-"value": 5000,
-"min": 1,
-"max": 1000
-}
+    "error": "INVALID_FIELD_VALUE",
+    "message": "Field 'limit' must be between 1 and 1000",
+    "details": {
+        "field": "limit",
+        "value": 5000,
+        "min": 1,
+        "max": 1000
+    }
 }
 ```
 
@@ -90,13 +90,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "INVALID_QUERY_PARAMETER",
-"message": "Invalid query parameter 'sort_by'",
-"details": {
-"parameter": "sort_by",
-"value": "invalid_field",
-"allowed_values": ["name", "created_at", "updated_at"]
-}
+    "error": "INVALID_QUERY_PARAMETER",
+    "message": "Invalid query parameter 'sort_by'",
+    "details": {
+        "parameter": "sort_by",
+        "value": "invalid_field",
+        "allowed_values": ["name", "created_at", "updated_at"]
+    }
 }
 ```
 
@@ -109,15 +109,15 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "AUTHENTICATION_REQUIRED",
-"message": "Authentication is required to access this resource",
-"details": {
-"supported_methods": ["Bearer token", "API key"],
-"headers": {
-"jwt": "Authorization: Bearer <token>",
-"api_key": "X-API-Key: <key>"
-}
-}
+    "error": "AUTHENTICATION_REQUIRED",
+    "message": "Authentication is required to access this resource",
+    "details": {
+        "supported_methods": ["Bearer token", "API key"],
+        "headers": {
+            "jwt": "Authorization: Bearer <token>",
+            "api_key": "X-API-Key: <key>"
+        }
+    }
 }
 ```
 
@@ -128,12 +128,12 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "INVALID_TOKEN",
-"message": "The provided authentication token is invalid",
-"details": {
-"token_type": "jwt",
-"reason": "signature_invalid"
-}
+    "error": "INVALID_TOKEN",
+    "message": "The provided authentication token is invalid",
+    "details": {
+        "token_type": "jwt",
+        "reason": "signature_invalid"
+    }
 }
 ```
 
@@ -144,13 +144,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "TOKEN_EXPIRED",
-"message": "The authentication token has expired",
-"details": {
-"expired_at": "2024-01-15T10:00:00Z",
-"current_time": "2024-01-15T10:30:00Z",
-"refresh_endpoint": "/auth/refresh"
-}
+    "error": "TOKEN_EXPIRED",
+    "message": "The authentication token has expired",
+    "details": {
+        "expired_at": "2024-01-15T10:00:00Z",
+        "current_time": "2024-01-15T10:30:00Z",
+        "refresh_endpoint": "/auth/refresh"
+    }
 }
 ```
 
@@ -161,12 +161,12 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "INVALID_API_KEY",
-"message": "The provided API key is invalid or has been revoked",
-"details": {
-"key_prefix": "grag_abcd1234",
-"status": "revoked"
-}
+    "error": "INVALID_API_KEY",
+    "message": "The provided API key is invalid or has been revoked",
+    "details": {
+        "key_prefix": "grag_abcd1234",
+        "status": "revoked"
+    }
 }
 ```
 
@@ -179,13 +179,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "PERMISSION_DENIED",
-"message": "Insufficient permissions to perform this action",
-"details": {
-"required_permission": "write:entities",
-"user_permissions": ["read:entities", "read:relationships"],
-"action": "create_entity"
-}
+    "error": "PERMISSION_DENIED",
+    "message": "Insufficient permissions to perform this action",
+    "details": {
+        "required_permission": "write:entities",
+        "user_permissions": ["read:entities", "read:relationships"],
+        "action": "create_entity"
+    }
 }
 ```
 
@@ -196,13 +196,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "TENANT_ACCESS_DENIED",
-"message": "Access denied to resources in this tenant",
-"details": {
-"user_tenant": "tenant_a",
-"resource_tenant": "tenant_b",
-"resource_id": "workspace_123"
-}
+    "error": "TENANT_ACCESS_DENIED",
+    "message": "Access denied to resources in this tenant",
+    "details": {
+        "user_tenant": "tenant_a",
+        "resource_tenant": "tenant_b",
+        "resource_id": "workspace_123"
+    }
 }
 ```
 
@@ -213,14 +213,14 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "RATE_LIMIT_EXCEEDED",
-"message": "API rate limit exceeded",
-"details": {
-"limit": 1000,
-"window": "1 hour",
-"reset_time": "2024-01-15T11:00:00Z",
-"retry_after": 1800
-}
+    "error": "RATE_LIMIT_EXCEEDED",
+    "message": "API rate limit exceeded",
+    "details": {
+        "limit": 1000,
+        "window": "1 hour",
+        "reset_time": "2024-01-15T11:00:00Z",
+        "retry_after": 1800
+    }
 }
 ```
 
@@ -233,12 +233,12 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "ENTITY_NOT_FOUND",
-"message": "Entity with the specified ID was not found",
-"details": {
-"entity_id": "entity_123",
-"workspace_id": "workspace_456"
-}
+    "error": "ENTITY_NOT_FOUND",
+    "message": "Entity with the specified ID was not found",
+    "details": {
+        "entity_id": "entity_123",
+        "workspace_id": "workspace_456"
+    }
 }
 ```
 
@@ -249,12 +249,12 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "WORKSPACE_NOT_FOUND",
-"message": "Workspace with the specified ID was not found",
-"details": {
-"workspace_id": "workspace_invalid",
-"available_workspaces": ["workspace_1", "workspace_2"]
-}
+    "error": "WORKSPACE_NOT_FOUND",
+    "message": "Workspace with the specified ID was not found",
+    "details": {
+        "workspace_id": "workspace_invalid",
+        "available_workspaces": ["workspace_1", "workspace_2"]
+    }
 }
 ```
 
@@ -265,13 +265,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "ENDPOINT_NOT_FOUND",
-"message": "The requested endpoint does not exist",
-"details": {
-"path": "/api/invalid-endpoint",
-"method": "GET",
-"available_endpoints": "/docs"
-}
+    "error": "ENDPOINT_NOT_FOUND",
+    "message": "The requested endpoint does not exist",
+    "details": {
+        "path": "/api/invalid-endpoint",
+        "method": "GET",
+        "available_endpoints": "/docs"
+    }
 }
 ```
 
@@ -284,13 +284,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "RESOURCE_ALREADY_EXISTS",
-"message": "A resource with this identifier already exists",
-"details": {
-"resource_type": "workspace",
-"identifier": "my-workspace",
-"existing_id": "workspace_789"
-}
+    "error": "RESOURCE_ALREADY_EXISTS",
+    "message": "A resource with this identifier already exists",
+    "details": {
+        "resource_type": "workspace",
+        "identifier": "my-workspace",
+        "existing_id": "workspace_789"
+    }
 }
 ```
 
@@ -301,13 +301,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "CONCURRENT_MODIFICATION",
-"message": "Resource was modified by another request",
-"details": {
-"resource_id": "entity_123",
-"expected_version": 5,
-"current_version": 7
-}
+    "error": "CONCURRENT_MODIFICATION",
+    "message": "Resource was modified by another request",
+    "details": {
+        "resource_id": "entity_123",
+        "expected_version": 5,
+        "current_version": 7
+    }
 }
 ```
 
@@ -320,13 +320,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "REQUEST_TOO_LARGE",
-"message": "Request payload exceeds maximum allowed size",
-"details": {
-"size": "15MB",
-"max_size": "10MB",
-"suggestion": "Split large requests into smaller chunks"
-}
+    "error": "REQUEST_TOO_LARGE",
+    "message": "Request payload exceeds maximum allowed size",
+    "details": {
+        "size": "15MB",
+        "max_size": "10MB",
+        "suggestion": "Split large requests into smaller chunks"
+    }
 }
 ```
 
@@ -339,22 +339,22 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "VALIDATION_ERROR",
-"message": "Request validation failed",
-"details": {
-"errors": [
-{
-"field": "email",
-"message": "Invalid email format",
-"value": "invalid-email"
-},
-{
-"field": "permissions",
-"message": "Unknown permission 'invalid:permission'",
-"allowed_values": ["read:entities", "write:entities"]
-}
-]
-}
+    "error": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": {
+        "errors": [
+            {
+                "field": "email",
+                "message": "Invalid email format",
+                "value": "invalid-email"
+            },
+            {
+                "field": "permissions",
+                "message": "Unknown permission 'invalid:permission'",
+                "allowed_values": ["read:entities", "write:entities"]
+            }
+        ]
+    }
 }
 ```
 
@@ -367,15 +367,15 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "RATE_LIMIT_EXCEEDED",
-"message": "Too many requests",
-"details": {
-"limit_type": "per_minute",
-"limit": 20,
-"window": 60,
-"reset_time": "2024-01-15T10:31:00Z",
-"retry_after": 45
-}
+    "error": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests",
+    "details": {
+        "limit_type": "per_minute",
+        "limit": 20,
+        "window": 60,
+        "reset_time": "2024-01-15T10:31:00Z",
+        "retry_after": 45
+    }
 }
 ```
 
@@ -390,12 +390,12 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "INTERNAL_SERVER_ERROR",
-"message": "An unexpected error occurred",
-"details": {
-"request_id": "req_abc123def456",
-"support_contact": "support@graphrag.com"
-}
+    "error": "INTERNAL_SERVER_ERROR",
+    "message": "An unexpected error occurred",
+    "details": {
+        "request_id": "req_abc123def456",
+        "support_contact": "support@graphrag.com"
+    }
 }
 ```
 
@@ -406,13 +406,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "DATABASE_ERROR",
-"message": "Database operation failed",
-"details": {
-"operation": "query",
-"retry_suggested": true,
-"request_id": "req_abc123def456"
-}
+    "error": "DATABASE_ERROR",
+    "message": "Database operation failed",
+    "details": {
+        "operation": "query",
+        "retry_suggested": true,
+        "request_id": "req_abc123def456"
+    }
 }
 ```
 
@@ -425,13 +425,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "UPSTREAM_SERVICE_ERROR",
-"message": "Upstream service is unavailable",
-"details": {
-"service": "embedding_service",
-"status": "unavailable",
-"retry_after": 30
-}
+    "error": "UPSTREAM_SERVICE_ERROR",
+    "message": "Upstream service is unavailable",
+    "details": {
+        "service": "embedding_service",
+        "status": "unavailable",
+        "retry_after": 30
+    }
 }
 ```
 
@@ -444,12 +444,12 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "SERVICE_MAINTENANCE",
-"message": "Service is temporarily unavailable for maintenance",
-"details": {
-"maintenance_window": "2024-01-15T02:00:00Z to 2024-01-15T04:00:00Z",
-"estimated_completion": "2024-01-15T04:00:00Z"
-}
+    "error": "SERVICE_MAINTENANCE",
+    "message": "Service is temporarily unavailable for maintenance",
+    "details": {
+        "maintenance_window": "2024-01-15T02:00:00Z to 2024-01-15T04:00:00Z",
+        "estimated_completion": "2024-01-15T04:00:00Z"
+    }
 }
 ```
 
@@ -460,13 +460,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "SERVICE_OVERLOADED",
-"message": "Service is temporarily overloaded",
-"details": {
-"retry_after": 60,
-"load_level": "high",
-"suggestion": "Reduce request frequency"
-}
+    "error": "SERVICE_OVERLOADED",
+    "message": "Service is temporarily overloaded",
+    "details": {
+        "retry_after": 60,
+        "load_level": "high",
+        "suggestion": "Reduce request frequency"
+    }
 }
 ```
 
@@ -479,13 +479,13 @@ All API errors return a consistent JSON structure:
 
 ```json
 {
-"error": "REQUEST_TIMEOUT",
-"message": "Request processing timed out",
-"details": {
-"timeout": "30s",
-"operation": "graph_query",
-"suggestion": "Reduce query complexity or increase timeout"
-}
+    "error": "REQUEST_TIMEOUT",
+    "message": "Request processing timed out",
+    "details": {
+        "timeout": "30s",
+        "operation": "graph_query",
+        "suggestion": "Reduce query complexity or increase timeout"
+    }
 }
 ```
 
@@ -498,18 +498,18 @@ GraphQL errors are returned in the standard GraphQL error format:
 
 ```json
 {
-"errors": [
-{
-"message": "Entity not found",
-"locations": [{"line": 3, "column": 5}],
-"path": ["entity"],
-"extensions": {
-"code": "ENTITY_NOT_FOUND",
-"entityId": "invalid_id"
-}
-}
-],
-"data": null
+    "errors": [
+        {
+            "message": "Entity not found",
+            "locations": [{ "line": 3, "column": 5 }],
+            "path": ["entity"],
+            "extensions": {
+                "code": "ENTITY_NOT_FOUND",
+                "entityId": "invalid_id"
+            }
+        }
+    ],
+    "data": null
 }
 ```
 
@@ -519,17 +519,17 @@ GraphQL errors are returned in the standard GraphQL error format:
 
 ```json
 {
-"errors": [
-{
-"message": "Cannot query field 'invalidField' on type 'Entity'",
-"locations": [{"line": 4, "column": 7}],
-"extensions": {
-"code": "GRAPHQL_VALIDATION_ERROR",
-"field": "invalidField",
-"type": "Entity"
-}
-}
-]
+    "errors": [
+        {
+            "message": "Cannot query field 'invalidField' on type 'Entity'",
+            "locations": [{ "line": 4, "column": 7 }],
+            "extensions": {
+                "code": "GRAPHQL_VALIDATION_ERROR",
+                "field": "invalidField",
+                "type": "Entity"
+            }
+        }
+    ]
 }
 ```
 
@@ -537,16 +537,16 @@ GraphQL errors are returned in the standard GraphQL error format:
 
 ```json
 {
-"errors": [
-{
-"message": "Query complexity 1500 exceeds maximum allowed 1000",
-"extensions": {
-"code": "QUERY_COMPLEXITY_EXCEEDED",
-"complexity": 1500,
-"maxComplexity": 1000
-}
-}
-]
+    "errors": [
+        {
+            "message": "Query complexity 1500 exceeds maximum allowed 1000",
+            "extensions": {
+                "code": "QUERY_COMPLEXITY_EXCEEDED",
+                "complexity": 1500,
+                "maxComplexity": 1000
+            }
+        }
+    ]
 }
 ```
 
@@ -554,15 +554,15 @@ GraphQL errors are returned in the standard GraphQL error format:
 
 ```json
 {
-"errors": [
-{
-"message": "Subscription connection failed",
-"extensions": {
-"code": "SUBSCRIPTION_ERROR",
-"reason": "authentication_failed"
-}
-}
-]
+    "errors": [
+        {
+            "message": "Subscription connection failed",
+            "extensions": {
+                "code": "SUBSCRIPTION_ERROR",
+                "reason": "authentication_failed"
+            }
+        }
+    ]
 }
 ```
 

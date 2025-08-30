@@ -128,21 +128,21 @@ VERTEX_AI_METRICS_ENABLED=true
 
 ### **Text Generation Models**
 
-| Model | Capabilities | Input Tokens | Output Tokens | Cost (per 1K tokens) |
-|-------|-------------|--------------|---------------|---------------------|
-| **text-bison** | General text | 8,192 | 1,024 | $0.0005 |
-| **text-bison-32k** | Long context | 32,768 | 8,192 | $0.0010 |
-| **gemini-pro** | Advanced reasoning | 32,768 | 8,192 | $0.0005 |
-| **gemini-pro-vision** | Multimodal | 16,384 | 2,048 | $0.0025 |
-| **chat-bison** | Conversational | 8,192 | 1,024 | $0.0005 |
+| Model                 | Capabilities       | Input Tokens | Output Tokens | Cost (per 1K tokens) |
+| --------------------- | ------------------ | ------------ | ------------- | -------------------- |
+| **text-bison**        | General text       | 8,192        | 1,024         | $0.0005              |
+| **text-bison-32k**    | Long context       | 32,768       | 8,192         | $0.0010              |
+| **gemini-pro**        | Advanced reasoning | 32,768       | 8,192         | $0.0005              |
+| **gemini-pro-vision** | Multimodal         | 16,384       | 2,048         | $0.0025              |
+| **chat-bison**        | Conversational     | 8,192        | 1,024         | $0.0005              |
 
 ### **Embedding Models**
 
-| Model | Dimensions | Max Input | Cost (per 1K tokens) | Use Case |
-|-------|------------|-----------|---------------------|----------|
-| **textembedding-gecko** | 768 | 3,072 | $0.0001 | General embeddings |
-| **textembedding-gecko-multilingual** | 768 | 3,072 | $0.0001 | Multilingual text |
-| **textembedding-gecko-003** | 768 | 3,072 | $0.0001 | Latest version |
+| Model                                | Dimensions | Max Input | Cost (per 1K tokens) | Use Case           |
+| ------------------------------------ | ---------- | --------- | -------------------- | ------------------ |
+| **textembedding-gecko**              | 768        | 3,072     | $0.0001              | General embeddings |
+| **textembedding-gecko-multilingual** | 768        | 3,072     | $0.0001              | Multilingual text  |
+| **textembedding-gecko-003**          | 768        | 3,072     | $0.0001              | Latest version     |
 
 ### **Recommended Configurations**
 

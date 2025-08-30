@@ -274,72 +274,72 @@ curl -X GET "http://localhost:8000/api/communities?level=1" \
 ```graphql
 # Basic entity query with pagination
 query GetEntities($first: Int, $after: String) {
-entities(first: $first, after: $after) {
-edges {
-node {
-id
-title
-type
-description
-degree
-communityIds
-}
-cursor
-}
-pageInfo {
-hasNextPage
-hasPreviousPage
-startCursor
-endCursor
-}
-totalCount
-}
+    entities(first: $first, after: $after) {
+        edges {
+            node {
+                id
+                title
+                type
+                description
+                degree
+                communityIds
+            }
+            cursor
+        }
+        pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+        }
+        totalCount
+    }
 }
 
 # Entity with relationships
 query GetEntityWithRelationships($id: String!) {
-entity(id: $id) {
-id
-title
-type
-description
-relationships {
-id
-source
-target
-type
-weight
-}
-}
+    entity(id: $id) {
+        id
+        title
+        type
+        description
+        relationships {
+            id
+            source
+            target
+            type
+            weight
+        }
+    }
 }
 
 # Semantic search
 query SemanticSearch($query: String!, $limit: Int) {
-search(query: $query, limit: $limit) {
-entities {
-id
-title
-type
-description
-}
-relationships {
-id
-source
-target
-type
-}
-score
-}
+    search(query: $query, limit: $limit) {
+        entities {
+            id
+            title
+            type
+            description
+        }
+        relationships {
+            id
+            source
+            target
+            type
+        }
+        score
+    }
 }
 
 # Real-time subscription
 subscription EntityUpdates($workspaceId: String) {
-entityUpdates(workspaceId: $workspaceId) {
-id
-title
-type
-action # CREATED, UPDATED, DELETED
-}
+    entityUpdates(workspaceId: $workspaceId) {
+        id
+        title
+        type
+        action # CREATED, UPDATED, DELETED
+    }
 }
 ```
 
@@ -423,13 +423,13 @@ curl http://localhost:8000/metrics/cache
 
 ### **Technology Stack**
 
-- ** Backend**: FastAPI, Python 3.11+, Pydantic
-- ** Database**: PostgreSQL with pgvector for embeddings
-- ** Cache**: Redis with compression and intelligent invalidation
-- ** Search**: Vector embeddings with semantic similarity
-- ** Monitoring**: Prometheus, Grafana, OpenTelemetry
-- ** Deployment**: Docker, Docker Compose, Kubernetes-ready
-- ** Security**: JWT tokens, API keys, RBAC, audit logging
+- **Backend**: FastAPI, Python 3.11+, Pydantic
+- **Database**: PostgreSQL with pgvector for embeddings
+- **Cache**: Redis with compression and intelligent invalidation
+- **Search**: Vector embeddings with semantic similarity
+- **Monitoring**: Prometheus, Grafana, OpenTelemetry
+- **Deployment**: Docker, Docker Compose, Kubernetes-ready
+- **Security**: JWT tokens, API keys, RBAC, audit logging
 
 ### **Project Structure**
 
@@ -475,12 +475,12 @@ grafana/ # Grafana dashboards
 
 ### **Architecture Patterns**
 
-- ** Modular Design**: Clean separation of concerns with dependency injection
-- ** Factory Pattern**: LLM provider abstraction for multi-provider support
-- ** Observer Pattern**: Real-time subscriptions and event handling
-- ** Strategy Pattern**: Configurable algorithms for graph operations
-- ** Decorator Pattern**: Authentication and authorization middleware
-- ** Monitoring Pattern**: Comprehensive observability with metrics and tracing
+- **Modular Design**: Clean separation of concerns with dependency injection
+- **Factory Pattern**: LLM provider abstraction for multi-provider support
+- **Observer Pattern**: Real-time subscriptions and event handling
+- **Strategy Pattern**: Configurable algorithms for graph operations
+- **Decorator Pattern**: Authentication and authorization middleware
+- **Monitoring Pattern**: Comprehensive observability with metrics and tracing
 
 ## LLM Provider Integration
 
@@ -537,15 +537,15 @@ VERTEX_AI_EMBEDDING_MODEL=textembedding-gecko
 
 ### **Provider Comparison Matrix**
 
-| Feature | Ollama (Local) | Google Cloud AI | OpenAI |
-|---------|----------------|-----------------|--------|
-| **Cost** | Free | Pay-per-use | Pay-per-use |
-| **Privacy** | Complete | Managed | External |
-| **Latency** | Low | Medium | Medium |
-| **Scalability** | Limited | High | High |
-| **Offline** | Yes | No | No |
-| **Models** | Open source | Latest Google | GPT series |
-| **Setup** | Simple | Moderate | Simple |
+| Feature         | Ollama (Local) | Google Cloud AI | OpenAI      |
+| --------------- | -------------- | --------------- | ----------- |
+| **Cost**        | Free           | Pay-per-use     | Pay-per-use |
+| **Privacy**     | Complete       | Managed         | External    |
+| **Latency**     | Low            | Medium          | Medium      |
+| **Scalability** | Limited        | High            | High        |
+| **Offline**     | Yes            | No              | No          |
+| **Models**      | Open source    | Latest Google   | GPT series  |
+| **Setup**       | Simple         | Moderate        | Simple      |
 
 ## Use Cases & Examples
 
@@ -580,20 +580,20 @@ status = requests.get(f"http://localhost:8000/api/indexing/status/{job_id}")
 ```graphql
 # GraphQL query for semantic search
 query SemanticQA($question: String!) {
-search(query: $question, limit: 5) {
-entities {
-id
-title
-description
-}
-relationships {
-source
-target
-type
-description
-}
-score
-}
+    search(query: $question, limit: 5) {
+        entities {
+            id
+            title
+            description
+        }
+        relationships {
+            source
+            target
+            type
+            description
+        }
+        score
+    }
 }
 ```
 
@@ -619,13 +619,14 @@ json={"algorithm": "betweenness", "limit": 50}
 
 ```javascript
 // WebSocket subscription for real-time updates
-const ws = new WebSocket('ws://localhost:8000/graphql', 'graphql-ws');
+const ws = new WebSocket("ws://localhost:8000/graphql", "graphql-ws")
 
 // Subscribe to performance metrics
-ws.send(JSON.stringify({
-type: 'start',
-payload: {
-query: `
+ws.send(
+    JSON.stringify({
+        type: "start",
+        payload: {
+            query: `
 subscription {
 performanceUpdates {
 timestamp
@@ -635,29 +636,30 @@ requestsPerSecond
 cacheHitRate
 }
 }
-`
-}
-}));
+`,
+        },
+    })
+)
 ```
 
 ### **5. Multi-tenant Enterprise Deployment**
 
 ```yaml
 # docker-compose.prod.yml for enterprise deployment
-version: '3.8'
+version: "3.8"
 services:
 graphrag-api:
 image: graphrag-api:latest
 environment:
-- ENVIRONMENT=production
-- JWT_SECRET_KEY=${JWT_SECRET_KEY}
-- DATABASE_URL=${DATABASE_URL}
-- REDIS_URL=${REDIS_URL}
+    - ENVIRONMENT=production
+    - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    - DATABASE_URL=${DATABASE_URL}
+    - REDIS_URL=${REDIS_URL}
 deploy:
 replicas: 3
 resources:
 limits:
-cpus: '2'
+cpus: "2"
 memory: 4G
 ```
 
@@ -665,13 +667,13 @@ memory: 4G
 
 ### **Response Time Benchmarks**
 
-| Operation | Cached | Uncached | Improvement |
-|-----------|--------|----------|-------------|
-| Entity Query (100 items) | 45ms | 180ms | 75% |
-| GraphQL Complex Query | 120ms | 450ms | 73% |
-| Semantic Search | 85ms | 320ms | 73% |
-| Relationship Traversal | 35ms | 140ms | 75% |
-| Community Detection | 200ms | 800ms | 75% |
+| Operation                | Cached | Uncached | Improvement |
+| ------------------------ | ------ | -------- | ----------- |
+| Entity Query (100 items) | 45ms   | 180ms    | 75%         |
+| GraphQL Complex Query    | 120ms  | 450ms    | 73%         |
+| Semantic Search          | 85ms   | 320ms    | 73%         |
+| Relationship Traversal   | 35ms   | 140ms    | 75%         |
+| Community Detection      | 200ms  | 800ms    | 75%         |
 
 ### **Scalability Metrics**
 
@@ -683,12 +685,12 @@ memory: 4G
 
 ### **Resource Requirements**
 
-| Deployment | CPU | Memory | Storage | Concurrent Users |
-|------------|-----|--------|---------|------------------|
-| Development | 2 cores | 4GB | 20GB | 10 |
-| Small Production | 4 cores | 8GB | 100GB | 100 |
-| Medium Production | 8 cores | 16GB | 500GB | 500 |
-| Large Production | 16+ cores | 32GB+ | 1TB+ | 1000+ |
+| Deployment        | CPU       | Memory | Storage | Concurrent Users |
+| ----------------- | --------- | ------ | ------- | ---------------- |
+| Development       | 2 cores   | 4GB    | 20GB    | 10               |
+| Small Production  | 4 cores   | 8GB    | 100GB   | 100              |
+| Medium Production | 8 cores   | 16GB   | 500GB   | 500              |
+| Large Production  | 16+ cores | 32GB+  | 1TB+    | 1000+            |
 
 ## Troubleshooting
 
@@ -724,15 +726,15 @@ redis-cli ping
 ```graphql
 # Use field selection to optimize queries
 query OptimizedQuery {
-entities(first: 10) {
-edges {
-node {
-id
-title
-# Only request needed fields
-}
-}
-}
+    entities(first: 10) {
+        edges {
+            node {
+                id
+                title
+                # Only request needed fields
+            }
+        }
+    }
 }
 ```
 
@@ -819,48 +821,48 @@ SOFTWARE.
 
 ### **Documentation**
 
-- ** API Documentation**: [docs/api/](docs/api/)
-- ** Testing Guide**: [docs/testing/](docs/testing/)
-- ** Deployment Guide**: [docs/deployment/](docs/deployment/)
-- ** Monitoring Guide**: [docs/monitoring/](docs/monitoring/)
+- **API Documentation**: [docs/api/](docs/api/)
+- **Testing Guide**: [docs/testing/](docs/testing/)
+- **Deployment Guide**: [docs/deployment/](docs/deployment/)
+- **Monitoring Guide**: [docs/monitoring/](docs/monitoring/)
 
 ### **Community & Support**
 
-- ** Issues**: [GitHub Issues](https://github.com/pierregrothe/graphrag-api/issues)
-- ** Discussions**: [GitHub Discussions](https://github.com/pierregrothe/graphrag-api/discussions)
-- ** Email**: <pierre@grothe.ca>
-- ** Twitter**: [@pierregrothe](https://twitter.com/pierregrothe)
+- **Issues**: [GitHub Issues](https://github.com/pierregrothe/graphrag-api/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/pierregrothe/graphrag-api/discussions)
+- **Email**: <pierre@grothe.ca>
+- **Twitter**: [@pierregrothe](https://twitter.com/pierregrothe)
 
 ### **Enterprise Support**
 
 For enterprise deployments, custom integrations, and professional support:
 
-- ** Enterprise Contact**: <enterprise@graphrag.com>
-- ** Phone Support**: Available for enterprise customers
-- ** Custom Development**: Tailored solutions and integrations
-- ** Training & Consulting**: Implementation and optimization services
+- **Enterprise Contact**: <enterprise@graphrag.com>
+- **Phone Support**: Available for enterprise customers
+- **Custom Development**: Tailored solutions and integrations
+- **Training & Consulting**: Implementation and optimization services
 
 ## Roadmap
 
 ### **Upcoming Features (Phase 12+)**
 
-- ** Kubernetes Deployment**: Helm charts and operators
-- ** Multi-language SDKs**: Python, JavaScript, Go, Java clients
-- ** Advanced Analytics**: Machine learning insights and predictions
-- ** Enterprise Integrations**: Salesforce, Microsoft Graph, Slack
-- ** Business Intelligence**: Advanced reporting and dashboards
-- ** Advanced Security**: OAuth2/OIDC, SAML, advanced threat detection
+- **Kubernetes Deployment**: Helm charts and operators
+- **Multi-language SDKs**: Python, JavaScript, Go, Java clients
+- **Advanced Analytics**: Machine learning insights and predictions
+- **Enterprise Integrations**: Salesforce, Microsoft Graph, Slack
+- **Business Intelligence**: Advanced reporting and dashboards
+- **Advanced Security**: OAuth2/OIDC, SAML, advanced threat detection
 
 ### **Long-term Vision**
 
-- ** Global Distribution**: Multi-region deployment with data replication
-- ** AI-Powered Insights**: Automated knowledge discovery and recommendations
-- ** Mobile Applications**: Native iOS and Android apps
-- ** Plugin Ecosystem**: Extensible plugin architecture for custom integrations
-- ** Predictive Analytics**: Trend analysis and forecasting capabilities
+- **Global Distribution**: Multi-region deployment with data replication
+- **AI-Powered Insights**: Automated knowledge discovery and recommendations
+- **Mobile Applications**: Native iOS and Android apps
+- **Plugin Ecosystem**: Extensible plugin architecture for custom integrations
+- **Predictive Analytics**: Trend analysis and forecasting capabilities
 
 ---
 
-** Star this repository if you find it useful!**
+**Star this repository if you find it useful!**
 
-** Ready to build enterprise knowledge graphs? Get started with GraphRAG API today!**
+**Ready to build enterprise knowledge graphs? Get started with GraphRAG API today!**

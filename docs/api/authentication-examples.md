@@ -136,142 +136,141 @@ entities = client.get_entities(limit=50)
 #### Basic JWT Authentication
 
 ```javascript
-const axios = require('axios');
+const axios = require("axios")
 
 class GraphRAGClient {
-constructor(baseURL = 'http://localhost:8000') {
-this.baseURL = baseURL;
-this.accessToken = null;
-this.refreshToken = null;
+    constructor(baseURL = "http://localhost:8000") {
+        this.baseURL = baseURL
+        this.accessToken = null
+        this.refreshToken = null
 
-// Create axios instance with interceptors
-this.client = axios.create({
-baseURL: this.baseURL,
-headers: {
-'Content-Type': 'application/json'
-}
-});
+        // Create axios instance with interceptors
+        this.client = axios.create({
+            baseURL: this.baseURL,
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
 
-// Request interceptor to add auth header
-this.client.interceptors.request.use(
-(config) => {
-if (this.accessToken) {
-config.headers.Authorization = `Bearer ${this.accessToken}`;
-}
-return config;
-},
-(error) => Promise.reject(error)
-);
+        // Request interceptor to add auth header
+        this.client.interceptors.request.use(
+            (config) => {
+                if (this.accessToken) {
+                    config.headers.Authorization = `Bearer ${this.accessToken}`
+                }
+                return config
+            },
+            (error) => Promise.reject(error)
+        )
 
-// Response interceptor for token refresh
-this.client.interceptors.response.use(
-(response) => response,
-async (error) => {
-if (error.response?.status === 401 && this.refreshToken) {
-try {
-await this.refreshAccessToken();
-// Retry original request
-return this.client.request(error.config);
-} catch (refreshError) {
-throw new Error('Token refresh failed, please login again');
-}
-}
-return Promise.reject(error);
-}
-);
-}
+        // Response interceptor for token refresh
+        this.client.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+                if (error.response?.status === 401 && this.refreshToken) {
+                    try {
+                        await this.refreshAccessToken()
+                        // Retry original request
+                        return this.client.request(error.config)
+                    } catch (refreshError) {
+                        throw new Error("Token refresh failed, please login again")
+                    }
+                }
+                return Promise.reject(error)
+            }
+        )
+    }
 
-async login(username, password) {
-try {
-const response = await axios.post(`${this.baseURL}/auth/login`, {
-username,
-password
-});
+    async login(username, password) {
+        try {
+            const response = await axios.post(`${this.baseURL}/auth/login`, {
+                username,
+                password,
+            })
 
-this.accessToken = response.data.access_token;
-this.refreshToken = response.data.refresh_token;
+            this.accessToken = response.data.access_token
+            this.refreshToken = response.data.refresh_token
 
-return response.data;
-} catch (error) {
-throw new Error(`Login failed: ${error.response?.data?.message || error.message}`);
-}
-}
+            return response.data
+        } catch (error) {
+            throw new Error(`Login failed: ${error.response?.data?.message || error.message}`)
+        }
+    }
 
-async refreshAccessToken() {
-const response = await axios.post(`${this.baseURL}/auth/refresh`, {
-refresh_token: this.refreshToken
-});
+    async refreshAccessToken() {
+        const response = await axios.post(`${this.baseURL}/auth/refresh`, {
+            refresh_token: this.refreshToken,
+        })
 
-this.accessToken = response.data.access_token;
-return response.data;
-}
+        this.accessToken = response.data.access_token
+        return response.data
+    }
 
-async getEntities(params = {}) {
-const response = await this.client.get('/api/entities', { params });
-return response.data;
-}
+    async getEntities(params = {}) {
+        const response = await this.client.get("/api/entities", { params })
+        return response.data
+    }
 
-async getEntity(entityId) {
-const response = await this.client.get(`/api/entities/${entityId}`);
-return response.data;
-}
+    async getEntity(entityId) {
+        const response = await this.client.get(`/api/entities/${entityId}`)
+        return response.data
+    }
 }
 
 // Usage example
 async function example() {
-const client = new GraphRAGClient();
+    const client = new GraphRAGClient()
 
-try {
-// Login
-await client.login('admin', 'secure_password');
-console.log('Login successful');
+    try {
+        // Login
+        await client.login("admin", "secure_password")
+        console.log("Login successful")
 
-// Get entities
-const entities = await client.getEntities({ limit: 10 });
-console.log(`Found ${entities.entities.length} entities`);
+        // Get entities
+        const entities = await client.getEntities({ limit: 10 })
+        console.log(`Found ${entities.entities.length} entities`)
 
-// Get specific entity
-if (entities.entities.length > 0) {
-const entity = await client.getEntity(entities.entities[0].id);
-console.log('Entity details:', entity);
+        // Get specific entity
+        if (entities.entities.length > 0) {
+            const entity = await client.getEntity(entities.entities[0].id)
+            console.log("Entity details:", entity)
+        }
+    } catch (error) {
+        console.error("Error:", error.message)
+    }
 }
 
-} catch (error) {
-console.error('Error:', error.message);
-}
-}
-
-example();
+example()
 ```
 
 #### GraphQL with JWT
 
 ```javascript
-const { GraphQLClient } = require('graphql-request');
+const { GraphQLClient } = require("graphql-request")
 
 class GraphQLGraphRAGClient {
-constructor(endpoint = 'http://localhost:8000/graphql') {
-this.endpoint = endpoint;
-this.client = new GraphQLClient(endpoint);
-}
+    constructor(endpoint = "http://localhost:8000/graphql") {
+        this.endpoint = endpoint
+        this.client = new GraphQLClient(endpoint)
+    }
 
-async login(username, password) {
-// Login via REST API to get token
-const response = await axios.post('http://localhost:8000/auth/login', {
-username,
-password
-});
+    async login(username, password) {
+        // Login via REST API to get token
+        const response = await axios.post("http://localhost:8000/auth/login", {
+            username,
+            password,
+        })
 
-const token = response.data.access_token;
+        const token = response.data.access_token
 
-// Set authorization header for GraphQL client
-this.client.setHeader('Authorization', `Bearer ${token}`);
+        // Set authorization header for GraphQL client
+        this.client.setHeader("Authorization", `Bearer ${token}`)
 
-return response.data;
-}
+        return response.data
+    }
 
-async getEntities(first = 10) {
-const query = `
+    async getEntities(first = 10) {
+        const query = `
 query GetEntities($first: Int) {
 entities(first: $first) {
 edges {
@@ -285,13 +284,13 @@ description
 totalCount
 }
 }
-`;
+`
 
-return await this.client.request(query, { first });
-}
+        return await this.client.request(query, { first })
+    }
 
-async subscribeToEntityUpdates() {
-const subscription = `
+    async subscribeToEntityUpdates() {
+        const subscription = `
 subscription {
 entityUpdates {
 id
@@ -299,12 +298,12 @@ title
 action
 }
 }
-`;
+`
 
-// Note: For subscriptions, you'd typically use a WebSocket client
-// This is a simplified example
-return subscription;
-}
+        // Note: For subscriptions, you'd typically use a WebSocket client
+        // This is a simplified example
+        return subscription
+    }
 }
 ```
 
@@ -423,47 +422,47 @@ print(f"Error: {e}")
 
 ```javascript
 class APIKeyClient {
-constructor(apiKey, baseURL = 'http://localhost:8000') {
-this.apiKey = apiKey;
-this.baseURL = baseURL;
+    constructor(apiKey, baseURL = "http://localhost:8000") {
+        this.apiKey = apiKey
+        this.baseURL = baseURL
 
-this.client = axios.create({
-baseURL: this.baseURL,
-headers: {
-'X-API-Key': this.apiKey,
-'Content-Type': 'application/json'
-}
-});
-}
+        this.client = axios.create({
+            baseURL: this.baseURL,
+            headers: {
+                "X-API-Key": this.apiKey,
+                "Content-Type": "application/json",
+            },
+        })
+    }
 
-async getEntities(params = {}) {
-const response = await this.client.get('/api/entities', { params });
-return response.data;
-}
+    async getEntities(params = {}) {
+        const response = await this.client.get("/api/entities", { params })
+        return response.data
+    }
 
-async getRelationships(params = {}) {
-const response = await this.client.get('/api/relationships', { params });
-return response.data;
-}
+    async getRelationships(params = {}) {
+        const response = await this.client.get("/api/relationships", { params })
+        return response.data
+    }
 
-async graphqlQuery(query, variables = {}) {
-const response = await this.client.post('/graphql', {
-query,
-variables
-});
-return response.data;
-}
+    async graphqlQuery(query, variables = {}) {
+        const response = await this.client.post("/graphql", {
+            query,
+            variables,
+        })
+        return response.data
+    }
 }
 
 // Usage
-const apiClient = new APIKeyClient('grag_abcd1234...');
+const apiClient = new APIKeyClient("grag_abcd1234...")
 
 async function example() {
-try {
-const entities = await apiClient.getEntities({ limit: 10 });
-console.log('Entities:', entities);
+    try {
+        const entities = await apiClient.getEntities({ limit: 10 })
+        console.log("Entities:", entities)
 
-const graphqlResult = await apiClient.graphqlQuery(`
+        const graphqlResult = await apiClient.graphqlQuery(`
 query {
 entities(first: 5) {
 edges {
@@ -475,12 +474,11 @@ type
 }
 }
 }
-`);
-console.log('GraphQL result:', graphqlResult);
-
-} catch (error) {
-console.error('Error:', error.message);
-}
+`)
+        console.log("GraphQL result:", graphqlResult)
+    } catch (error) {
+        console.error("Error:", error.message)
+    }
 }
 ```
 
@@ -561,46 +559,42 @@ print("Error:", e)
 
 ```javascript
 class APIError extends Error {
-constructor(message, status, details) {
-super(message);
-this.name = 'APIError';
-this.status = status;
-this.details = details;
-}
+    constructor(message, status, details) {
+        super(message)
+        this.name = "APIError"
+        this.status = status
+        this.details = details
+    }
 }
 
 function handleAPIError(error) {
-if (error.response) {
-const { status, data } = error.response;
+    if (error.response) {
+        const { status, data } = error.response
 
-switch (status) {
-case 401:
-throw new APIError('Authentication failed', status, data);
-case 403:
-throw new APIError('Permission denied', status, data);
-case 429:
-throw new APIError('Rate limit exceeded', status, data);
-default:
-throw new APIError(
-data.message || 'API error occurred',
-status,
-data
-);
-}
-} else if (error.request) {
-throw new APIError('Network error - no response received', 0, error.request);
-} else {
-throw new APIError('Request setup error', 0, error.message);
-}
+        switch (status) {
+            case 401:
+                throw new APIError("Authentication failed", status, data)
+            case 403:
+                throw new APIError("Permission denied", status, data)
+            case 429:
+                throw new APIError("Rate limit exceeded", status, data)
+            default:
+                throw new APIError(data.message || "API error occurred", status, data)
+        }
+    } else if (error.request) {
+        throw new APIError("Network error - no response received", 0, error.request)
+    } else {
+        throw new APIError("Request setup error", 0, error.message)
+    }
 }
 
 // Usage with async/await
 async function safeAPICall(apiFunction) {
-try {
-return await apiFunction();
-} catch (error) {
-handleAPIError(error);
-}
+    try {
+        return await apiFunction()
+    } catch (error) {
+        handleAPIError(error)
+    }
 }
 ```
 

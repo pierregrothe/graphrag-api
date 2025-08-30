@@ -222,7 +222,7 @@ curl -X GET "http://localhost:8000/api/communities" \
 
 ```json
 {
-"Authorization": "Bearer YOUR_JWT_TOKEN"
+    "Authorization": "Bearer YOUR_JWT_TOKEN"
 }
 ```
 
@@ -232,18 +232,18 @@ curl -X GET "http://localhost:8000/api/communities" \
 
 ```graphql
 query GetEntities {
-entities(first: 10) {
-edges {
-node {
-id
-title
-type
-description
-degree
-}
-}
-totalCount
-}
+    entities(first: 10) {
+        edges {
+            node {
+                id
+                title
+                type
+                description
+                degree
+            }
+        }
+        totalCount
+    }
 }
 ```
 
@@ -251,19 +251,19 @@ totalCount
 
 ```graphql
 query EntityWithRelationships($entityId: String!) {
-entity(id: $entityId) {
-id
-title
-type
-description
-relationships {
-id
-source
-target
-type
-weight
-}
-}
+    entity(id: $entityId) {
+        id
+        title
+        type
+        description
+        relationships {
+            id
+            source
+            target
+            type
+            weight
+        }
+    }
 }
 ```
 
@@ -271,21 +271,21 @@ weight
 
 ```graphql
 query SemanticSearch($query: String!) {
-search(query: $query, limit: 5) {
-entities {
-id
-title
-type
-description
-}
-relationships {
-id
-source
-target
-type
-}
-score
-}
+    search(query: $query, limit: 5) {
+        entities {
+            id
+            title
+            type
+            description
+        }
+        relationships {
+            id
+            source
+            target
+            type
+        }
+        score
+    }
 }
 ```
 
@@ -293,13 +293,13 @@ score
 
 ```graphql
 query Communities {
-communities(first: 5) {
-id
-title
-level
-entityIds
-relationshipIds
-}
+    communities(first: 5) {
+        id
+        title
+        level
+        entityIds
+        relationshipIds
+    }
 }
 ```
 
@@ -309,22 +309,25 @@ relationshipIds
 
 ```javascript
 // Connect to GraphQL subscriptions
-const ws = new WebSocket('ws://localhost:8000/graphql', 'graphql-ws');
+const ws = new WebSocket("ws://localhost:8000/graphql", "graphql-ws")
 
 // Initialize connection
-ws.send(JSON.stringify({
-type: 'connection_init',
-payload: {
-Authorization: 'Bearer YOUR_JWT_TOKEN'
-}
-}));
+ws.send(
+    JSON.stringify({
+        type: "connection_init",
+        payload: {
+            Authorization: "Bearer YOUR_JWT_TOKEN",
+        },
+    })
+)
 
 // Subscribe to entity updates
-ws.send(JSON.stringify({
-id: '1',
-type: 'start',
-payload: {
-query: `
+ws.send(
+    JSON.stringify({
+        id: "1",
+        type: "start",
+        payload: {
+            query: `
 subscription {
 entityUpdates {
 id
@@ -332,28 +335,30 @@ title
 action
 }
 }
-`
-}
-}));
+`,
+        },
+    })
+)
 
 // Handle real-time updates
-ws.onmessage = function(event) {
-const message = JSON.parse(event.data);
-if (message.type === 'data') {
-console.log('Entity update:', message.payload.data.entityUpdates);
+ws.onmessage = function (event) {
+    const message = JSON.parse(event.data)
+    if (message.type === "data") {
+        console.log("Entity update:", message.payload.data.entityUpdates)
+    }
 }
-};
 ```
 
 ### **Performance Monitoring Subscription**
 
 ```javascript
 // Subscribe to performance metrics
-ws.send(JSON.stringify({
-id: '2',
-type: 'start',
-payload: {
-query: `
+ws.send(
+    JSON.stringify({
+        id: "2",
+        type: "start",
+        payload: {
+            query: `
 subscription {
 performanceUpdates {
 timestamp
@@ -363,9 +368,10 @@ requestsPerSecond
 cacheHitRate
 }
 }
-`
-}
-}));
+`,
+        },
+    })
+)
 ```
 
 ## Step 7: Monitoring Dashboard (2 minutes)

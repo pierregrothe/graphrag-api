@@ -358,11 +358,11 @@ Expected Results:
 
 ```json
 {
-"base_url": "http://localhost:8000",
-"username": "admin",
-"password": "admin123",
-"entity_limit": "20",
-"search_query": "artificial intelligence"
+    "base_url": "http://localhost:8000",
+    "username": "admin",
+    "password": "admin123",
+    "entity_limit": "20",
+    "search_query": "artificial intelligence"
 }
 ```
 
@@ -370,11 +370,11 @@ Expected Results:
 
 ```json
 {
-"base_url": "https://staging-api.graphrag.example.com",
-"username": "staging_user",
-"password": "staging_password",
-"entity_limit": "10",
-"search_query": "machine learning"
+    "base_url": "https://staging-api.graphrag.example.com",
+    "username": "staging_user",
+    "password": "staging_password",
+    "entity_limit": "10",
+    "search_query": "machine learning"
 }
 ```
 
@@ -382,11 +382,11 @@ Expected Results:
 
 ```json
 {
-"base_url": "https://api.graphrag.example.com",
-"username": "",
-"password": "",
-"entity_limit": "5",
-"search_query": "innovation"
+    "base_url": "https://api.graphrag.example.com",
+    "username": "",
+    "password": "",
+    "entity_limit": "5",
+    "search_query": "innovation"
 }
 ```
 
