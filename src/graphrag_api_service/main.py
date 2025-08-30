@@ -123,11 +123,11 @@ async def lifespan(app: FastAPI):
     # Phase 11: Initialize advanced monitoring and authentication
     try:
         # Initialize distributed tracing
-        if settings.tracing_enabled:
+        if getattr(settings, "tracing_enabled", False):
             tracing_config = TracingConfig(
                 service_name=settings.app_name,
                 service_version=settings.app_version,
-                environment=settings.environment,
+                environment=getattr(settings, "environment", "development"),
                 jaeger_endpoint=getattr(settings, "jaeger_endpoint", None),
                 otlp_endpoint=getattr(settings, "otlp_endpoint", None),
             )
@@ -151,7 +151,7 @@ async def lifespan(app: FastAPI):
         # Initialize authentication service
         if getattr(settings, "auth_enabled", True):
             jwt_config = JWTConfig(
-                secret_key=settings.secret_key,
+                secret_key=getattr(settings, "secret_key", "default-secret-key"),
                 access_token_expire_minutes=getattr(settings, "access_token_expire_minutes", 30),
             )
             auth_service = AuthenticationService(jwt_config)
@@ -582,7 +582,7 @@ async def get_security_metrics() -> dict[str, Any]:
 
 
 @api_router.post("/admin/cache/clear", tags=["Administration"])
-async def clear_cache(namespace: str = None) -> dict[str, Any]:
+async def clear_cache(namespace: str | None = None) -> dict[str, Any]:
     """Clear cache entries.
 
     Args:

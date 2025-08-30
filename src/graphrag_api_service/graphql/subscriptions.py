@@ -260,12 +260,15 @@ class Subscription:
         async for update in subscription_manager.subscribe("system_updates"):
             if isinstance(update, dict):
                 yield SystemStatus(
-                    status=update.get("status", "unknown"),
-                    uptime=update.get("uptime", 0.0),
                     version=update.get("version", ""),
-                    active_workspaces=update.get("active_workspaces", 0),
-                    total_entities=update.get("total_entities", 0),
-                    total_relationships=update.get("total_relationships", 0),
+                    environment=update.get("environment", "development"),
+                    uptime_seconds=update.get("uptime_seconds", 0.0),
+                    provider_info=update.get("provider_info", {}),
+                    graph_metrics=update.get("graph_metrics", {}),
+                    indexing_metrics=update.get("indexing_metrics", {}),
+                    query_metrics=update.get("query_metrics", {}),
+                    workspace_metrics=update.get("workspace_metrics", {}),
+                    recent_operations=update.get("recent_operations", []),
                 )
 
     @strawberry.subscription

@@ -34,7 +34,15 @@ class TestDeploymentSettings:
                 env_file=None, env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
             )
 
-        settings = TestDeploymentSettings()
+        # Pass values using Field aliases
+        settings = TestDeploymentSettings(
+            ENVIRONMENT="development",
+            DEBUG=False,
+            HOST="0.0.0.0",
+            PORT=8000,
+            DATA_PATH="./data",
+            WORKSPACE_PATH="./workspaces"
+        )
 
         assert settings.environment == "development"
         assert settings.debug is False
@@ -231,7 +239,7 @@ class TestComponentConfigs:
             port=5432,
             database="testdb",
             username="testuser",
-            password="testpass",
+            DB_PASSWORD="testpass",  # Use alias name
             pool_size=20,
         )
 
@@ -242,7 +250,7 @@ class TestComponentConfigs:
     def test_security_config(self):
         """Test security configuration."""
         config = SecurityConfig(
-            secret_key="test-key",
+            SECRET_KEY="test-key",  # Use alias name
             jwt_algorithm="HS256",
             cors_origins=["https://example.com"],
             rate_limit_per_minute=200,

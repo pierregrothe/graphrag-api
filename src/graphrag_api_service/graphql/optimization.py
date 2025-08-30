@@ -68,13 +68,22 @@ class FieldSelector:
 
         for field in info.selected_fields:
             # Extract field name from selection
-            if isinstance(field, FieldNode) and hasattr(field, "name"):
-                selected_fields.add(field.name.value)
-            # Handle nested selections if available
-            if hasattr(field, "selection_set") and field.selection_set:
-                for selection in field.selection_set.selections:
-                    if isinstance(selection, FieldNode) and hasattr(selection, "name"):
-                        selected_fields.add(selection.name.value)
+            # Strawberry's selected_fields are different from GraphQL AST nodes
+            if hasattr(field, "name"):
+                field_name = field.name
+                if isinstance(field_name, str):
+                    selected_fields.add(field_name)
+                elif hasattr(field_name, "value"):
+                    selected_fields.add(field_name.value)
+            # Handle nested selections if available  
+            if hasattr(field, "selections"):
+                for selection in field.selections:
+                    if hasattr(selection, "name"):
+                        selection_name = selection.name
+                        if isinstance(selection_name, str):
+                            selected_fields.add(selection_name)
+                        elif hasattr(selection_name, "value"):
+                            selected_fields.add(selection_name.value)
 
         return selected_fields
 
@@ -232,10 +241,11 @@ class QueryComplexityAnalyzer:
         field_cost = base_cost + depth_penalty
 
         # Calculate nested field costs
-        if hasattr(field, "selection_set") and field.selection_set:
+        if isinstance(field, (FieldNode, InlineFragmentNode)) and hasattr(field, "selection_set") and field.selection_set:
             for nested_selection in field.selection_set.selections:
                 if isinstance(nested_selection, (FieldNode, InlineFragmentNode, FragmentSpreadNode)):
                     field_cost += self._calculate_field_complexity(nested_selection, depth + 1)
+        # FragmentSpreadNode doesn't have selection_set, it references a fragment definition
 
         return field_cost
 

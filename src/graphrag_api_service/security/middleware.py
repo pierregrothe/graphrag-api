@@ -429,7 +429,7 @@ class SecurityMiddleware:
         self.validator.validate_headers(request)
         self.validator.validate_user_agent(request)
 
-    def get_cors_config(self) -> dict:
+    def get_cors_config(self) -> dict | None:
         """Get CORS configuration for middleware.
 
         Returns:
