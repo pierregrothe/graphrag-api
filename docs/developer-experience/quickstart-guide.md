@@ -15,6 +15,7 @@ This guide will get you from zero to a fully functional GraphRAG API deployment 
 ## Step 1: Quick Installation (5 minutes)
 
 ### **Clone and Start**
+
 ```bash
 # Clone repository
 git clone https://github.com/pierregrothe/graphrag-api.git
@@ -28,6 +29,7 @@ docker-compose ps
 ```
 
 ### **Expected Output**
+
 ```
 NAME COMMAND SERVICE STATUS
 graphrag-api "python -m uvicorn s…" graphrag-api Up 2 minutes
@@ -37,6 +39,7 @@ grafana "/run.sh" grafana Up 2 minutes
 ```
 
 ### **Health Check**
+
 ```bash
 # Test API is running
 curl http://localhost:8000/health
@@ -48,6 +51,7 @@ curl http://localhost:8000/health
 ## Step 2: First API Call (2 minutes)
 
 ### **Get JWT Token**
+
 ```bash
 # Login to get authentication token
 curl -X POST "http://localhost:8000/auth/login" \
@@ -62,6 +66,7 @@ export JWT_TOKEN="your_access_token_here"
 ```
 
 ### **Test API Access**
+
 ```bash
 # Test authenticated endpoint
 curl -X GET "http://localhost:8000/api/entities" \
@@ -74,6 +79,7 @@ curl -X GET "http://localhost:8000/api/entities" \
 ## Step 3: Load Sample Data (10 minutes)
 
 ### **Create Sample Workspace**
+
 ```bash
 # Create workspace for sample data
 curl -X POST "http://localhost:8000/api/workspaces" \
@@ -89,6 +95,7 @@ export WORKSPACE_ID="your_workspace_id_here"
 ```
 
 ### **Upload Sample Documents**
+
 ```bash
 # Create sample data directory
 mkdir -p data/sample
@@ -120,6 +127,7 @@ EOF
 ```
 
 ### **Start Indexing**
+
 ```bash
 # Start indexing the sample documents
 curl -X POST "http://localhost:8000/api/indexing/start" \
@@ -140,6 +148,7 @@ export JOB_ID="your_job_id_here"
 ```
 
 ### **Monitor Progress**
+
 ```bash
 # Check indexing status (repeat until completed)
 curl -X GET "http://localhost:8000/api/indexing/status/$JOB_ID" \
@@ -151,6 +160,7 @@ curl -X GET "http://localhost:8000/api/indexing/status/$JOB_ID" \
 ## Step 4: Explore Your Knowledge Graph (5 minutes)
 
 ### **View Extracted Entities**
+
 ```bash
 # Get all entities
 curl -X GET "http://localhost:8000/api/entities?limit=20" \
@@ -162,6 +172,7 @@ curl -X GET "http://localhost:8000/api/entities?type=TECHNOLOGY&limit=10" \
 ```
 
 ### **Explore Relationships**
+
 ```bash
 # Get all relationships
 curl -X GET "http://localhost:8000/api/relationships?limit=20" \
@@ -173,6 +184,7 @@ curl -X GET "http://localhost:8000/api/relationships?source=artificial_intellige
 ```
 
 ### **Semantic Search**
+
 ```bash
 # Search for AI-related content
 curl -X POST "http://localhost:8000/api/graph/query" \
@@ -194,6 +206,7 @@ curl -X POST "http://localhost:8000/api/graph/query" \
 ```
 
 ### **Community Detection**
+
 ```bash
 # Get detected communities
 curl -X GET "http://localhost:8000/api/communities" \
@@ -203,8 +216,10 @@ curl -X GET "http://localhost:8000/api/communities" \
 ## Step 5: GraphQL Exploration (5 minutes)
 
 ### **Open GraphQL Playground**
-1. Open browser to: http://localhost:8000/graphql
+
+1. Open browser to: <http://localhost:8000/graphql>
 2. Add authentication header:
+
 ```json
 {
 "Authorization": "Bearer YOUR_JWT_TOKEN"
@@ -214,6 +229,7 @@ curl -X GET "http://localhost:8000/api/communities" \
 ### **Try Sample Queries**
 
 #### **Basic Entity Query**
+
 ```graphql
 query GetEntities {
 entities(first: 10) {
@@ -232,6 +248,7 @@ totalCount
 ```
 
 #### **Entity with Relationships**
+
 ```graphql
 query EntityWithRelationships($entityId: String!) {
 entity(id: $entityId) {
@@ -251,6 +268,7 @@ weight
 ```
 
 #### **Semantic Search**
+
 ```graphql
 query SemanticSearch($query: String!) {
 search(query: $query, limit: 5) {
@@ -272,6 +290,7 @@ score
 ```
 
 #### **Community Analysis**
+
 ```graphql
 query Communities {
 communities(first: 5) {
@@ -287,6 +306,7 @@ relationshipIds
 ## Step 6: Real-time Subscriptions (3 minutes)
 
 ### **WebSocket Connection**
+
 ```javascript
 // Connect to GraphQL subscriptions
 const ws = new WebSocket('ws://localhost:8000/graphql', 'graphql-ws');
@@ -326,6 +346,7 @@ console.log('Entity update:', message.payload.data.entityUpdates);
 ```
 
 ### **Performance Monitoring Subscription**
+
 ```javascript
 // Subscribe to performance metrics
 ws.send(JSON.stringify({
@@ -350,11 +371,13 @@ cacheHitRate
 ## Step 7: Monitoring Dashboard (2 minutes)
 
 ### **Access Monitoring Tools**
-- **Grafana Dashboard**: http://localhost:3000 (admin/admin)
-- **Prometheus Metrics**: http://localhost:9090
-- **API Metrics**: http://localhost:8000/metrics
+
+- **Grafana Dashboard**: <http://localhost:3000> (admin/admin)
+- **Prometheus Metrics**: <http://localhost:9090>
+- **API Metrics**: <http://localhost:8000/metrics>
 
 ### **Key Metrics to Watch**
+
 ```bash
 # API performance metrics
 curl http://localhost:8000/metrics/performance
@@ -369,6 +392,7 @@ curl http://localhost:8000/health/detailed
 ## Next Steps: Advanced Features
 
 ### **1. API Key Management**
+
 ```bash
 # Create API key for programmatic access
 curl -X POST "http://localhost:8000/auth/api-keys" \
@@ -387,6 +411,7 @@ curl -X GET "http://localhost:8000/api/entities" \
 ```
 
 ### **2. Postman Collection**
+
 ```bash
 # Import Postman collection for easy testing
 # File: postman/GraphRAG-API-Collection.json
@@ -394,6 +419,7 @@ curl -X GET "http://localhost:8000/api/entities" \
 ```
 
 ### **3. Custom Document Processing**
+
 ```python
 # Python example for custom document processing
 import requests
@@ -416,6 +442,7 @@ json={
 ```
 
 ### **4. Advanced Graph Analysis**
+
 ```bash
 # Centrality analysis
 curl -X POST "http://localhost:8000/api/graph/centrality" \
@@ -442,6 +469,7 @@ curl -X POST "http://localhost:8000/api/graph/multi-hop" \
 ### **Common Issues**
 
 #### **Services Not Starting**
+
 ```bash
 # Check Docker status
 docker --version
@@ -457,6 +485,7 @@ docker-compose up -d
 ```
 
 #### **Authentication Errors**
+
 ```bash
 # Verify login credentials
 curl -X POST "http://localhost:8000/auth/login" \
@@ -468,6 +497,7 @@ echo $JWT_TOKEN | cut -d'.' -f2 | base64 -d
 ```
 
 #### **Indexing Issues**
+
 ```bash
 # Check indexing logs
 curl -X GET "http://localhost:8000/api/indexing/logs/$JOB_ID" \
@@ -478,6 +508,7 @@ ls -la data/sample/
 ```
 
 #### **Performance Issues**
+
 ```bash
 # Check system resources
 docker stats
@@ -490,10 +521,11 @@ docker exec -it graphrag-redis redis-cli ping
 ```
 
 ### **Getting Help**
+
 - **Documentation**: [docs/](../README.md)
-- **GitHub Issues**: https://github.com/pierregrothe/graphrag-api/issues
-- **API Reference**: http://localhost:8000/docs
-- **GraphQL Schema**: http://localhost:8000/graphql
+- **GitHub Issues**: <https://github.com/pierregrothe/graphrag-api/issues>
+- **API Reference**: <http://localhost:8000/docs>
+- **GraphQL Schema**: <http://localhost:8000/graphql>
 
 ## Success Checklist
 
@@ -506,7 +538,7 @@ docker exec -it graphrag-redis redis-cli ping
 - [ ] Monitoring accessible (Grafana dashboard)
 - [ ] Real-time subscriptions working (WebSocket connection)
 
-** Congratulations! You now have a fully functional GraphRAG API with sample data and working examples.**
+**Congratulations! You now have a fully functional GraphRAG API with sample data and working examples.**
 
 ## What's Next?
 

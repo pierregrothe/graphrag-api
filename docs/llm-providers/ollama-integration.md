@@ -9,6 +9,7 @@ Ollama provides local LLM deployment for GraphRAG API, offering complete data pr
 ### 1. Install Ollama
 
 #### **Linux/macOS**
+
 ```bash
 # Install Ollama
 curl -fsSL https://ollama.ai/install.sh | sh
@@ -18,14 +19,17 @@ ollama --version
 ```
 
 #### **Windows**
-1. Download installer from https://ollama.ai/download
+
+1. Download installer from <https://ollama.ai/download>
 2. Run installer and follow setup wizard
 3. Verify installation in Command Prompt:
+
 ```cmd
 ollama --version
 ```
 
 #### **Docker Installation**
+
 ```bash
 # Run Ollama in Docker
 docker run -d \
@@ -41,6 +45,7 @@ docker ps | grep ollama
 ### 2. Download Required Models
 
 #### **Text Generation Models**
+
 ```bash
 # Recommended models for GraphRAG
 ollama pull llama2 # 7B parameters, good balance
@@ -54,6 +59,7 @@ ollama list
 ```
 
 #### **Embedding Models**
+
 ```bash
 # Essential for semantic search
 ollama pull nomic-embed-text # Recommended for text embeddings
@@ -66,6 +72,7 @@ ollama run nomic-embed-text "test embedding"
 ### 3. Configuration
 
 #### **Environment Variables**
+
 ```env
 # Ollama Configuration
 LLM_PROVIDER=ollama
@@ -86,6 +93,7 @@ OLLAMA_TOP_P=0.9
 ```
 
 #### **Advanced Configuration**
+
 ```env
 # Memory Management
 OLLAMA_MAX_LOADED_MODELS=3
@@ -123,6 +131,7 @@ OLLAMA_LOG_LEVEL=INFO
 ### **Recommended Configurations**
 
 #### **Development Environment**
+
 ```env
 OLLAMA_MODEL=llama2
 OLLAMA_EMBEDDING_MODEL=nomic-embed-text
@@ -131,6 +140,7 @@ OLLAMA_NUM_PREDICT=256
 ```
 
 #### **Production Environment**
+
 ```env
 OLLAMA_MODEL=llama2:13b
 OLLAMA_EMBEDDING_MODEL=nomic-embed-text
@@ -144,18 +154,21 @@ OLLAMA_NUM_PARALLEL=8
 ### **Hardware Requirements**
 
 #### **Minimum Requirements**
+
 - **CPU**: 4 cores, 2.5GHz+
 - **RAM**: 8GB (for 7B models)
 - **Storage**: 10GB free space
 - **GPU**: Optional (NVIDIA with CUDA support)
 
 #### **Recommended Requirements**
+
 - **CPU**: 8+ cores, 3.0GHz+
 - **RAM**: 16GB+ (for 13B models)
 - **Storage**: 50GB+ SSD
 - **GPU**: NVIDIA RTX 3060+ with 8GB+ VRAM
 
 #### **Production Requirements**
+
 - **CPU**: 16+ cores, 3.5GHz+
 - **RAM**: 32GB+ (for multiple models)
 - **Storage**: 100GB+ NVMe SSD
@@ -164,6 +177,7 @@ OLLAMA_NUM_PARALLEL=8
 ### **GPU Acceleration**
 
 #### **NVIDIA GPU Setup**
+
 ```bash
 # Install NVIDIA drivers and CUDA
 # Ubuntu/Debian
@@ -179,6 +193,7 @@ ollama serve
 ```
 
 #### **AMD GPU Setup (ROCm)**
+
 ```bash
 # Install ROCm (Linux only)
 wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | sudo apt-key add -
@@ -194,6 +209,7 @@ export OLLAMA_NUM_GPU=1
 ### **Memory Optimization**
 
 #### **Model Loading Strategy**
+
 ```bash
 # Preload frequently used models
 ollama run llama2 "preload"
@@ -204,6 +220,7 @@ export OLLAMA_KEEP_ALIVE=10m
 ```
 
 #### **Concurrent Request Handling**
+
 ```env
 # Optimize for concurrent requests
 OLLAMA_NUM_PARALLEL=4
@@ -214,6 +231,7 @@ OLLAMA_CONCURRENT_REQUESTS=8
 ## Integration Examples
 
 ### **Python Client Example**
+
 ```python
 import requests
 import json
@@ -273,6 +291,7 @@ print(f"Embedding dimension: {len(embedding)}")
 ```
 
 ### **GraphRAG Integration**
+
 ```python
 # GraphRAG API integration with Ollama
 from src.graphrag_api_service.providers.ollama_provider import OllamaProvider
@@ -302,6 +321,7 @@ await store_in_graph(doc, embedding, entities, relationships)
 ## Monitoring & Troubleshooting
 
 ### **Health Monitoring**
+
 ```bash
 # Check Ollama service status
 curl http://localhost:11434/api/tags
@@ -315,6 +335,7 @@ ollama ps
 ```
 
 ### **Performance Monitoring**
+
 ```python
 import time
 import psutil
@@ -354,6 +375,7 @@ return {
 ### **Common Issues & Solutions**
 
 #### **Model Loading Errors**
+
 ```bash
 # Issue: Model not found
 # Solution: Download the model
@@ -365,6 +387,7 @@ ollama pull llama2:7b # instead of 13b
 ```
 
 #### **Connection Issues**
+
 ```bash
 # Issue: Connection refused
 # Solution: Start Ollama service
@@ -377,6 +400,7 @@ ollama serve
 ```
 
 #### **Performance Issues**
+
 ```bash
 # Issue: Slow generation
 # Solutions:
@@ -388,6 +412,7 @@ export OLLAMA_NUM_CTX=2048 # Reduce context size
 ## Production Deployment
 
 ### **Docker Compose Configuration**
+
 ```yaml
 version: '3.8'
 services:
@@ -432,6 +457,7 @@ ollama_data:
 ```
 
 ### **Kubernetes Deployment**
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -499,24 +525,28 @@ claimName: ollama-pvc
 ## Best Practices
 
 ### **Security**
+
 - Run Ollama in isolated network segment
 - Use firewall rules to restrict access
 - Regular security updates and patches
 - Monitor for unusual resource usage
 
 ### **Backup & Recovery**
+
 - Backup model files and configurations
 - Document model versions and settings
 - Test recovery procedures regularly
 - Monitor disk space for model storage
 
 ### **Scaling**
+
 - Use load balancers for multiple Ollama instances
 - Implement model caching strategies
 - Monitor and scale based on usage patterns
 - Consider model quantization for efficiency
 
 ### **Monitoring**
+
 - Set up alerts for service availability
 - Monitor resource usage and performance
 - Track model loading times and errors

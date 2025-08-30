@@ -69,14 +69,22 @@ class FieldSelector:
         for field in info.selected_fields:
             # Strawberry's selected_fields are SelectedField objects
             # They have a 'name' attribute that is a string
-            if hasattr(field, "name") and field.name:
-                selected_fields.add(field.name)
+            try:
+                field_name = getattr(field, "name", None)
+                if field_name:
+                    selected_fields.add(field_name)
+            except (AttributeError, TypeError):
+                pass
             
             # Handle nested selections if available  
-            if hasattr(field, "selections"):
-                for selection in field.selections:
-                    if hasattr(selection, "name") and selection.name:
-                        selected_fields.add(selection.name)
+            try:
+                selections = getattr(field, "selections", [])
+                for selection in selections:
+                    selection_name = getattr(selection, "name", None)
+                    if selection_name:
+                        selected_fields.add(selection_name)
+            except (AttributeError, TypeError):
+                pass
 
         return selected_fields
 

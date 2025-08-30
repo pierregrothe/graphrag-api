@@ -24,6 +24,7 @@ X-API-Key: <api_key>
 ### Core Types
 
 #### Entity
+
 ```graphql
 type Entity {
 id: String!
@@ -38,6 +39,7 @@ relationships: [Relationship!]
 ```
 
 #### Relationship
+
 ```graphql
 type Relationship {
 id: String!
@@ -51,6 +53,7 @@ textUnitIds: [String!]!
 ```
 
 #### Community
+
 ```graphql
 type Community {
 id: String!
@@ -270,6 +273,7 @@ cacheHitRate
 ### Example 1: Entity Search with Filtering
 
 **Query:**
+
 ```graphql
 query SearchEntities($name: String, $type: String, $first: Int) {
 entities(name: $name, type: $type, first: $first) {
@@ -289,6 +293,7 @@ totalCount
 ```
 
 **Variables:**
+
 ```json
 {
 "name": "artificial intelligence",
@@ -300,6 +305,7 @@ totalCount
 ### Example 2: Multi-hop Graph Traversal
 
 **Query:**
+
 ```graphql
 query MultiHopTraversal($startEntity: String!, $hops: Int!, $relationTypes: [String!]) {
 multiHopQuery(
@@ -325,6 +331,7 @@ totalPaths
 ```
 
 **Variables:**
+
 ```json
 {
 "startEntity": "entity_123",
@@ -336,6 +343,7 @@ totalPaths
 ### Example 3: Centrality Analysis
 
 **Query:**
+
 ```graphql
 query CentralityAnalysis($algorithm: CentralityAlgorithm!, $limit: Int) {
 centralityAnalysis(algorithm: $algorithm, limit: $limit) {
@@ -351,6 +359,7 @@ executionTime
 ```
 
 **Variables:**
+
 ```json
 {
 "algorithm": "BETWEENNESS",
@@ -392,6 +401,7 @@ GraphQL errors follow the standard GraphQL error format:
 ## Performance Optimization
 
 ### Field Selection
+
 GraphQL automatically optimizes database queries based on requested fields:
 
 ```graphql
@@ -409,6 +419,7 @@ title
 ```
 
 ### Query Complexity
+
 Queries are automatically analyzed for complexity. Maximum complexity: 1000 points.
 
 ```graphql
@@ -431,7 +442,9 @@ source
 ```
 
 ### Caching
+
 Query results are automatically cached based on:
+
 - Selected fields
 - Query parameters
 - User permissions
@@ -478,10 +491,12 @@ action
 ## GraphQL Playground
 
 Access the interactive GraphQL playground at:
-- **Local Development**: http://localhost:8000/graphql
-- **Production**: https://api.graphrag.example.com/graphql
+
+- **Local Development**: <http://localhost:8000/graphql>
+- **Production**: <https://api.graphrag.example.com/graphql>
 
 The playground provides:
+
 - Schema introspection
 - Query autocompletion
 - Real-time query execution
@@ -491,6 +506,7 @@ The playground provides:
 ## Best Practices
 
 ### 1. Use Fragments for Reusable Fields
+
 ```graphql
 fragment EntityBasic on Entity {
 id
@@ -512,6 +528,7 @@ degree
 ```
 
 ### 2. Implement Proper Error Handling
+
 ```javascript
 const result = await client.query({
 query: GET_ENTITIES,
@@ -526,6 +543,7 @@ console.error('GraphQL Error:', error.message);
 ```
 
 ### 3. Use Variables for Dynamic Queries
+
 ```graphql
 # Good - using variables
 query GetEntity($id: String!) {
@@ -545,6 +563,7 @@ title
 ```
 
 ### 4. Optimize Subscription Usage
+
 ```graphql
 # Subscribe only to necessary updates
 subscription OptimizedUpdates($workspaceId: String!) {

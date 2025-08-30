@@ -16,6 +16,7 @@ Google Cloud AI provides enterprise-grade LLM services for GraphRAG API through 
 ### 1. Google Cloud Project Setup
 
 #### **Create Project**
+
 ```bash
 # Install Google Cloud CLI
 curl https://sdk.cloud.google.com | bash
@@ -32,6 +33,7 @@ gcloud billing projects link your-graphrag-project --billing-account=BILLING_ACC
 ```
 
 #### **Enable Required APIs**
+
 ```bash
 # Enable Vertex AI and related APIs
 gcloud services enable aiplatform.googleapis.com
@@ -46,6 +48,7 @@ gcloud services list --enabled
 ### 2. Service Account Setup
 
 #### **Create Service Account**
+
 ```bash
 # Create service account
 gcloud iam service-accounts create graphrag-service \
@@ -67,6 +70,7 @@ gcloud iam service-accounts keys create ~/graphrag-service-key.json \
 ```
 
 #### **Security Best Practices**
+
 ```bash
 # Set restrictive permissions on key file
 chmod 600 ~/graphrag-service-key.json
@@ -80,6 +84,7 @@ chmod 600 ~/graphrag-service-key.json
 ### 3. Environment Configuration
 
 #### **Basic Configuration**
+
 ```env
 # Google Cloud AI Configuration
 LLM_PROVIDER=google
@@ -100,6 +105,7 @@ VERTEX_AI_TOP_P=0.8
 ```
 
 #### **Advanced Configuration**
+
 ```env
 # Performance Tuning
 VERTEX_AI_TIMEOUT=60
@@ -141,6 +147,7 @@ VERTEX_AI_METRICS_ENABLED=true
 ### **Recommended Configurations**
 
 #### **Development Environment**
+
 ```env
 VERTEX_AI_MODEL=text-bison
 VERTEX_AI_EMBEDDING_MODEL=textembedding-gecko
@@ -149,6 +156,7 @@ VERTEX_AI_CONCURRENT_REQUESTS=5
 ```
 
 #### **Production Environment**
+
 ```env
 VERTEX_AI_MODEL=gemini-pro
 VERTEX_AI_EMBEDDING_MODEL=textembedding-gecko-003
@@ -157,6 +165,7 @@ VERTEX_AI_CONCURRENT_REQUESTS=20
 ```
 
 #### **High-Volume Environment**
+
 ```env
 VERTEX_AI_MODEL=text-bison-32k
 VERTEX_AI_EMBEDDING_MODEL=textembedding-gecko-003
@@ -167,6 +176,7 @@ VERTEX_AI_CONCURRENT_REQUESTS=50
 ## Integration Examples
 
 ### **Python Client Example**
+
 ```python
 from google.cloud import aiplatform
 from google.oauth2 import service_account
@@ -245,6 +255,7 @@ print(f"Embedding dimensions: {len(embeddings[0])}")
 ```
 
 ### **GraphRAG Integration**
+
 ```python
 from src.graphrag_api_service.providers.google_provider import GoogleProvider
 
@@ -299,6 +310,7 @@ continue
 ### **Cost Optimization Strategies**
 
 #### **Model Selection**
+
 ```python
 # Cost-effective model selection based on use case
 def select_optimal_model(task_type, content_length, quality_requirement):
@@ -323,6 +335,7 @@ return "text-bison" # Default fallback
 ```
 
 #### **Batch Processing**
+
 ```python
 async def batch_process_embeddings(texts, batch_size=100):
 """Process embeddings in batches to optimize costs"""
@@ -340,6 +353,7 @@ return embeddings
 ```
 
 #### **Caching Strategy**
+
 ```python
 import hashlib
 from functools import wraps
@@ -379,6 +393,7 @@ return await provider.get_embeddings([text])
 ```
 
 ### **Budget Monitoring**
+
 ```python
 from google.cloud import billing
 
@@ -419,6 +434,7 @@ return budget
 ## Performance Optimization
 
 ### **Request Optimization**
+
 ```python
 import asyncio
 import aiohttp
@@ -470,6 +486,7 @@ pass
 ```
 
 ### **Rate Limiting**
+
 ```python
 import time
 from collections import deque
@@ -509,6 +526,7 @@ return await provider.generate_text("Your prompt here")
 ## Monitoring & Troubleshooting
 
 ### **Logging Configuration**
+
 ```python
 import logging
 from google.cloud import logging as cloud_logging
@@ -547,6 +565,7 @@ raise
 ```
 
 ### **Health Monitoring**
+
 ```python
 async def health_check_vertex_ai():
 """Comprehensive health check for Vertex AI"""
@@ -589,6 +608,7 @@ return health_status
 ## Production Deployment
 
 ### **Kubernetes Configuration**
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -643,6 +663,7 @@ key.json: <base64-encoded-service-account-key>
 ```
 
 ### **Terraform Configuration**
+
 ```hcl
 # terraform/vertex_ai.tf
 resource "google_project_service" "vertex_ai" {
@@ -698,6 +719,7 @@ spend_basis = "CURRENT_SPEND"
 ## Best Practices
 
 ### **Security**
+
 - Use service accounts with minimal required permissions
 - Rotate service account keys regularly
 - Store credentials securely (Secret Manager, Kubernetes secrets)
@@ -705,6 +727,7 @@ spend_basis = "CURRENT_SPEND"
 - Use VPC Service Controls for network isolation
 
 ### **Cost Management**
+
 - Implement request caching to reduce API calls
 - Use appropriate models for each task type
 - Monitor usage and set up budget alerts
@@ -712,6 +735,7 @@ spend_basis = "CURRENT_SPEND"
 - Regular cost analysis and optimization
 
 ### **Performance**
+
 - Use batch processing for multiple requests
 - Implement proper error handling and retries
 - Monitor response times and optimize accordingly
@@ -719,6 +743,7 @@ spend_basis = "CURRENT_SPEND"
 - Implement circuit breakers for resilience
 
 ### **Monitoring**
+
 - Set up comprehensive logging and monitoring
 - Track key metrics (latency, error rates, costs)
 - Implement health checks and alerting

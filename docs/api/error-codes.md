@@ -37,6 +37,7 @@ All API errors return a consistent JSON structure:
 #### 400 Bad Request
 
 **INVALID_REQUEST_FORMAT**
+
 ```json
 {
 "error": "INVALID_REQUEST_FORMAT",
@@ -47,10 +48,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Request body is not valid JSON or has incorrect Content-Type header
 **Resolution**: Ensure request body is valid JSON and Content-Type header is `application/json`
 
 **MISSING_REQUIRED_FIELD**
+
 ```json
 {
 "error": "MISSING_REQUIRED_FIELD",
@@ -61,10 +64,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Required fields are missing from the request
 **Resolution**: Include all required fields in your request
 
 **INVALID_FIELD_VALUE**
+
 ```json
 {
 "error": "INVALID_FIELD_VALUE",
@@ -77,10 +82,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Field value is outside acceptable range or format
 **Resolution**: Provide a valid value within the specified range
 
 **INVALID_QUERY_PARAMETER**
+
 ```json
 {
 "error": "INVALID_QUERY_PARAMETER",
@@ -92,12 +99,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Query parameter has invalid value
 **Resolution**: Use one of the allowed values for the parameter
 
 #### 401 Unauthorized
 
 **AUTHENTICATION_REQUIRED**
+
 ```json
 {
 "error": "AUTHENTICATION_REQUIRED",
@@ -111,10 +120,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: No authentication credentials provided
 **Resolution**: Include valid JWT token or API key in request headers
 
 **INVALID_TOKEN**
+
 ```json
 {
 "error": "INVALID_TOKEN",
@@ -125,10 +136,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: JWT token signature is invalid or malformed
 **Resolution**: Obtain a new token by logging in again
 
 **TOKEN_EXPIRED**
+
 ```json
 {
 "error": "TOKEN_EXPIRED",
@@ -140,10 +153,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: JWT token has passed its expiration time
 **Resolution**: Use refresh token to get a new access token, or login again
 
 **INVALID_API_KEY**
+
 ```json
 {
 "error": "INVALID_API_KEY",
@@ -154,12 +169,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: API key is invalid, expired, or revoked
 **Resolution**: Generate a new API key or check key status
 
 #### 403 Forbidden
 
 **PERMISSION_DENIED**
+
 ```json
 {
 "error": "PERMISSION_DENIED",
@@ -171,10 +188,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: User lacks required permissions for the operation
 **Resolution**: Contact administrator to grant necessary permissions
 
 **TENANT_ACCESS_DENIED**
+
 ```json
 {
 "error": "TENANT_ACCESS_DENIED",
@@ -186,10 +205,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: User trying to access resources from different tenant
 **Resolution**: Ensure you're accessing resources within your tenant scope
 
 **RATE_LIMIT_EXCEEDED**
+
 ```json
 {
 "error": "RATE_LIMIT_EXCEEDED",
@@ -202,12 +223,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: API rate limit has been exceeded
 **Resolution**: Wait until reset time or upgrade to higher rate limit
 
 #### 404 Not Found
 
 **ENTITY_NOT_FOUND**
+
 ```json
 {
 "error": "ENTITY_NOT_FOUND",
@@ -218,10 +241,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Requested entity does not exist
 **Resolution**: Verify entity ID and ensure it exists in the specified workspace
 
 **WORKSPACE_NOT_FOUND**
+
 ```json
 {
 "error": "WORKSPACE_NOT_FOUND",
@@ -232,10 +257,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Requested workspace does not exist or user lacks access
 **Resolution**: Use a valid workspace ID that you have access to
 
 **ENDPOINT_NOT_FOUND**
+
 ```json
 {
 "error": "ENDPOINT_NOT_FOUND",
@@ -247,12 +274,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Requested URL path does not exist
 **Resolution**: Check API documentation for correct endpoint paths
 
 #### 409 Conflict
 
 **RESOURCE_ALREADY_EXISTS**
+
 ```json
 {
 "error": "RESOURCE_ALREADY_EXISTS",
@@ -264,10 +293,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Attempting to create resource with duplicate identifier
 **Resolution**: Use a unique identifier or update existing resource
 
 **CONCURRENT_MODIFICATION**
+
 ```json
 {
 "error": "CONCURRENT_MODIFICATION",
@@ -279,12 +310,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Resource was modified between read and write operations
 **Resolution**: Refresh resource data and retry the operation
 
 #### 413 Payload Too Large
 
 **REQUEST_TOO_LARGE**
+
 ```json
 {
 "error": "REQUEST_TOO_LARGE",
@@ -296,12 +329,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Request body exceeds size limits
 **Resolution**: Reduce request size or split into multiple requests
 
 #### 422 Unprocessable Entity
 
 **VALIDATION_ERROR**
+
 ```json
 {
 "error": "VALIDATION_ERROR",
@@ -322,12 +357,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Request data fails validation rules
 **Resolution**: Fix validation errors and resubmit request
 
 #### 429 Too Many Requests
 
 **RATE_LIMIT_EXCEEDED** (detailed)
+
 ```json
 {
 "error": "RATE_LIMIT_EXCEEDED",
@@ -341,6 +378,7 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Too many requests in short time period
 **Resolution**: Implement exponential backoff and retry after specified time
 
@@ -349,6 +387,7 @@ All API errors return a consistent JSON structure:
 #### 500 Internal Server Error
 
 **INTERNAL_SERVER_ERROR**
+
 ```json
 {
 "error": "INTERNAL_SERVER_ERROR",
@@ -359,10 +398,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Unexpected server-side error
 **Resolution**: Contact support with request ID if error persists
 
 **DATABASE_ERROR**
+
 ```json
 {
 "error": "DATABASE_ERROR",
@@ -374,12 +415,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Database connection or query error
 **Resolution**: Retry request; contact support if error persists
 
 #### 502 Bad Gateway
 
 **UPSTREAM_SERVICE_ERROR**
+
 ```json
 {
 "error": "UPSTREAM_SERVICE_ERROR",
@@ -391,12 +434,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Dependent service (LLM provider, embedding service) is unavailable
 **Resolution**: Wait and retry; check service status page
 
 #### 503 Service Unavailable
 
 **SERVICE_MAINTENANCE**
+
 ```json
 {
 "error": "SERVICE_MAINTENANCE",
@@ -407,10 +452,12 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Scheduled maintenance in progress
 **Resolution**: Wait until maintenance window ends
 
 **SERVICE_OVERLOADED**
+
 ```json
 {
 "error": "SERVICE_OVERLOADED",
@@ -422,12 +469,14 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Service experiencing high load
 **Resolution**: Implement backoff strategy and reduce request frequency
 
 #### 504 Gateway Timeout
 
 **REQUEST_TIMEOUT**
+
 ```json
 {
 "error": "REQUEST_TIMEOUT",
@@ -439,6 +488,7 @@ All API errors return a consistent JSON structure:
 }
 }
 ```
+
 **Cause**: Request took too long to process
 **Resolution**: Simplify query or increase client timeout
 
@@ -466,6 +516,7 @@ GraphQL errors are returned in the standard GraphQL error format:
 ### Common GraphQL Error Codes
 
 **GRAPHQL_VALIDATION_ERROR**
+
 ```json
 {
 "errors": [
@@ -483,6 +534,7 @@ GraphQL errors are returned in the standard GraphQL error format:
 ```
 
 **QUERY_COMPLEXITY_EXCEEDED**
+
 ```json
 {
 "errors": [
@@ -499,6 +551,7 @@ GraphQL errors are returned in the standard GraphQL error format:
 ```
 
 **SUBSCRIPTION_ERROR**
+
 ```json
 {
 "errors": [
@@ -598,21 +651,25 @@ return ERROR_MESSAGES.get(error_code, 'An unexpected error occurred')
 ## Troubleshooting Common Issues
 
 ### Authentication Issues
+
 1. **Token expired**: Use refresh token or login again
 2. **Invalid API key**: Generate new API key
 3. **Permission denied**: Contact admin for proper permissions
 
 ### Rate Limiting
+
 1. **Implement exponential backoff**
 2. **Cache responses when possible**
 3. **Use batch operations for multiple items**
 
 ### Network Issues
+
 1. **Check internet connectivity**
 2. **Verify API endpoint URL**
 3. **Check firewall settings**
 
 ### Data Issues
+
 1. **Validate input data format**
 2. **Check required fields**
 3. **Verify data types and ranges**
@@ -621,11 +678,12 @@ return ERROR_MESSAGES.get(error_code, 'An unexpected error occurred')
 
 For persistent errors or issues not covered in this documentation:
 
-- **GitHub Issues**: https://github.com/pierregrothe/graphrag-api/issues
-- **Email Support**: pierre@grothe.ca
-- **Documentation**: https://docs.graphrag.com
+- **GitHub Issues**: <https://github.com/pierregrothe/graphrag-api/issues>
+- **Email Support**: <pierre@grothe.ca>
+- **Documentation**: <https://docs.graphrag.com>
 
 When reporting errors, please include:
+
 - Error code and message
 - Request ID (if available)
 - Steps to reproduce

@@ -3,6 +3,7 @@
 ## Overview
 
 The GraphRAG API supports two authentication methods:
+
 1. **JWT Tokens**: For user-based authentication with role-based access control
 2. **API Keys**: For service-to-service authentication with configurable permissions
 
