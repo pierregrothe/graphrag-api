@@ -23,7 +23,7 @@ def setup_cors_middleware(app: FastAPI, security_middleware) -> None:
     logger.info("Setting up CORS middleware")
 
     # Get CORS configuration from security middleware
-    cors_config = security_middleware.get_cors_config()
+    cors_config = security_middleware.get_cors_config() if security_middleware else None
 
     if cors_config:
         app.add_middleware(CORSMiddleware, **cors_config)

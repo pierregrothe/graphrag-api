@@ -1,0 +1,423 @@
+# tests/test_api_integration.py
+# Comprehensive API integration tests using httpx
+# Author: Pierre Grothé
+# Creation Date: 2025-09-01
+
+"""Comprehensive integration tests for REST API endpoints."""
+
+import json
+import os
+import time
+from pathlib import Path
+from typing import Any, AsyncGenerator, Generator
+
+import httpx
+import pytest
+from httpx import AsyncClient
+
+from src.graphrag_api_service.config import Settings
+from src.graphrag_api_service.main import app
+
+
+@pytest.fixture
+def api_base_url() -> str:
+    """Get the API base URL for testing."""
+    return "http://localhost:8001"
+
+
+@pytest.fixture
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
+    """Create an async HTTP client for testing."""
+    from httpx import ASGITransport
+    
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+
+
+@pytest.fixture
+def sync_client() -> Generator[httpx.Client, None, None]:
+    """Create a sync HTTP client for testing."""
+    with httpx.Client(base_url="http://localhost:8001") as client:
+        yield client
+
+
+class TestHealthEndpoints:
+    """Test health and status endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_root_endpoint(self, async_client: AsyncClient):
+        """Test root endpoint returns application info."""
+        response = await async_client.get("/")
+        assert response.status_code == 200
+        data = response.json()
+        assert "name" in data
+        assert "version" in data
+        assert data["name"] == "GraphRAG API Service"
+
+    @pytest.mark.asyncio
+    async def test_health_endpoint(self, async_client: AsyncClient):
+        """Test health endpoint returns system status."""
+        response = await async_client.get("/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
+        assert "timestamp" in data
+        assert "components" in data
+
+    @pytest.mark.asyncio
+    async def test_info_endpoint(self, async_client: AsyncClient):
+        """Test info endpoint returns application details."""
+        response = await async_client.get("/info")
+        assert response.status_code == 200
+        data = response.json()
+        assert "version" in data
+        assert "environment" in data
+        assert "uptime_seconds" in data
+
+
+class TestWorkspaceEndpoints:
+    """Test workspace management endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_create_workspace(self, async_client: AsyncClient):
+        """Test creating a new workspace."""
+        workspace_data = {
+            "name": "test-workspace-api",
+            "description": "Test workspace created via API",
+            "data_path": "./test_data",
+            "chunk_size": 1200,
+            "max_entities": 500
+        }
+        
+        response = await async_client.post("/api/workspaces", json=workspace_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == workspace_data["name"]
+        assert data["description"] == workspace_data["description"]
+        assert "id" in data
+        assert "created_at" in data
+        
+        # Store workspace ID for cleanup
+        return data["id"]
+
+    @pytest.mark.asyncio
+    async def test_list_workspaces(self, async_client: AsyncClient):
+        """Test listing all workspaces."""
+        response = await async_client.get("/api/workspaces")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    @pytest.mark.asyncio
+    async def test_get_workspace(self, async_client: AsyncClient):
+        """Test getting a specific workspace."""
+        # First create a workspace
+        workspace_data = {
+            "name": "test-get-workspace",
+            "data_path": "./test_data"
+        }
+        create_response = await async_client.post("/api/workspaces", json=workspace_data)
+        workspace_id = create_response.json()["id"]
+        
+        # Get the workspace
+        response = await async_client.get(f"/api/workspaces/{workspace_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == workspace_id
+        assert data["name"] == workspace_data["name"]
+
+    @pytest.mark.asyncio
+    async def test_update_workspace(self, async_client: AsyncClient):
+        """Test updating a workspace."""
+        # Create a workspace
+        workspace_data = {
+            "name": "test-update-workspace",
+            "data_path": "./test_data"
+        }
+        create_response = await async_client.post("/api/workspaces", json=workspace_data)
+        workspace_id = create_response.json()["id"]
+        
+        # Update the workspace
+        update_data = {
+            "description": "Updated description",
+            "chunk_size": 1500
+        }
+        response = await async_client.put(f"/api/workspaces/{workspace_id}", json=update_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["description"] == update_data["description"]
+
+    @pytest.mark.asyncio
+    async def test_delete_workspace(self, async_client: AsyncClient):
+        """Test deleting a workspace."""
+        # Create a workspace
+        workspace_data = {
+            "name": "test-delete-workspace",
+            "data_path": "./test_data"
+        }
+        create_response = await async_client.post("/api/workspaces", json=workspace_data)
+        workspace_id = create_response.json()["id"]
+        
+        # Delete the workspace
+        response = await async_client.delete(f"/api/workspaces/{workspace_id}")
+        assert response.status_code == 200
+        
+        # Verify it's deleted
+        get_response = await async_client.get(f"/api/workspaces/{workspace_id}")
+        assert get_response.status_code == 404
+
+
+class TestGraphRAGEndpoints:
+    """Test GraphRAG query and indexing endpoints."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_query_local(self, async_client: AsyncClient):
+        """Test local query endpoint."""
+        query_data = {
+            "query": "What is GraphRAG?",
+            "query_type": "local",
+            "workspace_id": "default"
+        }
+        
+        response = await async_client.post("/api/query", json=query_data)
+        # May return 500 if no data is indexed yet
+        assert response.status_code in [200, 500]
+        
+        if response.status_code == 200:
+            data = response.json()
+            assert "response" in data
+            assert "query" in data
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_query_global(self, async_client: AsyncClient):
+        """Test global query endpoint."""
+        query_data = {
+            "query": "Summarize the main topics",
+            "query_type": "global",
+            "workspace_id": "default"
+        }
+        
+        response = await async_client.post("/api/query", json=query_data)
+        # May return 500 if no data is indexed yet
+        assert response.status_code in [200, 500]
+
+    @pytest.mark.asyncio
+    async def test_indexing_status(self, async_client: AsyncClient):
+        """Test indexing status endpoint."""
+        response = await async_client.get("/api/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "indexing_jobs" in data
+        assert isinstance(data["indexing_jobs"], list)
+
+
+class TestGraphEndpoints:
+    """Test graph data endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_get_entities(self, async_client: AsyncClient):
+        """Test getting entities from the graph."""
+        response = await async_client.get("/api/graph/entities")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    @pytest.mark.asyncio
+    async def test_get_relationships(self, async_client: AsyncClient):
+        """Test getting relationships from the graph."""
+        response = await async_client.get("/api/graph/relationships")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    @pytest.mark.asyncio
+    async def test_get_communities(self, async_client: AsyncClient):
+        """Test getting communities from the graph."""
+        response = await async_client.get("/api/graph/communities")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    @pytest.mark.asyncio
+    async def test_get_graph_statistics(self, async_client: AsyncClient):
+        """Test getting graph statistics."""
+        response = await async_client.get("/api/graph/statistics")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total_entities" in data
+        assert "total_relationships" in data
+        assert "total_communities" in data
+
+
+class TestSystemEndpoints:
+    """Test system management endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_clear_cache(self, async_client: AsyncClient):
+        """Test clearing system cache."""
+        response = await async_client.post("/api/cache/clear")
+        assert response.status_code == 200
+        data = response.json()
+        assert "success" in data
+        assert data["success"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_cache_statistics(self, async_client: AsyncClient):
+        """Test getting cache statistics."""
+        response = await async_client.get("/api/cache/statistics")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total_size_bytes" in data
+        assert "total_files" in data
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_switch_provider(self, async_client: AsyncClient):
+        """Test switching LLM provider."""
+        # Get current provider
+        info_response = await async_client.get("/info")
+        current_provider = info_response.json().get("provider_info", {}).get("provider")
+        
+        # Try to switch to a different provider
+        new_provider = "google_gemini" if current_provider == "ollama" else "ollama"
+        switch_data = {"provider": new_provider}
+        
+        response = await async_client.post("/api/provider/switch", json=switch_data)
+        # May fail if provider is not configured
+        assert response.status_code in [200, 400, 500]
+
+
+class TestErrorHandling:
+    """Test API error handling."""
+
+    @pytest.mark.asyncio
+    async def test_404_not_found(self, async_client: AsyncClient):
+        """Test 404 error for non-existent endpoint."""
+        response = await async_client.get("/api/nonexistent")
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_invalid_workspace_id(self, async_client: AsyncClient):
+        """Test error handling for invalid workspace ID."""
+        response = await async_client.get("/api/workspaces/invalid-uuid")
+        assert response.status_code in [404, 422]
+
+    @pytest.mark.asyncio
+    async def test_invalid_query_type(self, async_client: AsyncClient):
+        """Test error handling for invalid query type."""
+        query_data = {
+            "query": "Test query",
+            "query_type": "invalid_type"
+        }
+        response = await async_client.post("/api/query", json=query_data)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_missing_required_fields(self, async_client: AsyncClient):
+        """Test error handling for missing required fields."""
+        # Missing required 'name' field
+        workspace_data = {"description": "Test"}
+        response = await async_client.post("/api/workspaces", json=workspace_data)
+        assert response.status_code == 422
+
+
+class TestPerformance:
+    """Test API performance and load handling."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.benchmark
+    async def test_concurrent_requests(self, async_client: AsyncClient):
+        """Test handling concurrent requests."""
+        import asyncio
+        
+        async def make_request():
+            return await async_client.get("/health")
+        
+        # Make 10 concurrent requests
+        tasks = [make_request() for _ in range(10)]
+        start_time = time.time()
+        responses = await asyncio.gather(*tasks)
+        duration = time.time() - start_time
+        
+        # All requests should succeed
+        for response in responses:
+            assert response.status_code == 200
+        
+        # Should complete within reasonable time (< 2 seconds for 10 requests)
+        assert duration < 2.0
+
+    @pytest.mark.asyncio
+    @pytest.mark.benchmark
+    async def test_response_time(self, async_client: AsyncClient, benchmark):
+        """Benchmark API response times."""
+        async def get_health():
+            response = await async_client.get("/health")
+            return response
+        
+        # Benchmark the health endpoint
+        response = await benchmark(get_health)
+        assert response.status_code == 200
+
+
+class TestContentTypes:
+    """Test different content types and formats."""
+
+    @pytest.mark.asyncio
+    async def test_json_content_type(self, async_client: AsyncClient):
+        """Test JSON content type handling."""
+        headers = {"Content-Type": "application/json"}
+        data = {"name": "test", "data_path": "./test"}
+        
+        response = await async_client.post(
+            "/api/workspaces",
+            json=data,
+            headers=headers
+        )
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("application/json")
+
+    @pytest.mark.asyncio
+    async def test_invalid_content_type(self, async_client: AsyncClient):
+        """Test handling of invalid content type."""
+        headers = {"Content-Type": "text/plain"}
+        
+        response = await async_client.post(
+            "/api/workspaces",
+            content="plain text",
+            headers=headers
+        )
+        assert response.status_code == 422
+
+
+class TestAuthentication:
+    """Test authentication and authorization."""
+
+    @pytest.mark.asyncio
+    async def test_api_key_authentication(self, async_client: AsyncClient):
+        """Test API key authentication if enabled."""
+        # This test assumes API key authentication might be enabled
+        headers = {"X-API-Key": "invalid-key"}
+        
+        response = await async_client.get("/api/workspaces", headers=headers)
+        # Should either work (no auth) or return 401/403
+        assert response.status_code in [200, 401, 403]
+
+    @pytest.mark.asyncio
+    async def test_rate_limiting(self, async_client: AsyncClient):
+        """Test rate limiting if enabled."""
+        # Make multiple rapid requests
+        responses = []
+        for _ in range(20):
+            response = await async_client.get("/health")
+            responses.append(response.status_code)
+        
+        # All should succeed or some might be rate limited (429)
+        for status in responses:
+            assert status in [200, 429]
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

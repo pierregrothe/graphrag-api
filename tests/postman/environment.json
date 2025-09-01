@@ -1,0 +1,36 @@
+{
+  "id": "graphrag-api-env",
+  "name": "GraphRAG API Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8001",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "workspace_id",
+      "value": "",
+      "enabled": true,
+      "type": "any"
+    },
+    {
+      "key": "graphql_workspace_id",
+      "value": "",
+      "enabled": true,
+      "type": "any"
+    },
+    {
+      "key": "api_key",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    }
+  ]
+}

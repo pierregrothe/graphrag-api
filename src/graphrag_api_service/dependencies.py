@@ -27,7 +27,6 @@ from .performance.memory_optimizer import get_memory_optimizer
 from .performance.monitoring import cleanup_performance_monitor, get_performance_monitor
 from .security.middleware import get_security_middleware
 from .providers import LLMProviderFactory, register_providers
-from .system_operations import SystemOperations
 from .workspace import WorkspaceManager
 
 logger = get_logger(__name__)
@@ -71,16 +70,9 @@ class ServiceContainer:
             logger.error(f"Failed to initialize GraphRAG integration: {e}")
             self.graphrag_integration = None
 
-        # Initialize system operations
-        self.system_operations = SystemOperations(
-            settings=settings,
-            provider_factory=LLMProviderFactory(),
-            graphrag_integration=self.graphrag_integration,
-            workspace_manager=self.workspace_manager,
-            indexing_manager=self.indexing_manager,
-            graph_operations=self.graph_operations,
-        )
-        logger.info("System operations initialized successfully")
+        # System operations will be handled by individual route handlers
+        self.system_operations = None
+        logger.info("Core services initialized successfully")
 
         # Start indexing manager
         await self.indexing_manager.start()

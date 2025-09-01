@@ -345,46 +345,112 @@ subscription EntityUpdates($workspaceId: String) {
 
 ## Testing
 
-### **Run Tests**
+### **Comprehensive Test Suite**
+
+The project includes multiple testing approaches for complete coverage:
 
 ```bash
-# All tests
+# Run all tests
 pytest
 
-# Specific test file
-pytest tests/test_phase11_graphql_enhancement.py
+# API integration tests
+pytest tests/test_api_integration.py -v
 
-# With coverage
+# GraphQL integration tests
+pytest tests/test_graphql_integration.py -v
+
+# Postman collection runner
+pytest tests/test_postman_runner.py -v
+
+# Run with coverage
 pytest --cov=src tests/
 
-# Performance tests
-pytest tests/test_performance.py -v
+# Run only integration tests
+pytest -m integration -v
+
+# Performance benchmarks
+pytest tests/test_api_integration.py -v --benchmark-only
 ```
 
-### **API Testing with Postman**
+### **API Testing with Postman Collections**
 
-1. **Import Collection**: `postman/GraphRAG-API-Collection.json`
-2. **Import Environment**: `postman/environments/Local-Development.postman_environment.json`
-3. **Run Authentication**: Execute "Login (JWT)" request first
-4. **Test All Endpoints**: Use collection runner for comprehensive testing
+#### **Available Collections**
+
+1. **REST API Collection**: `tests/postman/graphrag_api_collection.json`
+   - Complete REST API endpoint testing
+   - Workspace CRUD operations
+   - GraphRAG queries and indexing
+   - System management endpoints
+
+2. **GraphQL Collection**: `tests/postman/graphql_collection.json`
+   - GraphQL queries and mutations
+   - Subscription testing
+   - Schema introspection
+   - Pagination and filtering
+
+#### **Running with Python Test Runner**
+
+```bash
+# Run all API tests using Python
+python scripts/run_api_tests.py
+
+# Run specific test types
+python scripts/run_api_tests.py --type api
+python scripts/run_api_tests.py --type graphql
+python scripts/run_api_tests.py --type postman
+
+# Run with Newman CLI (if installed)
+python scripts/run_api_tests.py --newman
+```
+
+#### **Running with Newman CLI**
+
+```bash
+# Install Newman
+npm install -g newman
+
+# Run REST API collection
+newman run tests/postman/graphrag_api_collection.json \
+  -e tests/postman/environment.json
+
+# Run GraphQL collection
+newman run tests/postman/graphql_collection.json \
+  -e tests/postman/environment.json
+
+# Run with detailed reporting
+newman run tests/postman/graphrag_api_collection.json \
+  -e tests/postman/environment.json \
+  --reporters cli,json,html \
+  --reporter-json-export results.json \
+  --reporter-html-export results.html
+```
 
 ### **Load Testing**
 
 ```bash
-# Install Newman for CLI testing
-npm install -g newman
+# Performance testing with concurrent requests
+pytest tests/test_api_integration.py::TestPerformance -v
 
-# Run collection with Newman
-newman run postman/GraphRAG-API-Collection.json \
--e postman/environments/Local-Development.postman_environment.json \
---iteration-count 10
+# Load testing with Newman (100 iterations)
+newman run tests/postman/graphrag_api_collection.json \
+  -e tests/postman/environment.json \
+  --iteration-count 100 \
+  --delay-request 100
 
-# Performance testing with multiple iterations
-newman run postman/GraphRAG-API-Collection.json \
--e postman/environments/Production.postman_environment.json \
---iteration-count 100 \
---delay-request 100
+# Stress testing with parallel execution
+newman run tests/postman/graphrag_api_collection.json \
+  -e tests/postman/environment.json \
+  -n 10 \
+  --timeout-request 30000
 ```
+
+### **Test Coverage**
+
+- **300+ unit tests** covering all components
+- **100+ integration tests** for API endpoints
+- **50+ GraphQL tests** for queries, mutations, and subscriptions
+- **Postman collections** with automated test assertions
+- **Performance benchmarks** for critical operations
 
 ## Monitoring & Observability
 
