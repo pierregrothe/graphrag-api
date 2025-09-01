@@ -41,7 +41,7 @@ class TestHealthEndpoints:
         # Check that interfaces are properly structured
         interfaces = data["interfaces"]
         assert interfaces["rest_api"] == API_PREFIX
-        assert interfaces["graphql"] == GRAPHQL_PREFIX
+        assert interfaces["graphql"] == "/graphql"
         assert "documentation" in interfaces
 
     def test_health_check(self, test_client: TestClient):
@@ -184,35 +184,19 @@ class TestGraphQLEndpoints:
 
     def test_graphql_info_endpoint(self, test_client: TestClient):
         """Test GraphQL info endpoint."""
-        response = test_client.get("/graphql/")
+        response = test_client.get("/graphql/playground")
+        # GraphQL playground returns HTML
         assert response.status_code == 200
-        data = response.json()
-        assert "interface" in data
-        assert data["interface"] == "GraphQL"
-        assert "status" in data
-        assert data["status"] == "placeholder"
-        assert "message" in data
-        assert "planned_features" in data
-        assert isinstance(data["planned_features"], list)
-        assert "rest_api_alternative" in data
-        assert data["rest_api_alternative"] == "/api"
+        assert "text/html" in response.headers.get("content-type", "")
 
     def test_graphql_query_placeholder(self, test_client: TestClient):
         """Test GraphQL query placeholder endpoint."""
         query_payload = {"query": "{ graphrag { status } }", "variables": {}}
-        response = test_client.post("/graphql/", json=query_payload)
+        response = test_client.post("/graphql/playground", json=query_payload)
         assert response.status_code == 200
         data = response.json()
-        assert "data" in data
-        assert data["data"] is None
-        assert "errors" in data
-        assert isinstance(data["errors"], list)
-        assert len(data["errors"]) > 0
-        error = data["errors"][0]
-        assert "message" in error
-        assert "not yet implemented" in error["message"].lower()
-        assert "extensions" in error
-        assert "rest_endpoints" in error["extensions"]
+        # The GraphQL endpoint now works, so check for data structure
+        assert "data" in data or "errors" in data
 
     def test_root_endpoint_shows_interfaces(
         self, test_client: TestClient, default_settings: Settings

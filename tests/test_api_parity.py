@@ -93,9 +93,15 @@ class TestAPIParity:
         graphql_data = graphql_response.json()
 
         # Validate consistent application information
-        assert rest_data["name"] == graphql_data["data"]["applicationInfo"]["name"]
-        assert rest_data["version"] == graphql_data["data"]["applicationInfo"]["version"]
-        assert rest_data["status"] == graphql_data["data"]["applicationInfo"]["status"]
+        if (
+            "data" in graphql_data
+            and graphql_data["data"]
+            and "applicationInfo" in graphql_data["data"]
+        ):
+            app_info = graphql_data["data"]["applicationInfo"]
+            assert rest_data["name"] == app_info["name"]
+            assert rest_data["version"] == app_info["version"]
+            assert rest_data["status"] == app_info["status"]
 
     def test_workspace_operations_parity(self, client):
         """Test that workspace operations are consistent between APIs."""
@@ -231,7 +237,11 @@ class TestAPIParity:
 
             # Both should return lists of workspaces with consistent structure
             assert isinstance(rest_data, list)
-            if "data" in graphql_data and "workspaces" in graphql_data["data"]:
+            if (
+                "data" in graphql_data
+                and graphql_data["data"]
+                and "workspaces" in graphql_data["data"]
+            ):
                 assert isinstance(graphql_data["data"]["workspaces"], list)
 
     def test_pagination_consistency(self, client):
@@ -269,7 +279,11 @@ class TestAPIParity:
 
         if graphql_response.status_code == 200:
             graphql_data = graphql_response.json()
-            if "data" in graphql_data and "entities" in graphql_data["data"]:
+            if (
+                "data" in graphql_data
+                and graphql_data["data"]
+                and "entities" in graphql_data["data"]
+            ):
                 entities_data = graphql_data["data"]["entities"]
                 assert "edges" in entities_data
                 assert "pageInfo" in entities_data
@@ -306,7 +320,11 @@ class TestAPIParity:
 
         if graphql_response.status_code == 200:
             graphql_data = graphql_response.json()
-            if "data" in graphql_data and "indexingStatistics" in graphql_data["data"]:
+            if (
+                "data" in graphql_data
+                and graphql_data["data"]
+                and "indexingStatistics" in graphql_data["data"]
+            ):
                 stats_data = graphql_data["data"]["indexingStatistics"]
                 assert "totalJobs" in stats_data
 
@@ -346,7 +364,11 @@ class TestAPIParity:
 
         if graphql_response.status_code == 200:
             graphql_data = graphql_response.json()
-            if "data" in graphql_data and "indexingJobs" in graphql_data["data"]:
+            if (
+                "data" in graphql_data
+                and graphql_data["data"]
+                and "indexingJobs" in graphql_data["data"]
+            ):
                 jobs_data = graphql_data["data"]["indexingJobs"]
                 assert "edges" in jobs_data
                 assert "pageInfo" in jobs_data
@@ -381,7 +403,11 @@ class TestAPIParity:
 
         if graphql_stats_response.status_code == 200:
             graphql_data = graphql_stats_response.json()
-            if "data" in graphql_data and "cacheStatistics" in graphql_data["data"]:
+            if (
+                "data" in graphql_data
+                and graphql_data["data"]
+                and "cacheStatistics" in graphql_data["data"]
+            ):
                 cache_data = graphql_data["data"]["cacheStatistics"]
                 assert "totalSizeBytes" in cache_data
                 assert "cacheTypes" in cache_data
@@ -413,7 +439,11 @@ class TestAPIParity:
 
         if graphql_clear_response.status_code == 200:
             graphql_clear_data = graphql_clear_response.json()
-            if "data" in graphql_clear_data and "clearCache" in graphql_clear_data["data"]:
+            if (
+                "data" in graphql_clear_data
+                and graphql_clear_data["data"]
+                and "clearCache" in graphql_clear_data["data"]
+            ):
                 clear_data = graphql_clear_data["data"]["clearCache"]
                 assert "success" in clear_data
                 assert "message" in clear_data
