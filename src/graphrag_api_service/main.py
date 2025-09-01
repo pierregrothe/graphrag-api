@@ -42,13 +42,15 @@ def create_app() -> FastAPI:
     from .routes.graphrag import setup_graphrag_routes
     from .routes.indexing import setup_indexing_routes
     from .routes.system import setup_system_routes
-    from .routes.workspace import setup_workspace_routes
+    from .routes.workspace_v2 import router as workspace_router_v2
 
-    # Register routers
+    # Register routers - Use v2 workspace router with dependency injection
+    app.include_router(workspace_router_v2)
+    
+    # Register other routers (these still use the old pattern for now)
     graphrag_router_configured = setup_graphrag_routes(
         container.graphrag_integration, container.workspace_manager
     )
-    workspace_router_configured = setup_workspace_routes(container.workspace_manager)
     indexing_router_configured = setup_indexing_routes(
         container.indexing_manager, container.workspace_manager
     )
@@ -58,7 +60,6 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(graphrag_router_configured)
-    app.include_router(workspace_router_configured)
     app.include_router(indexing_router_configured)
     app.include_router(graph_router_configured)
     app.include_router(system_router_configured)

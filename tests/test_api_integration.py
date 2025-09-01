@@ -91,24 +91,34 @@ class TestWorkspaceEndpoints:
     @pytest.mark.asyncio
     async def test_create_workspace(self, async_client: AsyncClient):
         """Test creating a new workspace."""
-        workspace_data = {
-            "name": "test-workspace-api",
-            "description": "Test workspace created via API",
-            "data_path": "./test_data",
-            "chunk_size": 1200,
-            "max_entities": 500
-        }
+        import tempfile
+        import os
         
-        response = await async_client.post("/api/workspaces", json=workspace_data)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["name"] == workspace_data["name"]
-        assert data["description"] == workspace_data["description"]
-        assert "id" in data
-        assert "created_at" in data
-        
-        # Store workspace ID for cleanup
-        return data["id"]
+        # Create a temporary directory for test data
+        with tempfile.TemporaryDirectory() as temp_dir:
+            import uuid
+            unique_name = f"test-workspace-{uuid.uuid4().hex[:8]}"
+            workspace_data = {
+                "name": unique_name,
+                "description": "Test workspace created via API",
+                "data_path": temp_dir,  # Use actual existing directory
+                "chunk_size": 1200,
+                "max_entities": 500
+            }
+            
+            response = await async_client.post("/api/workspaces", json=workspace_data)
+            if response.status_code != 200:
+                print(f"Response status: {response.status_code}")
+                print(f"Response body: {response.text}")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["name"] == workspace_data["name"]
+            assert data["description"] == workspace_data["description"]
+            assert "id" in data
+            assert "created_at" in data
+            
+            # Store workspace ID for cleanup
+            return data["id"]
 
     @pytest.mark.asyncio
     async def test_list_workspaces(self, async_client: AsyncClient):
@@ -121,60 +131,75 @@ class TestWorkspaceEndpoints:
     @pytest.mark.asyncio
     async def test_get_workspace(self, async_client: AsyncClient):
         """Test getting a specific workspace."""
-        # First create a workspace
-        workspace_data = {
-            "name": "test-get-workspace",
-            "data_path": "./test_data"
-        }
-        create_response = await async_client.post("/api/workspaces", json=workspace_data)
-        workspace_id = create_response.json()["id"]
+        import tempfile
         
-        # Get the workspace
-        response = await async_client.get(f"/api/workspaces/{workspace_id}")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["id"] == workspace_id
-        assert data["name"] == workspace_data["name"]
+        # First create a workspace with a valid temp directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            import uuid
+            unique_name = f"test-get-{uuid.uuid4().hex[:8]}"
+            workspace_data = {
+                "name": unique_name,
+                "data_path": temp_dir
+            }
+            create_response = await async_client.post("/api/workspaces", json=workspace_data)
+            workspace_id = create_response.json()["id"]
+            
+            # Get the workspace
+            response = await async_client.get(f"/api/workspaces/{workspace_id}")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["id"] == workspace_id
+            assert data["name"] == workspace_data["name"]
 
     @pytest.mark.asyncio
     async def test_update_workspace(self, async_client: AsyncClient):
         """Test updating a workspace."""
-        # Create a workspace
-        workspace_data = {
-            "name": "test-update-workspace",
-            "data_path": "./test_data"
-        }
-        create_response = await async_client.post("/api/workspaces", json=workspace_data)
-        workspace_id = create_response.json()["id"]
+        import tempfile
         
-        # Update the workspace
-        update_data = {
-            "description": "Updated description",
-            "chunk_size": 1500
-        }
-        response = await async_client.put(f"/api/workspaces/{workspace_id}", json=update_data)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["description"] == update_data["description"]
+        # Create a workspace with a valid temp directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            import uuid
+            unique_name = f"test-update-{uuid.uuid4().hex[:8]}"
+            workspace_data = {
+                "name": unique_name,
+                "data_path": temp_dir
+            }
+            create_response = await async_client.post("/api/workspaces", json=workspace_data)
+            workspace_id = create_response.json()["id"]
+        
+            # Update the workspace
+            update_data = {
+                "description": "Updated description",
+                "chunk_size": 1500
+            }
+            response = await async_client.put(f"/api/workspaces/{workspace_id}", json=update_data)
+            assert response.status_code == 200
+            data = response.json()
+            assert data["description"] == update_data["description"]
 
     @pytest.mark.asyncio
     async def test_delete_workspace(self, async_client: AsyncClient):
         """Test deleting a workspace."""
-        # Create a workspace
-        workspace_data = {
-            "name": "test-delete-workspace",
-            "data_path": "./test_data"
-        }
-        create_response = await async_client.post("/api/workspaces", json=workspace_data)
-        workspace_id = create_response.json()["id"]
+        import tempfile
         
-        # Delete the workspace
-        response = await async_client.delete(f"/api/workspaces/{workspace_id}")
-        assert response.status_code == 200
+        # Create a workspace with a valid temp directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            import uuid
+            unique_name = f"test-delete-{uuid.uuid4().hex[:8]}"
+            workspace_data = {
+                "name": unique_name,
+                "data_path": temp_dir
+            }
+            create_response = await async_client.post("/api/workspaces", json=workspace_data)
+            workspace_id = create_response.json()["id"]
         
-        # Verify it's deleted
-        get_response = await async_client.get(f"/api/workspaces/{workspace_id}")
-        assert get_response.status_code == 404
+            # Delete the workspace
+            response = await async_client.delete(f"/api/workspaces/{workspace_id}")
+            assert response.status_code == 200
+            
+            # Verify it's deleted
+            get_response = await async_client.get(f"/api/workspaces/{workspace_id}")
+            assert get_response.status_code == 404
 
 
 class TestGraphRAGEndpoints:

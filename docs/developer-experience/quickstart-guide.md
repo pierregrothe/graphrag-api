@@ -2,7 +2,8 @@
 
 ## Zero to GraphRAG in 30 Minutes
 
-This guide will get you from zero to a fully functional GraphRAG API deployment in under 30 minutes, complete with sample data and working examples.
+This guide will get you from zero to a fully functional GraphRAG API deployment in under 30 minutes, complete with
+sample data and working examples.
 
 ## Prerequisites Checklist
 
