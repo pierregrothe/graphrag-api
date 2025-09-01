@@ -10,11 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.graphrag_api_service.auth.api_keys import (
-    APIKeyManager,
-    APIKeyPermissions,
-    APIKeyRequest,
-)
+from src.graphrag_api_service.auth.api_keys import APIKeyManager, APIKeyPermissions, APIKeyRequest
 from src.graphrag_api_service.auth.jwt_auth import (
     AuthenticationService,
     JWTConfig,
@@ -31,16 +27,9 @@ from src.graphrag_api_service.graphql.optimization import (
     QueryCache,
     QueryComplexityAnalyzer,
 )
-from src.graphrag_api_service.graphql.subscriptions import (
-    SubscriptionManager,
-)
-from src.graphrag_api_service.graphql.testing import (
-    GraphQLTestCase,
-    GraphQLTestSuiteBuilder,
-)
-from src.graphrag_api_service.monitoring.prometheus import (
-    PrometheusMetrics,
-)
+from src.graphrag_api_service.graphql.subscriptions import SubscriptionManager
+from src.graphrag_api_service.graphql.testing import GraphQLTestCase, GraphQLTestSuiteBuilder
+from src.graphrag_api_service.monitoring.prometheus import PrometheusMetrics
 from src.graphrag_api_service.monitoring.tracing import (
     GraphQLTracingExtension,
     TracingConfig,
@@ -246,7 +235,6 @@ class TestJWTAuthentication:
         """Test JWT token creation."""
         config = JWTConfig(secret_key="test-secret")
         manager = JWTManager(config)
-
 
         token_data = TokenData(
             user_id="user-1",

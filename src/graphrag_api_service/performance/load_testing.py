@@ -144,10 +144,7 @@ class BenchmarkSuite:
         user_results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Filter out exceptions and keep only successful results
-        valid_results = [
-            result for result in user_results 
-            if not isinstance(result, BaseException)
-        ]
+        valid_results = [result for result in user_results if not isinstance(result, BaseException)]
 
         # Aggregate results by scenario
         scenario_results = {}

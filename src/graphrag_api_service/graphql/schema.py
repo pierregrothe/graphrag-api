@@ -5,8 +5,9 @@
 
 """GraphQL schema combining queries and mutations."""
 
-import strawberry
 from typing import Any
+
+import strawberry
 from strawberry.fastapi import GraphQLRouter
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 

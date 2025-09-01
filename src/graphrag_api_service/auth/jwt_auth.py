@@ -96,9 +96,7 @@ class JWTManager:
         Returns:
             Encoded JWT token
         """
-        expire = datetime.now(UTC) + timedelta(
-            minutes=self.config.access_token_expire_minutes
-        )
+        expire = datetime.now(UTC) + timedelta(minutes=self.config.access_token_expire_minutes)
 
         payload = {
             "sub": token_data.user_id,
@@ -276,9 +274,7 @@ class RoleBasedAccessControl:
 
         return False
 
-    def check_tenant_access(
-        self, user_tenant: str | None, resource_tenant: str | None
-    ) -> bool:
+    def check_tenant_access(self, user_tenant: str | None, resource_tenant: str | None) -> bool:
         """Check if user has access to resource based on tenant.
 
         Args:

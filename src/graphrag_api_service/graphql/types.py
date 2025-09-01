@@ -553,8 +553,6 @@ class AnomalyDetectionResult:
     detection_method: str
 
 
-
-
 @strawberry.type
 class PerformanceMetrics:
     """GraphQL type for performance metrics."""

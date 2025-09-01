@@ -41,7 +41,7 @@ class TestDeploymentSettings:
             HOST="0.0.0.0",
             PORT=8000,
             DATA_PATH="./data",
-            WORKSPACE_PATH="./workspaces"
+            WORKSPACE_PATH="./workspaces",
         )
 
         assert settings.environment == "development"
