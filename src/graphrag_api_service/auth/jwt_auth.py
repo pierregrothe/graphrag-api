@@ -6,13 +6,18 @@
 """JWT-based authentication system with role-based access control."""
 
 import logging
+import warnings
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
 from fastapi import HTTPException, status
-from passlib.context import CryptContext
 from pydantic import BaseModel
+
+# Suppress bcrypt version warning
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message=".*bcrypt.*")
+    from passlib.context import CryptContext
 
 logger = logging.getLogger(__name__)
 

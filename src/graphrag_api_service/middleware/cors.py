@@ -31,4 +31,12 @@ def setup_cors_middleware(app: FastAPI, security_middleware) -> None:
             f"CORS middleware configured with origins: {cors_config.get('allow_origins', [])}"
         )
     else:
-        logger.warning("No CORS configuration found")
+        # Use default CORS configuration for testing
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        logger.debug("Using default CORS configuration for testing")

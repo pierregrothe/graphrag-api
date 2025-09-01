@@ -54,9 +54,22 @@ def setup_error_handlers(app: FastAPI) -> None:
             JSON response with validation error details
         """
         logger.error(f"Validation error: {exc.errors()}")
+
+        # Clean up error details to ensure JSON serialization
+        errors = []
+        for error in exc.errors():
+            cleaned_error = {}
+            for key, value in error.items():
+                # Convert bytes to string if needed
+                if isinstance(value, bytes):
+                    cleaned_error[key] = value.decode("utf-8", errors="ignore")
+                else:
+                    cleaned_error[key] = value
+            errors.append(cleaned_error)
+
         return JSONResponse(
             status_code=422,
-            content={"error": "Validation error", "details": exc.errors()},
+            content={"error": "Validation error", "details": errors},
         )
 
     @app.exception_handler(Exception)

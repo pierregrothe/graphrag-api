@@ -5,9 +5,13 @@
 
 """Dependency injection and service initialization for GraphRAG API Service."""
 
+import warnings
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
+# Suppress passlib bcrypt warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
 
 from .auth.api_keys import get_api_key_manager
 from .auth.jwt_auth import AuthenticationService, JWTConfig
@@ -25,8 +29,8 @@ from .performance.compression import get_performance_middleware
 from .performance.connection_pool import cleanup_connection_pool, get_connection_pool
 from .performance.memory_optimizer import get_memory_optimizer
 from .performance.monitoring import cleanup_performance_monitor, get_performance_monitor
-from .security.middleware import get_security_middleware
 from .providers import LLMProviderFactory, register_providers
+from .security.middleware import get_security_middleware
 from .workspace import WorkspaceManager
 
 logger = get_logger(__name__)

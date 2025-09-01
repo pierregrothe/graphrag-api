@@ -37,31 +37,25 @@ def create_app() -> FastAPI:
     setup_auth_middleware(app, container.security_middleware, container.performance_middleware)
     setup_error_handlers(app)
 
-    # Setup route handlers with dependencies
-    from .routes.graph import setup_graph_routes
-    from .routes.graphrag import setup_graphrag_routes
-    from .routes.indexing import setup_indexing_routes
+    # Setup route handlers with dependency injection
+    from .routes.graph_v2 import router as graph_router
+    from .routes.graphrag_v2 import router as graphrag_router
+    from .routes.indexing_v2 import router as indexing_router
     from .routes.system import setup_system_routes
-    from .routes.workspace_v2 import router as workspace_router_v2
+    from .routes.system_v2 import router as system_router
+    from .routes.workspace_v2 import router as workspace_router
 
-    # Register routers - Use v2 workspace router with dependency injection
-    app.include_router(workspace_router_v2)
-    
-    # Register other routers (these still use the old pattern for now)
-    graphrag_router_configured = setup_graphrag_routes(
-        container.graphrag_integration, container.workspace_manager
-    )
-    indexing_router_configured = setup_indexing_routes(
-        container.indexing_manager, container.workspace_manager
-    )
-    graph_router_configured = setup_graph_routes(container.graph_operations)
+    # Register all v2 routers with dependency injection
+    app.include_router(workspace_router)
+    app.include_router(graphrag_router)
+    app.include_router(graph_router)
+    app.include_router(system_router)
+    app.include_router(indexing_router)
+
+    # Also register old system routes for health endpoints
     system_router_configured = setup_system_routes(
         container.workspace_manager, container.system_operations
     )
-
-    app.include_router(graphrag_router_configured)
-    app.include_router(indexing_router_configured)
-    app.include_router(graph_router_configured)
     app.include_router(system_router_configured)
 
     # Setup GraphQL router

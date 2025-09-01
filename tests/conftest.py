@@ -6,12 +6,17 @@
 """Pytest fixtures for GraphRAG API Service test suite."""
 
 import os
+import warnings
 from collections.abc import Generator
 from typing import Any
 from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
+
+# Suppress passlib bcrypt warnings
+warnings.filterwarnings("ignore", message=".*bcrypt.*")
+warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
 
 from src.graphrag_api_service.config import Settings
 from src.graphrag_api_service.main import app
