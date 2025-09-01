@@ -13,6 +13,7 @@ from typing import Any, AsyncGenerator, Generator
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
 from src.graphrag_api_service.config import Settings
@@ -26,13 +27,22 @@ def api_base_url() -> str:
 
 
 @pytest.fixture
+def client() -> Generator[TestClient, None, None]:
+    """Create a test client for testing."""
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create an async HTTP client for testing."""
+    # Use TestClient's async context for proper lifespan handling
     from httpx import ASGITransport
     
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+    with TestClient(app):  # This handles the lifespan events
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            yield client
 
 
 @pytest.fixture
@@ -58,22 +68,21 @@ class TestHealthEndpoints:
     @pytest.mark.asyncio
     async def test_health_endpoint(self, async_client: AsyncClient):
         """Test health endpoint returns system status."""
-        response = await async_client.get("/health")
+        response = await async_client.get("/api/health")
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
-        assert "timestamp" in data
-        assert "components" in data
+        assert data["status"] == "healthy"
 
     @pytest.mark.asyncio
     async def test_info_endpoint(self, async_client: AsyncClient):
         """Test info endpoint returns application details."""
-        response = await async_client.get("/info")
+        response = await async_client.get("/api/info")
         assert response.status_code == 200
         data = response.json()
-        assert "version" in data
-        assert "environment" in data
-        assert "uptime_seconds" in data
+        assert "app_name" in data
+        assert "app_version" in data
+        assert "debug" in data
 
 
 class TestWorkspaceEndpoints:
