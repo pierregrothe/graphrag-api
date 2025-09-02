@@ -68,15 +68,17 @@ class DatabaseAuthenticationService:
                 permissions.extend(role.permissions)
 
             # Create token data with expiration
-            expires_at = datetime.now(UTC) + timedelta(minutes=self.jwt_manager.config.access_token_expire_minutes)
-            
+            expires_at = datetime.now(UTC) + timedelta(
+                minutes=self.jwt_manager.config.access_token_expire_minutes
+            )
+
             token_data = TokenData(
                 user_id=str(user.id),
                 username=user.username,
                 email=user.email,
                 roles=[role.name for role in user.roles],
                 permissions=list(set(permissions)),  # Remove duplicates
-                tenant_id=user.tenant_id if hasattr(user, 'tenant_id') else None,
+                tenant_id=user.tenant_id if hasattr(user, "tenant_id") else None,
                 expires_at=expires_at,
             )
 
@@ -285,15 +287,32 @@ class DatabaseAuthenticationService:
         try:
             payload = self.jwt_manager.verify_token(token)
             if payload:
-                # Convert dict to TokenData
+                # Convert dict to TokenData - ensure required fields are not None
+                user_id = payload.get("user_id")
+                username = payload.get("username")
+                email = payload.get("email")
+                exp_str = payload.get("exp")
+
+                # Validate required fields
+                if not all([user_id, username, email, exp_str]):
+                    return None
+
+                # Convert exp timestamp to datetime
+                from datetime import datetime
+
+                if isinstance(exp_str, (int, float)):
+                    expires_at = datetime.fromtimestamp(exp_str, tz=UTC)
+                else:
+                    expires_at = datetime.fromisoformat(str(exp_str))
+
                 return TokenData(
-                    user_id=payload.get("user_id"),
-                    username=payload.get("username"),
-                    email=payload.get("email"),
+                    user_id=user_id,
+                    username=username,
+                    email=email,
                     roles=payload.get("roles", []),
                     permissions=payload.get("permissions", []),
                     tenant_id=payload.get("tenant_id"),
-                    expires_at=datetime.fromisoformat(payload.get("exp")),
+                    expires_at=expires_at,
                 )
             return None
         except Exception:
