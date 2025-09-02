@@ -207,7 +207,7 @@ async def get_workspace_config(
                 status_code=404, detail=f"Configuration file not found for workspace {workspace_id}"
             )
 
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             config = yaml.safe_load(f)
 
         return config

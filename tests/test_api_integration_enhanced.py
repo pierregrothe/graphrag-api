@@ -6,8 +6,7 @@
 """Enhanced integration tests for REST API endpoints."""
 
 import asyncio
-import json
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,8 +18,6 @@ from src.graphrag_api_service.main import app
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create an async HTTP client for testing."""
-    from fastapi.testclient import TestClient
-    from httpx import ASGITransport
 
     with TestClient(app):  # This handles the lifespan events
         transport = ASGITransport(app=app)

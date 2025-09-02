@@ -5,18 +5,12 @@
 
 """Tests for GraphRAG indexing API endpoints."""
 
-import os
 import uuid
 
 import pytest
 from fastapi.testclient import TestClient
 
-from src.graphrag_api_service.indexing.models import (
-    IndexingJob,
-    IndexingJobStatus,
-    IndexingJobSummary,
-    IndexingStats,
-)
+from src.graphrag_api_service.indexing.models import IndexingJob
 from src.graphrag_api_service.main import app
 from src.graphrag_api_service.workspace.models import Workspace, WorkspaceConfig, WorkspaceStatus
 

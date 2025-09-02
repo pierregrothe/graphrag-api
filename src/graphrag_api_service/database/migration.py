@@ -43,7 +43,7 @@ class DataMigrator:
             return 0
 
         try:
-            with open(workspaces_file, "r", encoding="utf-8") as f:
+            with open(workspaces_file, encoding="utf-8") as f:
                 workspaces_data = json.load(f)
 
             migrated_count = 0
@@ -113,7 +113,7 @@ class DataMigrator:
             # Find all job JSON files
             for job_file in jobs_directory.glob("*.json"):
                 try:
-                    with open(job_file, "r", encoding="utf-8") as f:
+                    with open(job_file, encoding="utf-8") as f:
                         job_data = json.load(f)
 
                     job_id = job_file.stem

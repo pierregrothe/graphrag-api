@@ -44,8 +44,9 @@ def get_system_operations():
 
 def get_cache_manager_dep():
     """Get cache manager for dependency injection."""
-    from .performance.cache_manager import get_cache_manager
     import asyncio
+
+    from .performance.cache_manager import get_cache_manager
 
     # Get the cache manager instance
     try:

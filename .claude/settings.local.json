@@ -25,7 +25,8 @@
       "Bash(poetry add:*)",
       "Bash(tree:*)",
       "Bash(find:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

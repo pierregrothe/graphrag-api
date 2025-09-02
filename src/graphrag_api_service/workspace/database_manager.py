@@ -5,7 +5,6 @@
 
 """Database-backed workspace manager for GraphRAG API."""
 
-import json
 import logging
 import uuid
 from datetime import UTC, datetime
@@ -13,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import Settings
 from ..database.models import Workspace as DBWorkspace

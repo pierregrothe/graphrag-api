@@ -7,7 +7,6 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 import yaml
@@ -552,7 +551,7 @@ class TestWorkspaceManager:
         )  # No database manager for this test
 
         # Verify the new manager was initialized properly
-        assert hasattr(new_manager, 'db_manager'), "New manager missing db_manager attribute"
+        assert hasattr(new_manager, "db_manager"), "New manager missing db_manager attribute"
         assert new_manager.db_manager is None, "db_manager should be None for file-based storage"
 
         # Ensure the workspaces paths are the same

@@ -10,7 +10,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ..deps import CacheManagerDep, SystemOperationsDep, WorkspaceManagerDep
+from ..deps import CacheManagerDep, SystemOperationsDep
 from ..logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -27,8 +27,7 @@ class ProviderSwitchRequest(BaseModel):
 
 @router.post("/cache/clear")
 async def clear_cache(
-    namespace: str | None = None,
-    cache_manager: CacheManagerDep = None
+    namespace: str | None = None, cache_manager: CacheManagerDep = None
 ) -> dict[str, Any]:
     """Clear cache.
 
@@ -59,7 +58,7 @@ async def clear_cache(
 
             return {
                 "success": True,
-                "message": f"Cache cleared successfully",
+                "message": "Cache cleared successfully",
                 "files_cleared": cleared_count,
                 "bytes_freed": 0,  # Cache manager doesn't track bytes
                 "namespace": namespace,
@@ -82,28 +81,6 @@ async def clear_cache(
             "files_cleared": 0,
             "bytes_freed": 0,
             "namespace": namespace,
-        }
-
-    try:
-        # Clear cache using system operations
-        result = await system_operations.clear_cache(namespace=namespace)
-
-        return {
-            "success": True,
-            "message": result.get("message", "Cache cleared successfully"),
-            "files_cleared": result.get("files_cleared", 0),
-            "bytes_freed": result.get("bytes_freed", 0),
-            "namespace": namespace,
-        }
-
-    except Exception as e:
-        logger.error(f"Failed to clear cache: {e}")
-        return {
-            "success": False,
-            "message": f"Cache clear failed: {str(e)}",
-            "files_cleared": 0,
-            "bytes_freed": 0,
-            "error": str(e),
         }
 
 

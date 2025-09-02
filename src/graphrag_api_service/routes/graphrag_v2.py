@@ -7,7 +7,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from ..deps import GraphRAGIntegrationDep, WorkspaceManagerDep
 from ..logging_config import get_logger

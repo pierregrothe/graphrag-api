@@ -8,9 +8,9 @@
 import gc
 import logging
 import weakref
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
-from typing import Any, Callable
+from typing import Any
 
 import pandas as pd
 import psutil

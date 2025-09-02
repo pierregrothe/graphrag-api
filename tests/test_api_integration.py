@@ -5,18 +5,14 @@
 
 """Comprehensive integration tests for REST API endpoints."""
 
-import json
-import os
 import time
-from pathlib import Path
-from typing import Any, AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
-from src.graphrag_api_service.config import Settings
 from src.graphrag_api_service.main import app
 
 
@@ -91,7 +87,6 @@ class TestWorkspaceEndpoints:
     @pytest.mark.asyncio
     async def test_create_workspace(self, async_client: AsyncClient):
         """Test creating a new workspace."""
-        import os
         import tempfile
 
         # Create a temporary directory for test data

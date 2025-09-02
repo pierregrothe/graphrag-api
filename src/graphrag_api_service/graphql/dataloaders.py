@@ -8,7 +8,8 @@
 import asyncio
 import logging
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ..config import settings
 from ..graph.operations import GraphOperations
@@ -28,9 +29,9 @@ class DataLoader:
         """
         self.batch_load_fn = batch_load_fn
         self.max_batch_size = max_batch_size
-        self._cache: Dict[str, Any] = {}
-        self._batch: List[str] = []
-        self._batch_promises: Dict[str, asyncio.Future] = {}
+        self._cache: dict[str, Any] = {}
+        self._batch: list[str] = []
+        self._batch_promises: dict[str, asyncio.Future] = {}
         self._batch_scheduled = False
 
     async def load(self, key: str) -> Any:
@@ -62,7 +63,7 @@ class DataLoader:
 
         return await future
 
-    async def load_many(self, keys: List[str]) -> List[Any]:
+    async def load_many(self, keys: list[str]) -> list[Any]:
         """Load multiple items by keys.
 
         Args:
@@ -108,7 +109,7 @@ class DataLoader:
                 if key in current_promises:
                     current_promises[key].set_exception(e)
 
-    def clear(self, key: Optional[str] = None):
+    def clear(self, key: str | None = None):
         """Clear cache.
 
         Args:
@@ -132,7 +133,7 @@ class EntityDataLoader(DataLoader):
         self.graph_operations = graph_operations
         super().__init__(self._batch_load_entities)
 
-    async def _batch_load_entities(self, entity_ids: List[str]) -> List[Optional[Dict[str, Any]]]:
+    async def _batch_load_entities(self, entity_ids: list[str]) -> list[dict[str, Any] | None]:
         """Batch load entities by IDs.
 
         Args:
@@ -174,8 +175,8 @@ class RelationshipDataLoader(DataLoader):
         super().__init__(self._batch_load_relationships)
 
     async def _batch_load_relationships(
-        self, relationship_ids: List[str]
-    ) -> List[Optional[Dict[str, Any]]]:
+        self, relationship_ids: list[str]
+    ) -> list[dict[str, Any] | None]:
         """Batch load relationships by IDs.
 
         Args:
@@ -219,8 +220,8 @@ class EntityRelationshipsDataLoader(DataLoader):
         super().__init__(self._batch_load_entity_relationships)
 
     async def _batch_load_entity_relationships(
-        self, entity_ids: List[str]
-    ) -> List[List[Dict[str, Any]]]:
+        self, entity_ids: list[str]
+    ) -> list[list[dict[str, Any]]]:
         """Batch load relationships for multiple entities.
 
         Args:
@@ -268,8 +269,8 @@ class CommunityDataLoader(DataLoader):
         super().__init__(self._batch_load_communities)
 
     async def _batch_load_communities(
-        self, community_ids: List[str]
-    ) -> List[Optional[Dict[str, Any]]]:
+        self, community_ids: list[str]
+    ) -> list[dict[str, Any] | None]:
         """Batch load communities by IDs.
 
         Args:
@@ -300,7 +301,7 @@ class CommunityDataLoader(DataLoader):
             return [None] * len(community_ids)
 
 
-def create_dataloaders(graph_operations: GraphOperations) -> Dict[str, DataLoader]:
+def create_dataloaders(graph_operations: GraphOperations) -> dict[str, DataLoader]:
     """Create all DataLoaders for GraphQL context.
 
     Args:

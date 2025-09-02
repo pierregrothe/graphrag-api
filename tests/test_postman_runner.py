@@ -6,10 +6,8 @@
 """Execute Postman collections using Python for automated API testing."""
 
 import json
-import os
 import time
 from pathlib import Path
-from typing import Any
 
 import httpx
 import pytest
@@ -38,7 +36,7 @@ class PostmanCollectionRunner:
         Returns:
             Collection data
         """
-        with open(collection_path, "r") as f:
+        with open(collection_path) as f:
             return json.load(f)
 
     def replace_variables(self, text: str) -> str:
@@ -52,7 +50,7 @@ class PostmanCollectionRunner:
         """
         # Replace environment variables
         for key, value in self.environment.items():
-            text = text.replace(f"{{{{key}}}}", str(value))
+            text = text.replace("{{key}}", str(value))
 
         # Replace base_url
         text = text.replace("{{base_url}}", self.base_url)

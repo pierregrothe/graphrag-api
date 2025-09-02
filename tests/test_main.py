@@ -14,7 +14,6 @@ from fastapi.testclient import TestClient
 
 from src.graphrag_api_service.config import (
     API_PREFIX,
-    GRAPHQL_PREFIX,
     MAX_COMMUNITY_LEVEL,
     MIN_MAX_TOKENS,
     TEST_DATA_PATH,

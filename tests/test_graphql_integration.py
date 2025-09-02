@@ -5,7 +5,7 @@
 
 """GraphQL integration tests for the GraphRAG API Service."""
 
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -34,8 +34,6 @@ async def graphql_client(graphql_url: str) -> AsyncGenerator[Client, None]:
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create an async HTTP client for testing."""
-    from fastapi.testclient import TestClient
-    from httpx import ASGITransport
 
     with TestClient(app):  # This handles the lifespan events
         transport = ASGITransport(app=app)

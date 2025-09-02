@@ -10,9 +10,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-# Suppress passlib bcrypt warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
-
 from .auth.api_keys import get_api_key_manager
 from .auth.database_auth import DatabaseAuthenticationService
 from .auth.jwt_auth import JWTConfig
@@ -33,6 +30,9 @@ from .performance.monitoring import cleanup_performance_monitor, get_performance
 from .providers import LLMProviderFactory, register_providers
 from .security.middleware import get_security_middleware
 from .workspace import WorkspaceManager
+
+# Suppress passlib bcrypt warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
 
 logger = get_logger(__name__)
 
@@ -173,7 +173,7 @@ class ServiceContainer:
                     # Fallback to in-memory authentication
                     from .auth.jwt_auth import AuthenticationService
 
-                    self.auth_service = AuthenticationService(jwt_config)
+                    self.auth_service = AuthenticationService(jwt_config, self.database_manager)
                     api_key_manager = get_api_key_manager(self.auth_service.rbac)
                     logger.warning("Using in-memory authentication (database not available)")
 

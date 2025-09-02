@@ -14,8 +14,6 @@ from typing import Any
 
 import pandas as pd
 from pydantic import BaseModel
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +57,9 @@ class ConnectionPool:
         self._lock = asyncio.Lock()
         self._metrics: list[QueryMetrics] = []
         self._initialized = False
+        # Simple in-memory cache with TTL
+        self._cache: dict[str, tuple[pd.DataFrame, float]] = {}
+        self._cache_ttl = 300  # 5 minutes default TTL
 
     async def initialize(self) -> None:
         """Initialize the connection pool."""
@@ -355,9 +356,19 @@ class ConnectionPool:
         Returns:
             Cached result if available
         """
-        # Simple cache implementation - in production, use Redis or similar
         cache_key = f"{query_type}:{data_path}:{str(filters)}"
-        # For now, return None (no cache hit)
+
+        # Check if key exists and is not expired
+        if cache_key in self._cache:
+            cached_data, cached_time = self._cache[cache_key]
+            if time.time() - cached_time < self._cache_ttl:
+                logger.debug(f"Cache hit for key: {cache_key}")
+                return cached_data.copy()  # Return a copy to prevent mutations
+            else:
+                # Remove expired entry
+                del self._cache[cache_key]
+                logger.debug(f"Cache expired for key: {cache_key}")
+
         return None
 
     async def _cache_result(
@@ -375,9 +386,22 @@ class ConnectionPool:
             filters: Optional filters
             result: Query result to cache
         """
-        # Simple cache implementation - in production, use Redis or similar
         cache_key = f"{query_type}:{data_path}:{str(filters)}"
-        logger.debug(f"Caching result for key: {cache_key}")
+
+        # Store result with current timestamp
+        self._cache[cache_key] = (result.copy(), time.time())
+        logger.debug(f"Cached result for key: {cache_key}")
+
+        # Clean up old entries if cache is getting too large (simple LRU)
+        if len(self._cache) > 100:  # Max 100 entries
+            # Remove oldest entries
+            current_time = time.time()
+            expired_keys = [
+                k for k, (_, t) in self._cache.items() if current_time - t > self._cache_ttl
+            ]
+            for key in expired_keys:
+                del self._cache[key]
+            logger.debug(f"Cleaned {len(expired_keys)} expired cache entries")
 
     async def _record_metrics(
         self, query_type: str, execution_time: float, rows_processed: int, cache_hit: bool
