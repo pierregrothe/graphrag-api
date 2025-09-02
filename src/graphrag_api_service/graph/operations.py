@@ -221,6 +221,158 @@ class GraphOperations:
             logger.error(f"Relationship querying failed: {e}")
             raise GraphOperationsError(f"Relationship querying failed: {e}") from e
 
+    async def get_entities(self, data_path: str, entity_ids: list[str]) -> list[dict[str, Any]]:
+        """Get entities by their IDs.
+
+        Args:
+            data_path: Path to GraphRAG data directory
+            entity_ids: List of entity IDs to retrieve
+
+        Returns:
+            List of entity dictionaries
+        """
+        try:
+            entities_df = self._load_parquet_file(data_path, "create_final_entities.parquet")
+            if entities_df is None:
+                return []
+
+            # Filter by entity IDs
+            filtered_entities = entities_df[entities_df["id"].isin(entity_ids)]
+
+            return [
+                {
+                    "id": row["id"],
+                    "name": row.get("title", ""),
+                    "type": row.get("type", ""),
+                    "description": row.get("description", ""),
+                    "degree": row.get("degree", 0),
+                    "community": row.get("community", ""),
+                }
+                for _, row in filtered_entities.iterrows()
+            ]
+
+        except Exception as e:
+            logger.error(f"Entity retrieval failed: {e}")
+            return []
+
+    async def get_relationships(
+        self, data_path: str, relationship_ids: list[str]
+    ) -> list[dict[str, Any]]:
+        """Get relationships by their IDs.
+
+        Args:
+            data_path: Path to GraphRAG data directory
+            relationship_ids: List of relationship IDs to retrieve
+
+        Returns:
+            List of relationship dictionaries
+        """
+        try:
+            relationships_df = self._load_parquet_file(
+                data_path, "create_final_relationships.parquet"
+            )
+            if relationships_df is None:
+                return []
+
+            # Filter by relationship IDs
+            filtered_relationships = relationships_df[relationships_df["id"].isin(relationship_ids)]
+
+            return [
+                {
+                    "id": row["id"],
+                    "source": row.get("source", ""),
+                    "target": row.get("target", ""),
+                    "type": row.get("type", ""),
+                    "description": row.get("description", ""),
+                    "weight": row.get("weight", 1.0),
+                }
+                for _, row in filtered_relationships.iterrows()
+            ]
+
+        except Exception as e:
+            logger.error(f"Relationship retrieval failed: {e}")
+            return []
+
+    async def get_communities(
+        self, data_path: str, community_ids: list[str]
+    ) -> list[dict[str, Any]]:
+        """Get communities by their IDs.
+
+        Args:
+            data_path: Path to GraphRAG data directory
+            community_ids: List of community IDs to retrieve
+
+        Returns:
+            List of community dictionaries
+        """
+        try:
+            communities_df = self._load_parquet_file(data_path, "create_final_communities.parquet")
+            if communities_df is None:
+                return []
+
+            # Filter by community IDs
+            filtered_communities = communities_df[communities_df["id"].isin(community_ids)]
+
+            return [
+                {
+                    "id": row["id"],
+                    "title": row.get("title", ""),
+                    "level": row.get("level", 0),
+                    "size": row.get("size", 0),
+                    "description": row.get("full_content", ""),
+                }
+                for _, row in filtered_communities.iterrows()
+            ]
+
+        except Exception as e:
+            logger.error(f"Community retrieval failed: {e}")
+            return []
+
+    async def query_communities(self, data_path: str, **kwargs) -> dict[str, Any]:
+        """Query communities from the knowledge graph.
+
+        Args:
+            data_path: Path to GraphRAG data directory
+            **kwargs: Additional query parameters
+
+        Returns:
+            Dictionary containing communities and metadata
+        """
+        try:
+            communities_df = self._load_parquet_file(data_path, "create_final_communities.parquet")
+            if communities_df is None:
+                return {"communities": [], "total": 0}
+
+            # Apply any filtering based on kwargs
+            limit = kwargs.get("limit", 50)
+            offset = kwargs.get("offset", 0)
+
+            # Paginate results
+            total = len(communities_df)
+            paginated_df = communities_df.iloc[offset : offset + limit]
+
+            communities = [
+                {
+                    "id": row["id"],
+                    "title": row.get("title", ""),
+                    "level": row.get("level", 0),
+                    "size": row.get("size", 0),
+                    "description": row.get("full_content", ""),
+                }
+                for _, row in paginated_df.iterrows()
+            ]
+
+            return {
+                "communities": communities,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            }
+
+        except Exception as e:
+            logger.error(f"Community querying failed: {e}")
+            raise GraphOperationsError(f"Community querying failed: {e}") from e
+
     async def get_graph_statistics(self, data_path: str) -> dict[str, Any]:
         """Get comprehensive statistics about the knowledge graph.
 

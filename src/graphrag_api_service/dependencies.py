@@ -24,7 +24,6 @@ from .graphql.subscriptions import get_subscription_manager
 from .graphrag_integration import GraphRAGIntegration
 from .indexing import IndexingManager
 from .logging_config import get_logger
-from .monitoring.prometheus import get_metrics
 from .monitoring.tracing import TracingConfig, initialize_tracing, shutdown_tracing
 from .performance.cache_manager import cleanup_cache_manager, get_cache_manager
 from .performance.compression import get_performance_middleware

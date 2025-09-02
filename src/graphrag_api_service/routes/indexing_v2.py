@@ -44,17 +44,13 @@ async def create_indexing_job(
         )
 
     # Get workspace
-    workspace = workspace_manager.get_workspace(request.workspace_id)
+    workspace = await workspace_manager.get_workspace(request.workspace_id)
     if not workspace:
         raise HTTPException(status_code=404, detail=f"Workspace not found: {request.workspace_id}")
 
     # Create indexing job
     try:
-        job = indexing_manager.create_indexing_job(
-            workspace_id=request.workspace_id,
-            priority=request.priority,
-            max_retries=request.max_retries,
-        )
+        job = indexing_manager.create_indexing_job(request, workspace)
 
         # Update workspace status
         workspace.status = "INDEXING"

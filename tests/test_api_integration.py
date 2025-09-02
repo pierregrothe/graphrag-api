@@ -255,7 +255,11 @@ class TestGraphEndpoints:
         response = await async_client.get("/api/graph/entities")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert isinstance(data, dict)
+        assert "entities" in data
+        assert "total_count" in data
+        assert "limit" in data
+        assert "offset" in data
 
     @pytest.mark.asyncio
     async def test_get_relationships(self, async_client: AsyncClient):
@@ -263,7 +267,11 @@ class TestGraphEndpoints:
         response = await async_client.get("/api/graph/relationships")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert isinstance(data, dict)
+        assert "relationships" in data
+        assert "total_count" in data
+        assert "limit" in data
+        assert "offset" in data
 
     @pytest.mark.asyncio
     async def test_get_communities(self, async_client: AsyncClient):
@@ -271,7 +279,9 @@ class TestGraphEndpoints:
         response = await async_client.get("/api/graph/communities")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert isinstance(data, dict)
+        assert "communities" in data
+        assert "total_count" in data
 
     @pytest.mark.asyncio
     async def test_get_graph_statistics(self, async_client: AsyncClient):

@@ -121,20 +121,19 @@ class TestWorkspaceManager:
     @pytest.fixture
     def workspace_manager(self, settings: Settings, temp_dir: Path):
         """Create workspace manager with temporary directory."""
-        # Patch the base workspaces path to use temp directory
-        with patch.object(WorkspaceManager, "__init__", lambda self, settings, db_manager=None: None):
-            manager = WorkspaceManager.__new__(WorkspaceManager)
-            manager.settings = settings
-            manager.db_manager = None  # Use file-based storage for tests
-            manager.base_workspaces_path = temp_dir / "workspaces"
-            manager.workspaces_index_file = manager.base_workspaces_path / "workspaces.json"
-            manager._workspaces = {}
+        # Create manager normally, then override the base path
+        manager = WorkspaceManager(settings, None)  # Use file-based storage for tests
 
-            # Create workspaces directory
-            manager.base_workspaces_path.mkdir(exist_ok=True)
-            manager._save_workspaces_index()
+        # Override the base workspaces path to use temp directory
+        manager.base_workspaces_path = temp_dir / "workspaces"
+        manager.workspaces_index_file = manager.base_workspaces_path / "workspaces.json"
 
-            yield manager
+        # Create workspaces directory and reset workspaces
+        manager.base_workspaces_path.mkdir(exist_ok=True)
+        manager._workspaces = {}
+        manager._save_workspaces_index()
+
+        yield manager
 
     @pytest.fixture
     def test_data_dir(self, temp_dir: Path):
@@ -249,7 +248,9 @@ class TestWorkspaceManager:
         with pytest.raises(ValueError, match="Data path does not exist"):
             await workspace_manager.create_workspace(request)
 
-    async def test_get_workspace_by_id(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
+    async def test_get_workspace_by_id(
+        self, workspace_manager: WorkspaceManager, test_data_dir: Path
+    ):
         """Test retrieving workspace by ID."""
         request = WorkspaceCreateRequest(
             name="retrieve-test",
@@ -276,7 +277,9 @@ class TestWorkspaceManager:
         non_existent = await workspace_manager.get_workspace("non-existent-id")
         assert non_existent is None
 
-    async def test_get_workspace_by_name(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
+    async def test_get_workspace_by_name(
+        self, workspace_manager: WorkspaceManager, test_data_dir: Path
+    ):
         """Test retrieving workspace by name."""
         request = WorkspaceCreateRequest(
             name="name-lookup-test",
@@ -544,11 +547,19 @@ class TestWorkspaceManager:
         workspace_id = workspace.id
 
         # Create new manager instance (simulating restart)
-        new_manager = WorkspaceManager.__new__(WorkspaceManager)
-        new_manager.settings = workspace_manager.settings
+        new_manager = WorkspaceManager(
+            workspace_manager.settings, None
+        )  # No database manager for this test
+
+        # Verify the new manager was initialized properly
+        assert hasattr(new_manager, 'db_manager'), "New manager missing db_manager attribute"
+        assert new_manager.db_manager is None, "db_manager should be None for file-based storage"
+
+        # Ensure the workspaces paths are the same
         new_manager.base_workspaces_path = workspace_manager.base_workspaces_path
         new_manager.workspaces_index_file = workspace_manager.workspaces_index_file
-        new_manager._workspaces = {}
+
+        # Reload the workspaces index from the shared location
         new_manager._load_workspaces_index()
 
         # Verify workspace persisted

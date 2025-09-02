@@ -386,7 +386,7 @@ class Query:
             List of workspaces
         """
         workspace_manager: WorkspaceManager = info.context["workspace_manager"]
-        workspaces = workspace_manager.list_workspaces()
+        workspaces = await workspace_manager.list_workspaces()
 
         return [
             Workspace(
@@ -414,7 +414,7 @@ class Query:
             Workspace if found, None otherwise
         """
         workspace_manager: WorkspaceManager = info.context["workspace_manager"]
-        w = workspace_manager.get_workspace(id)
+        w = await workspace_manager.get_workspace(id)
 
         if w:
             return Workspace(

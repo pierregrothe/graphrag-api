@@ -44,7 +44,7 @@ def setup_indexing_routes(indexing_manager, workspace_manager):
         logger.info(f"Creating indexing job for workspace {request.workspace_id}")
 
         # Get workspace
-        workspace = workspace_manager.get_workspace(request.workspace_id)
+        workspace = await workspace_manager.get_workspace(request.workspace_id)
         if not workspace:
             raise HTTPException(
                 status_code=404, detail=f"Workspace not found: {request.workspace_id}"
@@ -181,7 +181,7 @@ def setup_indexing_routes(indexing_manager, workspace_manager):
         logger.info(f"Getting indexing jobs for workspace {workspace_id}")
 
         # Verify workspace exists
-        workspace = workspace_manager.get_workspace(workspace_id)
+        workspace = await workspace_manager.get_workspace(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
 

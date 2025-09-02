@@ -8,11 +8,15 @@
 import logging
 import warnings
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Optional
 
 import jwt
 from fastapi import HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from ..database.connection import DatabaseManager
+from ..database.models import User
 
 # Suppress bcrypt version warning
 with warnings.catch_warnings():
@@ -304,15 +308,18 @@ class RoleBasedAccessControl:
 class AuthenticationService:
     """Authentication service combining JWT and RBAC."""
 
-    def __init__(self, jwt_config: JWTConfig):
+    def __init__(self, jwt_config: JWTConfig, database_manager: Optional[DatabaseManager] = None):
         """Initialize authentication service.
 
         Args:
             jwt_config: JWT configuration
+            database_manager: Database manager for user persistence
         """
         self.jwt_manager = JWTManager(jwt_config)
         self.rbac = RoleBasedAccessControl()
-        self.users: dict[str, dict[str, Any]] = {}  # In-memory user store (replace with database)
+        self.database_manager = database_manager
+        # Fallback to in-memory storage if no database manager provided
+        self.users: dict[str, dict[str, Any]] = {} if not database_manager else {}
 
     async def authenticate_user(self, credentials: UserCredentials) -> TokenData | None:
         """Authenticate a user with credentials.
@@ -323,25 +330,53 @@ class AuthenticationService:
         Returns:
             Token data if authentication successful
         """
-        user = self.users.get(credentials.username)
-        if not user:
-            return None
+        # Use database if available, otherwise fallback to in-memory
+        if self.database_manager:
+            try:
+                async with self.database_manager.get_session() as session:
+                    user = session.query(User).filter(User.username == credentials.username).first()
+                    if not user or not user.is_active:
+                        return None
 
-        if not self.jwt_manager.verify_password(credentials.password, user["password_hash"]):
-            return None
+                    if not self.jwt_manager.verify_password(credentials.password, user.password_hash):
+                        return None
 
-        permissions = self.rbac.get_permissions(user["roles"])
+                    permissions = self.rbac.get_permissions([user.role.value] if user.role else [])
 
-        return TokenData(
-            user_id=user["id"],
-            username=user["username"],
-            email=user["email"],
-            roles=user["roles"],
-            permissions=permissions,
-            tenant_id=user.get("tenant_id"),
-            expires_at=datetime.now(UTC)
-            + timedelta(minutes=self.jwt_manager.config.access_token_expire_minutes),
-        )
+                    return TokenData(
+                        user_id=user.id,
+                        username=user.username,
+                        email=user.email,
+                        roles=[user.role.value] if user.role else [],
+                        permissions=permissions,
+                        tenant_id=None,  # Add tenant support later if needed
+                        expires_at=datetime.now(UTC)
+                        + timedelta(minutes=self.jwt_manager.config.access_token_expire_minutes),
+                    )
+            except Exception as e:
+                logger.error(f"Database authentication failed: {e}")
+                return None
+        else:
+            # Fallback to in-memory storage
+            user = self.users.get(credentials.username)
+            if not user:
+                return None
+
+            if not self.jwt_manager.verify_password(credentials.password, user["password_hash"]):
+                return None
+
+            permissions = self.rbac.get_permissions(user["roles"])
+
+            return TokenData(
+                user_id=user["id"],
+                username=user["username"],
+                email=user["email"],
+                roles=user["roles"],
+                permissions=permissions,
+                tenant_id=user.get("tenant_id"),
+                expires_at=datetime.now(UTC)
+                + timedelta(minutes=self.jwt_manager.config.access_token_expire_minutes),
+            )
 
     async def create_user(
         self,
@@ -363,22 +398,57 @@ class AuthenticationService:
         Returns:
             User ID
         """
-        user_id = f"user_{len(self.users) + 1}"
         password_hash = self.jwt_manager.hash_password(password)
 
-        self.users[username] = {
-            "id": user_id,
-            "username": username,
-            "email": email,
-            "password_hash": password_hash,
-            "roles": roles,
-            "tenant_id": tenant_id,
-            "created_at": datetime.now(UTC),
-            "is_active": True,
-        }
+        # Use database if available, otherwise fallback to in-memory
+        if self.database_manager:
+            try:
+                from ..database.models import Role
+                async with self.database_manager.get_session() as session:
+                    # Get the first role or default to USER
+                    role_enum = Role.USER
+                    if roles:
+                        try:
+                            role_enum = Role(roles[0])
+                        except ValueError:
+                            role_enum = Role.USER
 
-        logger.info(f"Created user: {username} with roles: {roles}")
-        return user_id
+                    user = User(
+                        username=username,
+                        email=email,
+                        password_hash=password_hash,
+                        role=role_enum,
+                        is_active=True,
+                        created_at=datetime.now(UTC),
+                        updated_at=datetime.now(UTC)
+                    )
+
+                    session.add(user)
+                    session.commit()
+                    session.refresh(user)
+
+                    logger.info(f"Created user in database: {username} with role: {role_enum.value}")
+                    return user.id
+            except Exception as e:
+                logger.error(f"Database user creation failed: {e}")
+                raise HTTPException(status_code=500, detail="User creation failed")
+        else:
+            # Fallback to in-memory storage
+            user_id = f"user_{len(self.users) + 1}"
+
+            self.users[username] = {
+                "id": user_id,
+                "username": username,
+                "email": email,
+                "password_hash": password_hash,
+                "roles": roles,
+                "tenant_id": tenant_id,
+                "created_at": datetime.now(UTC),
+                "is_active": True,
+            }
+
+            logger.info(f"Created user in memory: {username} with roles: {roles}")
+            return user_id
 
     async def login(self, credentials: UserCredentials) -> TokenResponse:
         """Login user and return tokens.

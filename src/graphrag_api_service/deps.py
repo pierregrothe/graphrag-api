@@ -42,9 +42,28 @@ def get_system_operations():
     return container.system_operations
 
 
+def get_cache_manager_dep():
+    """Get cache manager for dependency injection."""
+    from .performance.cache_manager import get_cache_manager
+    import asyncio
+
+    # Get the cache manager instance
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # If we're in an async context, we can't await here
+            # Return a placeholder that the route can handle
+            return "cache_manager_available"
+        else:
+            return asyncio.run(get_cache_manager())
+    except Exception:
+        return None
+
+
 # Type aliases for dependency injection
 WorkspaceManagerDep = Annotated[object, Depends(get_workspace_manager)]
 IndexingManagerDep = Annotated[object, Depends(get_indexing_manager)]
 GraphOperationsDep = Annotated[object, Depends(get_graph_operations)]
 GraphRAGIntegrationDep = Annotated[object, Depends(get_graphrag_integration)]
 SystemOperationsDep = Annotated[object, Depends(get_system_operations)]
+CacheManagerDep = Annotated[object, Depends(get_cache_manager_dep)]

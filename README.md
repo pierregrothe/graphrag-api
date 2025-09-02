@@ -688,11 +688,12 @@ newman run tests/postman/graphrag_api_collection.json \
 
 ### **Test Coverage**
 
-- **354 total tests** with **93% pass rate** (342 passing tests)
+- **354 total tests** with **90.1% pass rate** (319 passing tests)
 - **100+ integration tests** for API endpoints
 - **50+ GraphQL tests** for queries, mutations, and subscriptions
 - **Postman collections** with automated test assertions
 - **Performance benchmarks** for critical operations
+- **Comprehensive async/await validation** across all components
 
 ## **🔧 Troubleshooting Guide**
 

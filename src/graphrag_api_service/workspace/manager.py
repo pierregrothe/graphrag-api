@@ -277,7 +277,9 @@ class WorkspaceManager:
         summaries.sort(key=lambda x: x.created_at, reverse=True)
         return summaries
 
-    async def update_workspace(self, workspace_id: str, request: WorkspaceUpdateRequest) -> Workspace:
+    async def update_workspace(
+        self, workspace_id: str, request: WorkspaceUpdateRequest
+    ) -> Workspace:
         """Update workspace configuration.
 
         Args:

@@ -249,8 +249,12 @@ class TestPaginationAndFiltering:
             response = await async_client.get(f"/api/graph/entities?limit={limit}")
             assert response.status_code == 200
             data = response.json()
-            assert isinstance(data, list)
-            assert len(data) <= limit
+            assert isinstance(data, dict)
+            assert "entities" in data
+            assert "limit" in data
+            assert data["limit"] == limit
+            assert isinstance(data["entities"], list)
+            assert len(data["entities"]) <= limit
 
         # Test offset
         response1 = await async_client.get("/api/graph/entities?limit=5&offset=0")
@@ -258,13 +262,30 @@ class TestPaginationAndFiltering:
         assert response1.status_code == 200
         assert response2.status_code == 200
 
+        data1 = response1.json()
+        data2 = response2.json()
+        assert isinstance(data1, dict)
+        assert isinstance(data2, dict)
+        assert "entities" in data1
+        assert "entities" in data2
+        assert "offset" in data1
+        assert "offset" in data2
+        assert data1["offset"] == 0
+        assert data2["offset"] == 5
+
     @pytest.mark.asyncio
     async def test_relationships_pagination(self, async_client: AsyncClient):
         """Test relationships endpoint pagination."""
         response = await async_client.get("/api/graph/relationships?limit=10&offset=0")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert isinstance(data, dict)
+        assert "relationships" in data
+        assert "limit" in data
+        assert "offset" in data
+        assert data["limit"] == 10
+        assert data["offset"] == 0
+        assert isinstance(data["relationships"], list)
 
 
 class TestDataValidation:

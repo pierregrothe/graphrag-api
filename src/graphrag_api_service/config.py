@@ -184,3 +184,12 @@ ENV_VERTEX_AI_LOCATION = "VERTEX_AI_LOCATION"
 
 # Global settings instance
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Get the global settings instance.
+
+    Returns:
+        The global settings instance
+    """
+    return settings

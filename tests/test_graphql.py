@@ -93,7 +93,7 @@ def mock_graph_operations():
 def mock_workspace_manager():
     """Create mock workspace manager."""
     mock = MagicMock()
-    mock.list_workspaces = MagicMock(
+    mock.list_workspaces = AsyncMock(
         return_value=[
             MagicMock(
                 id="ws1",
@@ -103,11 +103,16 @@ def mock_workspace_manager():
                 status="ready",
                 created_at="2025-01-01T00:00:00",
                 updated_at="2025-01-01T00:00:00",
-                config=None,
+                config=MagicMock(
+                    name="Test Workspace",
+                    description="A test workspace",
+                    data_path="/data/test",
+                    model_dump=MagicMock(return_value={}),
+                ),
             )
         ]
     )
-    mock.get_workspace = MagicMock(
+    mock.get_workspace = AsyncMock(
         return_value=MagicMock(
             id="ws1",
             name="Test Workspace",
@@ -116,22 +121,30 @@ def mock_workspace_manager():
             status="ready",
             created_at="2025-01-01T00:00:00",
             updated_at="2025-01-01T00:00:00",
-            config=None,
+            config=MagicMock(
+                name="Test Workspace",
+                description="A test workspace",
+                data_path="/data/test",
+                model_dump=MagicMock(return_value={}),
+            ),
         )
     )
     # Create a proper mock workspace object with spec_set to prevent new attributes
+    mock_config = MagicMock()
+    mock_config.name = "New Workspace"
+    mock_config.description = "A new workspace"
+    mock_config.data_path = "/data/new"
+    mock_config.model_dump.return_value = {}
+
     mock_workspace = MagicMock()
     mock_workspace.id = "ws2"
-    mock_workspace.name = "New Workspace"
-    mock_workspace.description = "A new workspace"
-    mock_workspace.data_path = "/data/new"
     mock_workspace.status = "created"
     mock_workspace.created_at = "2025-01-01T00:00:00"
     mock_workspace.updated_at = "2025-01-01T00:00:00"
-    mock_workspace.config = None
+    mock_workspace.config = mock_config
 
-    mock.create_workspace = MagicMock(return_value=mock_workspace)
-    mock.delete_workspace = MagicMock(return_value=True)
+    mock.create_workspace = AsyncMock(return_value=mock_workspace)
+    mock.delete_workspace = AsyncMock(return_value=True)
     return mock
 
 

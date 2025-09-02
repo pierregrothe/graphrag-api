@@ -9,6 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 
+from ..config import get_settings
 from ..deps import GraphOperationsDep
 from ..logging_config import get_logger
 
@@ -60,8 +61,12 @@ async def get_entities(
             filters["type"] = entity_type
 
         # Get entities from graph operations
-        result = await graph_operations.get_entities(
-            limit=limit, offset=offset, filters=filters, workspace_id=workspace_id
+        settings = get_settings()
+        result = await graph_operations.query_entities(
+            data_path=workspace_id or settings.graphrag_data_path,
+            limit=limit,
+            offset=offset,
+            **filters,
         )
 
         return {
@@ -119,8 +124,12 @@ async def get_relationships(
             filters["target"] = target_entity
 
         # Get relationships from graph operations
-        result = await graph_operations.get_relationships(
-            limit=limit, offset=offset, filters=filters, workspace_id=workspace_id
+        settings = get_settings()
+        result = await graph_operations.query_relationships(
+            data_path=workspace_id or settings.graphrag_data_path,
+            limit=limit,
+            offset=offset,
+            **filters,
         )
 
         return {
@@ -162,7 +171,10 @@ async def get_communities(
 
     try:
         # Get communities from graph operations
-        result = await graph_operations.get_communities(workspace_id=workspace_id)
+        settings = get_settings()
+        result = await graph_operations.query_communities(
+            data_path=workspace_id or settings.graphrag_data_path
+        )
 
         return {
             "communities": result.get("communities", []),
@@ -175,7 +187,7 @@ async def get_communities(
         return {"communities": [], "total_count": 0, "error": str(e)}
 
 
-@router.get("/stats")
+@router.get("/statistics")
 async def get_statistics(
     workspace_id: str = Query("default"), graph_operations: GraphOperationsDep = None
 ) -> dict[str, Any]:
@@ -205,7 +217,10 @@ async def get_statistics(
 
     try:
         # Get statistics from graph operations
-        result = await graph_operations.get_graph_statistics(workspace_id=workspace_id)
+        settings = get_settings()
+        result = await graph_operations.get_graph_statistics(
+            data_path=workspace_id or settings.graphrag_data_path
+        )
 
         return {
             "total_entities": result.get("total_entities", 0),

@@ -366,4 +366,7 @@ def setup_graph_routes(graph_operations):
                 status_code=500, detail="Internal server error during graph export"
             ) from e
 
+    # Store graph_operations for testing access
+    router.graph_operations = graph_operations
+
     return router
