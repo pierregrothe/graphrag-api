@@ -1,17 +1,15 @@
-# src/graphrag_api_service/routes/graphrag.py
-# GraphRAG API route handlers
+# src/graphrag_api_service/routes/graphrag_v2.py
+# GraphRAG API route handlers with proper dependency injection
 # Author: Pierre Grothé
-# Creation Date: 2025-08-29
+# Creation Date: 2025-09-01
 
-"""GraphRAG API route handlers for query, indexing, and status endpoints."""
+"""GraphRAG API route handlers with proper dependency injection."""
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter
 
-from ..config import settings
-from ..graphrag_integration import GraphRAGError
+from ..deps import GraphRAGIntegrationDep, WorkspaceManagerDep
 from ..logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -20,198 +18,242 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/api", tags=["GraphRAG"])
 
 
-# Pydantic models for GraphRAG endpoints
-class QueryRequest(BaseModel):
-    """Request model for GraphRAG query endpoint."""
+@router.post("/query")
+async def query_graphrag(
+    query: str,
+    query_type: str = "local",
+    workspace_id: str = "default",
+    graphrag_integration: GraphRAGIntegrationDep = None,
+    workspace_manager: WorkspaceManagerDep = None,
+) -> dict[str, Any]:
+    """Execute a GraphRAG query.
 
-    query: str = Field(..., description="The question or query to ask")
-    community_level: int = Field(
-        default=2, ge=0, le=4, description="Community level for hierarchical search (0-4)"
-    )
-    response_type: str = Field(
-        default="multiple paragraphs",
-        description="Type of response format (e.g., 'multiple paragraphs', 'single paragraph', 'single sentence')",
-    )
-    max_tokens: int = Field(default=1500, ge=100, le=4000, description="Maximum tokens in response")
+    Args:
+        query: The query to execute
+        query_type: Type of query (local or global)
+        workspace_id: Workspace ID
+        graphrag_integration: GraphRAG integration (injected)
+        workspace_manager: Workspace manager (injected)
 
+    Returns:
+        Query response
+    """
+    logger.info(f"Executing {query_type} query in workspace {workspace_id}")
 
-class QueryResponse(BaseModel):
-    """Response model for GraphRAG query endpoint."""
-
-    answer: str = Field(..., description="The answer to the query")
-    sources: list[str] = Field(default_factory=list, description="Source references used")
-    community_level: int = Field(..., description="Community level used for the query")
-    tokens_used: int = Field(default=0, description="Number of tokens used in the response")
-
-
-class IndexRequest(BaseModel):
-    """Request model for GraphRAG indexing endpoint."""
-
-    data_path: str = Field(..., description="Path to the data directory to index")
-    config_path: str | None = Field(
-        None, description="Optional path to GraphRAG configuration file"
-    )
-    force_reindex: bool = Field(
-        default=False, description="Whether to force reindexing existing data"
-    )
-
-
-class IndexResponse(BaseModel):
-    """Response model for GraphRAG indexing endpoint."""
-
-    status: str = Field(..., description="Status of the indexing operation")
-    message: str = Field(..., description="Detailed message about the operation")
-    files_processed: int = Field(default=0, description="Number of files processed")
-    entities_extracted: int = Field(default=0, description="Number of entities extracted")
-    relationships_extracted: int = Field(default=0, description="Number of relationships extracted")
-
-
-# Dependency injection functions (to be called from main.py)
-def setup_graphrag_routes(graphrag_integration, workspace_manager):
-    """Setup GraphRAG routes with dependencies."""
-
-    @router.post("/query", response_model=QueryResponse)
-    async def query_graphrag(request: QueryRequest) -> QueryResponse:
-        """Query the GraphRAG system with a question.
-
-        This endpoint allows you to ask questions against your indexed knowledge graph.
-        The system will use the graph structure to provide comprehensive answers.
-
-        Args:
-            request: Query request containing the question and parameters
-
-        Returns:
-            QueryResponse containing the answer and metadata
-
-        Raises:
-            HTTPException: If GraphRAG is not configured or query fails
-        """
-        logger.info(f"GraphRAG query received: {request.query[:100]}...")
-
-        # Check if GraphRAG integration is available
-        if not graphrag_integration:
-            raise HTTPException(
-                status_code=503,
-                detail="GraphRAG integration not available. Please check configuration and provider settings.",
-            )
-
-        # Check if GraphRAG is configured
-        if not settings.graphrag_data_path:
-            raise HTTPException(
-                status_code=400,
-                detail="GraphRAG data path not configured. Please set GRAPHRAG_DATA_PATH environment variable.",
-            )
-
-        try:
-            # Determine search type based on community level
-            if request.community_level > 0:
-                # Use global search for community-level queries
-                result = await graphrag_integration.query_global(
-                    query=request.query,
-                    data_path=settings.graphrag_data_path,
-                    community_level=request.community_level,
-                    max_tokens=request.max_tokens,
-                )
-            else:
-                # Use local search for entity-level queries
-                result = await graphrag_integration.query_local(
-                    query=request.query,
-                    data_path=settings.graphrag_data_path,
-                    max_tokens=request.max_tokens,
-                )
-
-            return QueryResponse(
-                answer=result["answer"],
-                sources=result["sources"],
-                community_level=result["community_level"],
-                tokens_used=result["tokens_used"],
-            )
-
-        except GraphRAGError as e:
-            logger.error(f"GraphRAG query failed: {e}")
-            raise HTTPException(status_code=500, detail=f"GraphRAG query failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error during GraphRAG query: {e}")
-            raise HTTPException(
-                status_code=500, detail="Internal server error during query processing"
-            ) from e
-
-    @router.post("/index", response_model=IndexResponse)
-    async def index_data(request: IndexRequest) -> IndexResponse:
-        """Index data using GraphRAG.
-
-        This endpoint processes documents and creates a knowledge graph with entities,
-        relationships, and communities for efficient retrieval.
-
-        Args:
-            request: Index request containing data path and configuration
-
-        Returns:
-            IndexResponse containing the status and statistics
-
-        Raises:
-            HTTPException: If indexing fails or paths are invalid
-        """
-        logger.info(f"GraphRAG indexing requested for path: {request.data_path}")
-
-        # Check if GraphRAG integration is available
-        if not graphrag_integration:
-            raise HTTPException(
-                status_code=503,
-                detail="GraphRAG integration not available. Please check configuration and provider settings.",
-            )
-
-        # Basic validation
-        if not request.data_path:
-            raise HTTPException(status_code=400, detail="Data path is required")
-
-        try:
-            # Perform GraphRAG indexing
-            result = await graphrag_integration.index_data(
-                data_path=request.data_path,
-                config_path=request.config_path,
-                force_reindex=request.force_reindex,
-            )
-
-            return IndexResponse(
-                status=result["status"],
-                message=result["message"],
-                files_processed=result["files_processed"],
-                entities_extracted=result["entities_extracted"],
-                relationships_extracted=result["relationships_extracted"],
-            )
-
-        except GraphRAGError as e:
-            logger.error(f"GraphRAG indexing failed: {e}")
-            raise HTTPException(status_code=500, detail=f"GraphRAG indexing failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error during GraphRAG indexing: {e}")
-            raise HTTPException(
-                status_code=500, detail="Internal server error during indexing"
-            ) from e
-
-    @router.get("/status")
-    async def get_graphrag_status() -> dict[str, Any]:
-        """Get GraphRAG system status and configuration.
-
-        Returns:
-            Dict containing GraphRAG configuration and status information
-        """
-        logger.info("GraphRAG status requested")
-
+    # Check if GraphRAG integration is available
+    if not graphrag_integration:
         return {
-            "graphrag_configured": bool(settings.graphrag_data_path),
-            "data_path": settings.graphrag_data_path,
-            "config_path": settings.graphrag_config_path,
-            "llm_provider_info": settings.get_provider_info(),
-            "implementation_status": "multi-provider configuration implemented",
-            "available_endpoints": [
-                "/api/query",
-                "/api/index",
-                "/api/status",
-                "/api/workspaces",
-            ],
-            "workspace_stats": workspace_manager.get_workspace_stats(),
+            "query": query,
+            "response": "GraphRAG integration not available",
+            "context": None,
+            "query_type": query_type.upper(),
+            "processing_time": 0.0,
+            "entity_count": 0,
+            "relationship_count": 0,
+            "token_count": 0,
+            "error": "GraphRAG integration not configured",
         }
 
-    return router
+    try:
+        # Get workspace to determine data path
+        workspace = await workspace_manager.get_workspace(workspace_id)
+        if not workspace:
+            return {
+                "query": query,
+                "response": f"Workspace '{workspace_id}' not found",
+                "context": None,
+                "query_type": query_type.upper(),
+                "processing_time": 0.0,
+                "entity_count": 0,
+                "relationship_count": 0,
+                "token_count": 0,
+                "error": f"Workspace '{workspace_id}' not found",
+            }
+
+        # Determine data path from workspace
+        data_path = workspace.get_output_directory_path()
+        if not data_path or not data_path.exists():
+            return {
+                "query": query,
+                "response": "Workspace data not indexed yet",
+                "context": None,
+                "query_type": query_type.upper(),
+                "processing_time": 0.0,
+                "entity_count": 0,
+                "relationship_count": 0,
+                "token_count": 0,
+                "error": "Workspace data not indexed",
+            }
+
+        # Execute query based on type
+        if query_type.lower() == "global":
+            result = await graphrag_integration.query_global(
+                query=query, data_path=str(data_path), workspace_id=workspace_id
+            )
+        else:
+            result = await graphrag_integration.query_local(
+                query=query, data_path=str(data_path), workspace_id=workspace_id
+            )
+
+        return {
+            "query": query,
+            "response": result.get("answer", ""),
+            "context": result.get("context"),
+            "query_type": query_type.upper(),
+            "processing_time": result.get("processing_time", 0.0),
+            "entity_count": result.get("entity_count", 0),
+            "relationship_count": result.get("relationship_count", 0),
+            "token_count": result.get("tokens_used", 0),
+        }
+
+    except Exception as e:
+        logger.error(f"GraphRAG query failed: {e}")
+        return {
+            "query": query,
+            "response": f"Query failed: {str(e)}",
+            "context": None,
+            "query_type": query_type.upper(),
+            "processing_time": 0.0,
+            "entity_count": 0,
+            "relationship_count": 0,
+            "token_count": 0,
+            "error": str(e),
+        }
+
+
+@router.post("/index")
+async def index_data(
+    workspace_id: str = "default",
+    force_reindex: bool = False,
+    graphrag_integration: GraphRAGIntegrationDep = None,
+    workspace_manager: WorkspaceManagerDep = None,
+) -> dict[str, Any]:
+    """Start indexing for a workspace.
+
+    Args:
+        workspace_id: Workspace ID
+        force_reindex: Whether to force reindexing
+        graphrag_integration: GraphRAG integration (injected)
+        workspace_manager: Workspace manager (injected)
+
+    Returns:
+        Indexing job information
+    """
+    logger.info(f"Starting indexing for workspace {workspace_id}")
+
+    # Check if GraphRAG integration is available
+    if not graphrag_integration:
+        return {
+            "success": False,
+            "message": "GraphRAG integration not available",
+            "job_id": None,
+            "workspace_id": workspace_id,
+            "error": "GraphRAG integration not configured",
+        }
+
+    try:
+        # Get workspace
+        workspace = await workspace_manager.get_workspace(workspace_id)
+        if not workspace:
+            return {
+                "success": False,
+                "message": f"Workspace '{workspace_id}' not found",
+                "job_id": None,
+                "workspace_id": workspace_id,
+                "error": f"Workspace '{workspace_id}' not found",
+            }
+
+        # Get data and config paths from workspace
+        data_path = workspace.config.data_path
+        config_path = workspace.config_file_path
+
+        # Start indexing
+        result = await graphrag_integration.index_data(
+            data_path=data_path,
+            config_path=config_path,
+            force_reindex=force_reindex,
+            workspace_id=workspace_id,
+        )
+
+        return {
+            "success": True,
+            "message": result.get("message", "Indexing started successfully"),
+            "job_id": result.get("job_id", f"job_{workspace_id}"),
+            "workspace_id": workspace_id,
+            "files_processed": result.get("files_processed", 0),
+            "entities_extracted": result.get("entities_extracted", 0),
+            "relationships_extracted": result.get("relationships_extracted", 0),
+            "status": result.get("status", "completed"),
+        }
+
+    except Exception as e:
+        logger.error(f"Indexing failed for workspace {workspace_id}: {e}")
+        return {
+            "success": False,
+            "message": f"Indexing failed: {str(e)}",
+            "job_id": None,
+            "workspace_id": workspace_id,
+            "error": str(e),
+        }
+
+
+@router.get("/status")
+async def get_status(
+    workspace_id: str = "default",
+    workspace_manager: WorkspaceManagerDep = None,
+) -> dict[str, Any]:
+    """Get GraphRAG indexing status.
+
+    Args:
+        workspace_id: Workspace ID to check status for
+        workspace_manager: Workspace manager (injected)
+
+    Returns:
+        Status information
+    """
+    try:
+        if workspace_manager:
+            # Get workspace-specific status
+            workspace = await workspace_manager.get_workspace(workspace_id)
+            if workspace:
+                return {
+                    "workspace_id": workspace_id,
+                    "status": (
+                        workspace.status.value
+                        if hasattr(workspace.status, "value")
+                        else str(workspace.status)
+                    ),
+                    "indexing_jobs": [],  # Job tracking will be implemented in Phase 3
+                    "last_indexed": (
+                        workspace.updated_at.isoformat() if workspace.updated_at else None
+                    ),
+                    "files_processed": workspace.files_processed,
+                    "entities_extracted": workspace.entities_extracted,
+                    "relationships_extracted": workspace.relationships_extracted,
+                    "data_path": workspace.config.data_path,
+                    "output_path": workspace.get_output_directory_path(),
+                }
+            else:
+                return {
+                    "workspace_id": workspace_id,
+                    "status": "not_found",
+                    "indexing_jobs": [],
+                    "error": f"Workspace '{workspace_id}' not found",
+                }
+        else:
+            # Fallback status
+            return {
+                "workspace_id": workspace_id,
+                "status": "ready",
+                "indexing_jobs": [],
+                "message": "Workspace manager not available",
+            }
+
+    except Exception as e:
+        logger.error(f"Failed to get status for workspace {workspace_id}: {e}")
+        return {
+            "workspace_id": workspace_id,
+            "status": "error",
+            "indexing_jobs": [],
+            "error": str(e),
+        }

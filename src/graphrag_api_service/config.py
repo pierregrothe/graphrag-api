@@ -173,16 +173,35 @@ class Settings(BaseSettings):
     )
 
     # Database Settings
+    database_type: str = Field(
+        default="sqlite",
+        description="Database type (only sqlite supported in simplified architecture)",
+    )
+    database_path: str = Field(
+        default="data/graphrag.db",
+        description="SQLite database file path",
+    )
+    # Legacy fields kept for compatibility
     database_url: str = Field(
-        default="postgresql://user:pass@localhost/graphrag",
-        description="Database connection URL",
+        default="",
+        description="Legacy field - not used with SQLite",
     )
     database_pool_size: int = Field(
-        default=10,
-        description="Database connection pool size",
+        default=5,
+        description="Legacy field - not used with SQLite",
     )
 
-    # Redis Settings
+    # Cache Settings
+    cache_type: str = Field(
+        default="memory",
+        description="Cache type (memory or redis)",
+    )
+    cache_ttl: int = Field(
+        default=3600,
+        description="Default cache TTL in seconds",
+    )
+
+    # Redis Settings (optional, only if cache_type=redis)
     redis_url: str = Field(
         default="redis://localhost:6379",
         description="Redis connection URL",

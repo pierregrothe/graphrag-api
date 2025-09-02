@@ -1,0 +1,110 @@
+version: "3.8"
+
+services:
+    # GraphRAG API - Main Application
+    graphrag-api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: graphrag-api
+        ports:
+            - "8001:8001"
+        environment:
+            # Core Settings
+            APP_NAME: "GraphRAG API Service"
+            DEBUG: "true"
+            PORT: 8001
+
+            # LLM Configuration - Ollama for local dev
+            LLM_PROVIDER: ollama
+            OLLAMA_BASE_URL: http://ollama:11434
+            OLLAMA_LLM_MODEL: gemma2:2b # Smaller model for dev
+            OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+
+            # Simple SQLite database (no external DB needed!)
+            DATABASE_TYPE: sqlite
+            DATABASE_PATH: /app/data/graphrag.db
+
+            # Minimal caching (in-memory for simplicity)
+            CACHE_TYPE: memory
+            CACHE_TTL: 3600
+
+            # Security (simplified for dev)
+            JWT_SECRET_KEY: dev-secret-key-change-in-production
+            AUTH_ENABLED: false # Disable for local dev
+
+            # Performance (tuned for small scale)
+            MAX_WORKERS: 2
+            CONNECTION_POOL_SIZE: 5
+
+        volumes:
+            # Persist data and GraphRAG files
+            - ./data:/app/data
+            - ./logs:/app/logs
+
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+
+        depends_on:
+            ollama:
+                condition: service_healthy
+
+    # Ollama - Local LLM
+    ollama:
+        image: ollama/ollama:latest
+        container_name: ollama
+        ports:
+            - "11434:11434"
+        volumes:
+            - ollama_data:/root/.ollama
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+        environment:
+            OLLAMA_KEEP_ALIVE: 24h
+            OLLAMA_MAX_LOADED_MODELS: 2
+
+    # Model Loader - Automatically pulls required models
+    model-loader:
+        image: ollama/ollama:latest
+        container_name: model-loader
+        depends_on:
+            ollama:
+                condition: service_healthy
+        entrypoint: ["/bin/sh", "-c"]
+        command:
+            - |
+                echo "Waiting for Ollama to be ready..."
+                sleep 5
+                echo "Pulling Gemma 2B model..."
+                ollama pull gemma2:2b || ollama pull gemma:2b
+                echo "Pulling embedding model..."
+                ollama pull nomic-embed-text
+                echo "Models ready!"
+        volumes:
+            - ollama_data:/root/.ollama
+
+    # Optional: Simple Web UI for testing
+    graphrag-ui:
+        image: nginx:alpine
+        container_name: graphrag-ui
+        ports:
+            - "3000:80"
+        volumes:
+            - ./ui:/usr/share/nginx/html:ro
+        depends_on:
+            - graphrag-api
+
+volumes:
+    ollama_data:
+        driver: local
+
+networks:
+    default:
+        name: graphrag-network
+        driver: bridge

@@ -1,9 +1,9 @@
-# src/graphrag_api_service/routes/workspace.py
-# Workspace management API route handlers
+# src/graphrag_api_service/routes/workspace_v2.py
+# Workspace management API route handlers with proper dependency injection
 # Author: Pierre Grothé
-# Creation Date: 2025-08-29
+# Creation Date: 2025-09-01
 
-"""Workspace management API route handlers."""
+"""Workspace management API route handlers with proper dependency injection."""
 
 from pathlib import Path
 from typing import Any
@@ -11,6 +11,7 @@ from typing import Any
 import yaml
 from fastapi import APIRouter, HTTPException
 
+from ..deps import WorkspaceManagerDep
 from ..logging_config import get_logger
 from ..workspace.models import (
     Workspace,
@@ -25,167 +26,193 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/api", tags=["Workspace"])
 
 
-# Dependency injection function (to be called from main.py)
-def setup_workspace_routes(workspace_manager):
-    """Setup workspace routes with dependencies."""
+@router.post("/workspaces", response_model=Workspace)
+async def create_workspace(
+    request: WorkspaceCreateRequest, workspace_manager: WorkspaceManagerDep
+) -> Workspace:
+    """Create a new GraphRAG workspace.
 
-    @router.post("/workspaces", response_model=Workspace)
-    async def create_workspace(request: WorkspaceCreateRequest) -> Workspace:
-        """Create a new GraphRAG workspace.
+    Creates a new workspace with its own configuration, data directory,
+    and isolated GraphRAG processing environment.
 
-        Creates a new workspace with its own configuration, data directory,
-        and isolated GraphRAG processing environment.
+    Args:
+        request: Workspace creation request
+        workspace_manager: Workspace manager instance (injected)
 
-        Args:
-            request: Workspace creation request
+    Returns:
+        Created workspace information
 
-        Returns:
-            Created workspace information
+    Raises:
+        HTTPException: If workspace creation fails
+    """
+    logger.info(f"Creating workspace: {request.name}")
 
-        Raises:
-            HTTPException: If workspace creation fails
-        """
-        logger.info(f"Creating workspace: {request.name}")
+    try:
+        workspace = await workspace_manager.create_workspace(request)
+        logger.info(f"Successfully created workspace: {workspace.id}")
+        return workspace
+    except ValueError as e:
+        logger.error(f"Workspace creation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except OSError as e:
+        logger.error(f"Workspace directory creation failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create workspace directories: {e}"
+        ) from e
+    except Exception as e:
+        logger.error(f"Unexpected error creating workspace: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create workspace: {e}") from e
 
-        try:
-            workspace = await workspace_manager.create_workspace(request)
-            logger.info(f"Successfully created workspace: {workspace.id}")
-            return workspace
-        except ValueError as e:
-            logger.error(f"Workspace creation failed: {e}")
-            raise HTTPException(status_code=400, detail=str(e)) from e
-        except OSError as e:
-            logger.error(f"Workspace directory creation failed: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to create workspace directories: {e}"
-            ) from e
 
-    @router.get("/workspaces", response_model=list[WorkspaceSummary])
-    async def list_workspaces() -> list[WorkspaceSummary]:
-        """List all GraphRAG workspaces.
+@router.get("/workspaces", response_model=list[WorkspaceSummary])
+async def list_workspaces(workspace_manager: WorkspaceManagerDep) -> list[WorkspaceSummary]:
+    """List all available workspaces.
 
-        Returns:
-            List of workspace summaries with key information
-        """
-        logger.info("Listing workspaces")
+    Returns:
+        List of workspace summaries
+
+    Raises:
+        HTTPException: If listing fails
+    """
+    logger.debug("Listing all workspaces")
+
+    try:
         workspaces = await workspace_manager.list_workspaces()
         logger.info(f"Found {len(workspaces)} workspaces")
         return workspaces
+    except Exception as e:
+        logger.error(f"Failed to list workspaces: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list workspaces: {e}") from e
 
-    @router.get("/workspaces/{workspace_id}", response_model=Workspace)
-    async def get_workspace(workspace_id: str) -> Workspace:
-        """Get workspace by ID.
 
-        Args:
-            workspace_id: Unique workspace identifier
+@router.get("/workspaces/{workspace_id}", response_model=Workspace)
+async def get_workspace(workspace_id: str, workspace_manager: WorkspaceManagerDep) -> Workspace:
+    """Get detailed information about a specific workspace.
 
-        Returns:
-            Workspace information
+    Args:
+        workspace_id: Workspace ID
+        workspace_manager: Workspace manager instance (injected)
 
-        Raises:
-            HTTPException: If workspace not found
-        """
-        logger.info(f"Getting workspace: {workspace_id}")
+    Returns:
+        Workspace information
 
+    Raises:
+        HTTPException: If workspace not found or access fails
+    """
+    logger.debug(f"Getting workspace: {workspace_id}")
+
+    try:
         workspace = await workspace_manager.get_workspace(workspace_id)
         if not workspace:
-            logger.warning(f"Workspace not found: {workspace_id}")
-            raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
-
+            raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
         return workspace
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get workspace {workspace_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get workspace: {e}") from e
 
-    @router.put("/workspaces/{workspace_id}", response_model=Workspace)
-    async def update_workspace(workspace_id: str, request: WorkspaceUpdateRequest) -> Workspace:
-        """Update workspace configuration.
 
-        Args:
-            workspace_id: Unique workspace identifier
-            request: Workspace update request
+@router.put("/workspaces/{workspace_id}", response_model=Workspace)
+async def update_workspace(
+    workspace_id: str, request: WorkspaceUpdateRequest, workspace_manager: WorkspaceManagerDep
+) -> Workspace:
+    """Update workspace configuration.
 
-        Returns:
-            Updated workspace information
+    Args:
+        workspace_id: Workspace ID
+        request: Update request with new configuration
+        workspace_manager: Workspace manager instance (injected)
 
-        Raises:
-            HTTPException: If workspace not found or update fails
-        """
-        logger.info(f"Updating workspace: {workspace_id}")
+    Returns:
+        Updated workspace information
 
-        try:
-            workspace = await workspace_manager.update_workspace(workspace_id, request)
-            logger.info(f"Successfully updated workspace: {workspace_id}")
-            return workspace
-        except ValueError as e:
-            logger.error(f"Workspace update failed: {e}")
-            raise HTTPException(status_code=400, detail=str(e)) from e
+    Raises:
+        HTTPException: If workspace not found or update fails
+    """
+    logger.info(f"Updating workspace: {workspace_id}")
 
-    @router.delete("/workspaces/{workspace_id}")
-    async def delete_workspace(workspace_id: str, remove_files: bool = False) -> dict[str, Any]:
-        """Delete workspace.
+    try:
+        workspace = await workspace_manager.update_workspace(workspace_id, request)
+        if not workspace:
+            raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
+        logger.info(f"Successfully updated workspace: {workspace_id}")
+        return workspace
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update workspace {workspace_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update workspace: {e}") from e
 
-        Args:
-            workspace_id: Unique workspace identifier
-            remove_files: Whether to remove workspace files from disk
 
-        Returns:
-            Deletion status information
+@router.delete("/workspaces/{workspace_id}")
+async def delete_workspace(
+    workspace_id: str, remove_files: bool = False, workspace_manager: WorkspaceManagerDep = None
+) -> dict[str, str]:
+    """Delete a workspace.
 
-        Raises:
-            HTTPException: If workspace not found
-        """
-        logger.info(f"Deleting workspace: {workspace_id} (remove_files={remove_files})")
+    Args:
+        workspace_id: Workspace ID
+        remove_files: Whether to remove workspace files from disk
+        workspace_manager: Workspace manager instance (injected)
 
+    Returns:
+        Deletion confirmation message
+
+    Raises:
+        HTTPException: If workspace not found or deletion fails
+    """
+    logger.info(f"Deleting workspace: {workspace_id} (remove_files={remove_files})")
+
+    try:
         success = await workspace_manager.delete_workspace(workspace_id, remove_files)
         if not success:
-            logger.warning(f"Workspace not found for deletion: {workspace_id}")
-            raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
-
+            raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
         logger.info(f"Successfully deleted workspace: {workspace_id}")
-        return {
-            "status": "deleted",
-            "workspace_id": workspace_id,
-            "files_removed": remove_files,
-            "message": f"Workspace {workspace_id} deleted successfully",
-        }
+        return {"message": f"Workspace {workspace_id} deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete workspace {workspace_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete workspace: {e}") from e
 
-    @router.get("/workspaces/{workspace_id}/config")
-    async def get_workspace_config(workspace_id: str) -> dict[str, Any]:
-        """Get workspace GraphRAG configuration file content.
 
-        Args:
-            workspace_id: Unique workspace identifier
+@router.get("/workspaces/{workspace_id}/config")
+async def get_workspace_config(
+    workspace_id: str, workspace_manager: WorkspaceManagerDep
+) -> dict[str, Any]:
+    """Get GraphRAG configuration for a workspace.
 
-        Returns:
-            Workspace GraphRAG configuration
+    Args:
+        workspace_id: Workspace ID
+        workspace_manager: Workspace manager instance (injected)
 
-        Raises:
-            HTTPException: If workspace not found or config not available
-        """
-        logger.info(f"Getting workspace config: {workspace_id}")
+    Returns:
+        GraphRAG configuration as YAML/JSON
 
+    Raises:
+        HTTPException: If workspace not found or config read fails
+    """
+    logger.debug(f"Getting config for workspace: {workspace_id}")
+
+    try:
         workspace = await workspace_manager.get_workspace(workspace_id)
         if not workspace:
-            logger.warning(f"Workspace not found: {workspace_id}")
-            raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
+            raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
 
-        if not workspace.config_file_path:
-            raise HTTPException(status_code=404, detail="Workspace configuration not available")
+        # Read the settings.yaml file
+        config_path = Path(workspace.data_path) / "settings.yaml"
+        if not config_path.exists():
+            raise HTTPException(
+                status_code=404, detail=f"Configuration file not found for workspace {workspace_id}"
+            )
 
-        try:
-            config_path = Path(workspace.config_file_path)
-            if not config_path.exists():
-                raise HTTPException(status_code=404, detail="Configuration file not found")
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
 
-            with open(config_path, encoding="utf-8") as f:
-                config_content = yaml.safe_load(f)
-
-            return {
-                "workspace_id": workspace_id,
-                "config_file": str(config_path),
-                "configuration": config_content,
-            }
-
-        except Exception as e:
-            logger.error(f"Failed to read workspace config: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to read configuration: {e}") from e
-
-    return router
+        return config
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get config for workspace {workspace_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get workspace config: {e}") from e

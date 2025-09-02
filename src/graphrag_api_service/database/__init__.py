@@ -3,19 +3,14 @@
 # Author: Pierre Grothé
 # Creation Date: 2025-09-01
 
-"""Database module for GraphRAG API service."""
+"""Database module for GraphRAG API service - simplified SQLite implementation."""
 
-from .base import Base
-from .connection import DatabaseManager, get_database_manager
-from .models import APIKey, IndexingJob, Role, User, Workspace
+from .simple_connection import SimpleDatabaseManager, get_simple_database_manager
+from .sqlite_models import SQLiteManager, get_db_manager
 
 __all__ = [
-    "Base",
-    "DatabaseManager",
-    "get_database_manager",
-    "User",
-    "Role",
-    "APIKey",
-    "Workspace",
-    "IndexingJob",
+    "SimpleDatabaseManager",
+    "get_simple_database_manager",
+    "SQLiteManager",
+    "get_db_manager",
 ]

@@ -38,13 +38,13 @@ def create_app() -> FastAPI:
     setup_error_handlers(app)
 
     # Setup route handlers with dependency injection
-    from .routes.graph_v2 import router as graph_router
-    from .routes.graphrag_v2 import router as graphrag_router
-    from .routes.indexing_v2 import router as indexing_router
-    from .routes.system_v2 import router as system_router
-    from .routes.workspace_v2 import router as workspace_router
+    from .routes.graph import router as graph_router
+    from .routes.graphrag import router as graphrag_router
+    from .routes.indexing import router as indexing_router
+    from .routes.system import router as system_router
+    from .routes.workspace import router as workspace_router
 
-    # Register all v2 routers with dependency injection
+    # Register all routers with dependency injection
     app.include_router(workspace_router)
     app.include_router(graphrag_router)
     app.include_router(graph_router)

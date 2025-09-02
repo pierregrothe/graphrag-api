@@ -15,7 +15,6 @@ from .auth.database_auth import DatabaseAuthenticationService
 from .auth.jwt_auth import JWTConfig
 from .caching.redis_cache import RedisCacheConfig, get_redis_cache, initialize_redis_cache
 from .config import settings
-from .database import get_database_manager
 from .graph import GraphOperations
 from .graphql.subscriptions import get_subscription_manager
 from .graphrag_integration import GraphRAGIntegration
@@ -55,15 +54,13 @@ class ServiceContainer:
         """Initialize all services."""
         logger.info(f"Initializing services for {settings.app_name} v{settings.app_version}")
 
-        # Initialize database manager first
+        # Initialize database manager (using SQLite)
         try:
-            from ..deployment.config import DeploymentSettings
+            from .database.simple_connection import get_simple_database_manager
 
-            deployment_settings = DeploymentSettings()
-            self.database_manager = get_database_manager(deployment_settings)
-            await self.database_manager.initialize()
-            await self.database_manager.create_tables()
-            logger.info("Database manager initialized successfully")
+            self.database_manager = get_simple_database_manager(settings)
+            self.database_manager.initialize()
+            logger.info("SQLite database manager initialized successfully")
         except Exception as e:
             logger.warning(
                 f"Database initialization failed, falling back to file-based storage: {e}"
@@ -213,7 +210,7 @@ class ServiceContainer:
         # Shutdown database connections
         try:
             if self.database_manager:
-                await self.database_manager.close()
+                self.database_manager.close()
                 logger.info("Database connections closed")
         except Exception as e:
             logger.error(f"Error closing database connections: {e}")

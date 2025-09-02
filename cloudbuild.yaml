@@ -1,0 +1,66 @@
+# Google Cloud Build configuration for Cloud Run deployment
+# This file automates building and deploying to Cloud Run
+
+steps:
+    # Build the Docker image
+    - name: "gcr.io/cloud-builders/docker"
+      args:
+          - "build"
+          - "-t"
+          - "gcr.io/$PROJECT_ID/graphrag-api:$COMMIT_SHA"
+          - "-t"
+          - "gcr.io/$PROJECT_ID/graphrag-api:latest"
+          - "-f"
+          - "Dockerfile.cloudrun"
+          - "."
+
+    # Push the image to Google Container Registry
+    - name: "gcr.io/cloud-builders/docker"
+      args:
+          - "push"
+          - "gcr.io/$PROJECT_ID/graphrag-api:$COMMIT_SHA"
+
+    - name: "gcr.io/cloud-builders/docker"
+      args:
+          - "push"
+          - "gcr.io/$PROJECT_ID/graphrag-api:latest"
+
+    # Deploy to Cloud Run
+    - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+      entrypoint: gcloud
+      args:
+          - "run"
+          - "deploy"
+          - "graphrag-api"
+          - "--image=gcr.io/$PROJECT_ID/graphrag-api:$COMMIT_SHA"
+          - "--region=$_DEPLOY_REGION"
+          - "--platform=managed"
+          - "--allow-unauthenticated" # Change this for production
+          - "--port=8001"
+          - "--memory=2Gi"
+          - "--cpu=2"
+          - "--min-instances=0" # Scale to zero when not in use
+          - "--max-instances=5" # Limit for cost control
+          - "--concurrency=100"
+          - "--timeout=300"
+          - "--set-env-vars=LLM_PROVIDER=google_gemini"
+          - "--set-env-vars=GEMINI_MODEL=gemini-1.5-flash"
+          - "--set-env-vars=DATABASE_TYPE=sqlite"
+          - "--set-env-vars=DATABASE_PATH=/tmp/graphrag.db" # Use /tmp for Cloud Run
+          - "--set-env-vars=CACHE_TYPE=memory"
+          - "--set-env-vars=AUTH_ENABLED=true"
+          - "--set-secrets=GOOGLE_API_KEY=graphrag-api-key:latest"
+          - "--set-secrets=JWT_SECRET_KEY=graphrag-jwt-secret:latest"
+          - "--service-account=graphrag-api@$PROJECT_ID.iam.gserviceaccount.com"
+
+# Substitutions (set these in Cloud Build trigger or command line)
+substitutions:
+    _DEPLOY_REGION: us-central1
+
+# Build timeout
+timeout: "1200s"
+
+# Store build logs in Cloud Storage
+options:
+    logging: GCS_ONLY
+    logsBucket: "gs://${PROJECT_ID}_cloudbuild_logs"
