@@ -132,7 +132,7 @@ class ServiceContainer:
                 logger.info("Redis distributed cache initialized")
 
             # Initialize subscription manager
-            subscription_manager = await get_subscription_manager()
+            await get_subscription_manager()
             logger.info("GraphQL subscription manager initialized")
 
             # Initialize authentication service
@@ -154,7 +154,7 @@ class ServiceContainer:
                     await self.auth_service.create_default_roles()
 
                     # Initialize API key manager with RBAC
-                    api_key_manager = get_api_key_manager(self.auth_service.rbac)
+                    get_api_key_manager(self.auth_service.rbac)
                     logger.info("Database-backed authentication service initialized")
 
                     # Create default admin user if none exists
@@ -174,7 +174,7 @@ class ServiceContainer:
                     from .auth.jwt_auth import AuthenticationService
 
                     self.auth_service = AuthenticationService(jwt_config, self.database_manager)
-                    api_key_manager = get_api_key_manager(self.auth_service.rbac)
+                    get_api_key_manager(self.auth_service.rbac)
                     logger.warning("Using in-memory authentication (database not available)")
 
             logger.info("Advanced features initialized successfully")
@@ -187,19 +187,19 @@ class ServiceContainer:
         """Initialize performance monitoring components."""
         try:
             # Initialize connection pool with database manager
-            connection_pool = await get_connection_pool(self.database_manager)
+            await get_connection_pool(self.database_manager)
             logger.info("Connection pool initialized successfully")
 
             # Initialize cache manager
-            cache_manager = await get_cache_manager()
+            await get_cache_manager()
             logger.info("Cache manager initialized successfully")
 
             # Initialize performance monitor
-            performance_monitor = await get_performance_monitor()
+            await get_performance_monitor()
             logger.info("Performance monitoring started successfully")
 
             # Initialize memory optimizer
-            memory_optimizer = get_memory_optimizer()
+            get_memory_optimizer()
             logger.info("Memory optimizer initialized successfully")
 
             logger.info("All performance components initialized successfully")

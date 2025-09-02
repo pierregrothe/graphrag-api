@@ -77,7 +77,7 @@ class TestCacheManager:
         assert cleared_count >= 0  # Should clear some entries
 
         # Check that ns2 still has data
-        result = await cache_manager.get("ns2", "key1")
+        await cache_manager.get("ns2", "key1")
         # Note: Simple implementation may not preserve across namespaces
 
     @pytest.mark.asyncio

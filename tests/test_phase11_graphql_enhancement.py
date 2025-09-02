@@ -393,6 +393,7 @@ class TestIntegration:
         jwt_config = JWTConfig(secret_key="test-secret")
         # Create a mock database manager for testing
         from unittest.mock import MagicMock
+
         mock_db_manager = MagicMock()
         auth_service = AuthenticationService(jwt_config, mock_db_manager)
 

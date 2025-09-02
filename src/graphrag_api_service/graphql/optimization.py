@@ -221,7 +221,7 @@ class QueryComplexityAnalyzer:
         total_complexity = 0
 
         for field in info.selected_fields:
-            if isinstance(field, (FieldNode, InlineFragmentNode, FragmentSpreadNode)):
+            if isinstance(field, FieldNode | InlineFragmentNode | FragmentSpreadNode):
                 total_complexity += self._calculate_field_complexity(field)
 
         return total_complexity
@@ -252,13 +252,13 @@ class QueryComplexityAnalyzer:
 
         # Calculate nested field costs
         if (
-            isinstance(field, (FieldNode, InlineFragmentNode))
+            isinstance(field, FieldNode | InlineFragmentNode)
             and hasattr(field, "selection_set")
             and field.selection_set
         ):
             for nested_selection in field.selection_set.selections:
                 if isinstance(
-                    nested_selection, (FieldNode, InlineFragmentNode, FragmentSpreadNode)
+                    nested_selection, FieldNode | InlineFragmentNode | FragmentSpreadNode
                 ):
                     field_cost += self._calculate_field_complexity(nested_selection, depth + 1)
         # FragmentSpreadNode doesn't have selection_set, it references a fragment definition
@@ -308,7 +308,7 @@ class QueryCache:
         cache_data = {
             "query_type": query_type,
             "params": params,
-            "fields": sorted(list(fields)),
+            "fields": sorted(fields),
         }
 
         cache_string = json.dumps(cache_data, sort_keys=True)

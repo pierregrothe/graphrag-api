@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api", tags=["System"])
 @router.get("/health", tags=["Health"])
 async def health_check() -> dict[str, str]:
     """Basic health check endpoint.
-    
+
     Returns:
         Dict containing health status
     """
@@ -34,12 +34,12 @@ async def health_check() -> dict[str, str]:
 @router.get("/info", tags=["Health"])
 async def app_info() -> dict[str, Any]:
     """Application information endpoint.
-    
+
     Returns:
         Dict containing application info
     """
     from ..config import settings
-    
+
     return {
         "name": settings.app_name,
         "version": settings.app_version,

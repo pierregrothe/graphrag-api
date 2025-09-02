@@ -14,12 +14,12 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
+from src.graphrag_api_service.config import Settings
+from src.graphrag_api_service.main import app
+
 # Suppress passlib bcrypt warnings
 warnings.filterwarnings("ignore", message=".*bcrypt.*")
 warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
-
-from src.graphrag_api_service.config import Settings
-from src.graphrag_api_service.main import app
 
 
 # Global fixture to disable rate limiting for all tests

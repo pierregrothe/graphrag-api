@@ -24,6 +24,10 @@ logger = get_logger(__name__)
 # Create router for indexing endpoints
 router = APIRouter(prefix="/api", tags=["Indexing"])
 
+# Module-level dependencies to avoid B008 errors
+_STATUS_FILTER_QUERY = Query(None)
+_LIMIT_QUERY = Query(100)
+
 
 @router.post("/indexing/jobs", response_model=IndexingJob)
 async def create_indexing_job(
@@ -68,9 +72,9 @@ async def create_indexing_job(
 
 @router.get("/indexing/jobs", response_model=list[IndexingJobSummary])
 async def list_indexing_jobs(
-    status: IndexingJobStatus | None = Query(None),
-    limit: int = Query(100),
     indexing_manager: IndexingManagerDep = None,
+    status: IndexingJobStatus | None = _STATUS_FILTER_QUERY,
+    limit: int = _LIMIT_QUERY,
 ) -> list[IndexingJobSummary]:
     """List indexing jobs with optional filtering."""
     logger.info(f"Listing indexing jobs (status: {status}, limit: {limit})")

@@ -49,7 +49,7 @@ class PostmanCollectionRunner:
             Text with variables replaced
         """
         # Replace environment variables
-        for key, value in self.environment.items():
+        for _key, value in self.environment.items():
             text = text.replace("{{key}}", str(value))
 
         # Replace base_url

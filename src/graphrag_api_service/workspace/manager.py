@@ -15,8 +15,6 @@ from typing import Any
 
 import yaml
 
-logger = logging.getLogger(__name__)
-
 from ..config import Settings
 from .models import (
     Workspace,
@@ -26,6 +24,8 @@ from .models import (
     WorkspaceSummary,
     WorkspaceUpdateRequest,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class WorkspaceManager:

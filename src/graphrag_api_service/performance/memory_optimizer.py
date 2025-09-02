@@ -277,14 +277,14 @@ class MemoryMonitor:
         Returns:
             Garbage collection statistics
         """
-        before_stats = {f"gen_{i}": gc.get_count()[i] for i in range(3)}
+        {f"gen_{i}": gc.get_count()[i] for i in range(3)}
 
         # Force collection for all generations
         collected = {}
         for generation in range(3):
             collected[f"gen_{generation}"] = gc.collect(generation)
 
-        after_stats = {f"gen_{i}": gc.get_count()[i] for i in range(3)}
+        {f"gen_{i}": gc.get_count()[i] for i in range(3)}
 
         logger.debug(f"Garbage collection completed: {collected}")
         return collected

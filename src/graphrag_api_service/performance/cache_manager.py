@@ -272,7 +272,7 @@ class CacheManager:
 
         async with self._lock:
             keys_to_remove = []
-            for key, entry in self._cache.items():
+            for key, _entry in self._cache.items():
                 # Check if key belongs to namespace (simplified check)
                 if key.startswith(namespace):
                     keys_to_remove.append(key)

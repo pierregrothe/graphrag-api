@@ -155,12 +155,12 @@ class ConnectionPool:
                 connection = await asyncio.wait_for(
                     self._available_connections.get(), timeout=self.config.connection_timeout
                 )
-            except TimeoutError:
+            except TimeoutError as timeout_err:
                 # Create new connection if under max limit
                 if self._active_connections < self.config.max_connections:
                     connection = await self._create_connection()
                 else:
-                    raise Exception("Connection pool exhausted")
+                    raise Exception("Connection pool exhausted") from timeout_err
 
             # Update connection metadata
             connection["last_used"] = time.time()

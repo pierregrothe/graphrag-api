@@ -11,13 +11,6 @@ from typing import TYPE_CHECKING, Any
 import strawberry
 from strawberry.types import Info
 
-# For GraphQL runtime, we use strawberry.scalars.JSON
-# For type checking, we use Any since strawberry.scalars.JSON is not a valid type
-if TYPE_CHECKING:
-    JSONType = Any
-else:
-    JSONType = strawberry.scalars.JSON
-
 from ..config import settings
 from ..graphrag_integration import GraphRAGIntegration
 from ..system.operations import SystemOperations
@@ -26,8 +19,6 @@ from ..workspace.models import WorkspaceCreateRequest
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
 from ..workspace.models import WorkspaceUpdateRequest
 from .optimization import get_query_cache
-
-logger = logging.getLogger(__name__)
 from .types import (
     CacheClearResult,
     ConfigValidationResult,
@@ -42,6 +33,15 @@ from .types import (
     Workspace,
     WorkspaceStatus,
 )
+
+# For GraphQL runtime, we use strawberry.scalars.JSON
+# For type checking, we use Any since strawberry.scalars.JSON is not a valid type
+if TYPE_CHECKING:
+    JSONType = Any
+else:
+    JSONType = strawberry.scalars.JSON
+
+logger = logging.getLogger(__name__)
 
 
 def convert_workspace_status(model_status: WorkspaceModelStatus) -> WorkspaceStatus:

@@ -211,6 +211,6 @@ def setup_system_routes(workspace_manager, system_operations=None):
             }
         except Exception as e:
             logger.error(f"Failed to optimize memory: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to optimize memory: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to optimize memory: {e}") from e
 
     return router

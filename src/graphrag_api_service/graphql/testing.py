@@ -234,7 +234,7 @@ class GraphQLTestRunner:
         Returns:
             True if data matches
         """
-        if type(actual) != type(expected):
+        if not isinstance(actual, type(expected)):
             return False
 
         if isinstance(actual, dict):
