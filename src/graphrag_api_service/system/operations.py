@@ -173,7 +173,7 @@ class SystemOperations:
                 health_status["status"] = "degraded"
 
             # Check workspace health
-            workspaces = self.workspace_manager.list_workspaces()
+            workspaces = await self.workspace_manager.list_workspaces()
             health_status["workspaces"] = {
                 "total": len(workspaces),
                 "active": sum(1 for w in workspaces if getattr(w, "status", None) == "active"),
@@ -277,7 +277,7 @@ class SystemOperations:
             }
 
             # Get workspace metrics
-            workspaces = self.workspace_manager.list_workspaces()
+            workspaces = await self.workspace_manager.list_workspaces()
             workspace_metrics = {
                 "total_workspaces": len(workspaces),
                 "operations_performed": self.metrics["workspace_operations"],

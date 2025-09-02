@@ -11,6 +11,7 @@ import strawberry
 from strawberry.fastapi import GraphQLRouter
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 
+from .dataloaders import create_dataloaders
 from .mutations import Mutation
 from .queries import Query
 from .subscriptions import Subscription
@@ -41,12 +42,18 @@ def create_graphql_router(
 
     async def get_context():
         """Get context for GraphQL resolvers."""
+        # Create DataLoaders for this request
+        dataloaders = {}
+        if graph_operations:
+            dataloaders = create_dataloaders(graph_operations)
+
         return {
             "graph_operations": graph_operations,
             "workspace_manager": workspace_manager,
             "system_operations": system_operations,
             "graphrag_integration": graphrag_integration,
             "indexing_manager": indexing_manager,
+            "dataloaders": dataloaders,
         }
 
     # Create the main GraphQL router with subscription support

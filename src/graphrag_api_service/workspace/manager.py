@@ -6,6 +6,7 @@
 """GraphRAG workspace manager for multi-project support and data directory management."""
 
 import json
+import logging
 import shutil
 import uuid
 from datetime import UTC, datetime
@@ -13,6 +14,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 from ..config import Settings
 from .models import (
@@ -28,22 +31,37 @@ from .models import (
 class WorkspaceManager:
     """Manager for GraphRAG workspaces providing multi-project support."""
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, database_manager=None):
         """Initialize workspace manager.
 
         Args:
             settings: Application settings
+            database_manager: Optional database manager for database-backed storage
         """
         self.settings = settings
+        self.database_manager = database_manager
         self.base_workspaces_path = Path("workspaces")
         self.workspaces_index_file = self.base_workspaces_path / "workspaces.json"
 
         # Ensure workspaces directory exists
         self.base_workspaces_path.mkdir(exist_ok=True)
 
-        # Load existing workspaces
+        # Initialize storage backend
+        if database_manager:
+            from .database_manager import DatabaseWorkspaceManager
+
+            self.db_manager = DatabaseWorkspaceManager(
+                settings, database_manager.async_session_factory
+            )
+            logger.info("Using database-backed workspace storage")
+        else:
+            self.db_manager = None
+            logger.info("Using file-based workspace storage")
+
+        # Load existing workspaces (for file-based fallback)
         self._workspaces: dict[str, Workspace] = {}
-        self._load_workspaces_index()
+        if not self.db_manager:
+            self._load_workspaces_index()
 
     def _load_workspaces_index(self) -> None:
         """Load workspaces index from disk."""
@@ -76,11 +94,14 @@ class WorkspaceManager:
         with open(self.workspaces_index_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, default=str)
 
-    def create_workspace(self, request: WorkspaceCreateRequest) -> Workspace:
+    async def create_workspace(
+        self, request: WorkspaceCreateRequest, owner_id: str = None
+    ) -> Workspace:
         """Create a new GraphRAG workspace.
 
         Args:
             request: Workspace creation request
+            owner_id: Optional owner user ID for database storage
 
         Returns:
             Created workspace
@@ -88,6 +109,22 @@ class WorkspaceManager:
         Raises:
             ValueError: If workspace name already exists or data path is invalid
             OSError: If workspace directories cannot be created
+        """
+        # Use database backend if available
+        if self.db_manager:
+            return await self.db_manager.create_workspace(request, owner_id)
+
+        # Fallback to file-based storage
+        return self._create_workspace_file_based(request)
+
+    def _create_workspace_file_based(self, request: WorkspaceCreateRequest) -> Workspace:
+        """Create workspace using file-based storage (original implementation).
+
+        Args:
+            request: Workspace creation request
+
+        Returns:
+            Created workspace
         """
         # Check if workspace name already exists
         if any(ws.config.name == request.name for ws in self._workspaces.values()):
@@ -157,7 +194,7 @@ class WorkspaceManager:
                 shutil.rmtree(workspace_dir)
             raise OSError(f"Failed to create workspace directories: {e}") from e
 
-    def get_workspace(self, workspace_id: str) -> Workspace | None:
+    async def get_workspace(self, workspace_id: str) -> Workspace | None:
         """Get workspace by ID.
 
         Args:
@@ -166,9 +203,14 @@ class WorkspaceManager:
         Returns:
             Workspace if found, None otherwise
         """
+        # Use database backend if available
+        if self.db_manager:
+            return await self.db_manager.get_workspace(workspace_id)
+
+        # Fallback to file-based storage
         return self._workspaces.get(workspace_id)
 
-    def get_workspace_by_name(self, name: str) -> Workspace | None:
+    async def get_workspace_by_name(self, name: str) -> Workspace | None:
         """Get workspace by name.
 
         Args:
@@ -177,17 +219,45 @@ class WorkspaceManager:
         Returns:
             Workspace if found, None otherwise
         """
+        if self.db_manager:
+            # Use database backend
+            return await self.db_manager.get_workspace_by_name(name)
+
+        # Fallback to file-based storage
         for workspace in self._workspaces.values():
             if workspace.config.name == name:
                 return workspace
         return None
 
-    def list_workspaces(self) -> list[WorkspaceSummary]:
+    async def list_workspaces(self, owner_id: str = None) -> list[WorkspaceSummary]:
         """List all workspaces with summary information.
+
+        Args:
+            owner_id: Optional owner ID to filter by (for database backend)
 
         Returns:
             List of workspace summaries
         """
+        # Use database backend if available
+        if self.db_manager:
+            workspaces = await self.db_manager.list_workspaces(owner_id)
+            summaries = []
+            for workspace in workspaces:
+                summary = WorkspaceSummary(
+                    id=workspace.id,
+                    name=workspace.config.name,
+                    description=workspace.config.description,
+                    status=workspace.status,
+                    created_at=workspace.created_at,
+                    updated_at=workspace.updated_at,
+                    files_processed=workspace.files_processed,
+                    entities_extracted=workspace.entities_extracted,
+                    relationships_extracted=workspace.relationships_extracted,
+                )
+                summaries.append(summary)
+            return summaries
+
+        # Fallback to file-based storage
         summaries = []
         for workspace in self._workspaces.values():
             summary = WorkspaceSummary(
@@ -207,7 +277,7 @@ class WorkspaceManager:
         summaries.sort(key=lambda x: x.created_at, reverse=True)
         return summaries
 
-    def update_workspace(self, workspace_id: str, request: WorkspaceUpdateRequest) -> Workspace:
+    async def update_workspace(self, workspace_id: str, request: WorkspaceUpdateRequest) -> Workspace:
         """Update workspace configuration.
 
         Args:
@@ -220,7 +290,7 @@ class WorkspaceManager:
         Raises:
             ValueError: If workspace not found or update invalid
         """
-        workspace = self.get_workspace(workspace_id)
+        workspace = await self.get_workspace(workspace_id)
         if not workspace:
             raise ValueError(f"Workspace not found: {workspace_id}")
 
@@ -267,7 +337,7 @@ class WorkspaceManager:
 
         return workspace
 
-    def delete_workspace(self, workspace_id: str, remove_files: bool = False) -> bool:
+    async def delete_workspace(self, workspace_id: str, remove_files: bool = False) -> bool:
         """Delete workspace.
 
         Args:
@@ -277,7 +347,12 @@ class WorkspaceManager:
         Returns:
             True if workspace was deleted, False if not found
         """
-        workspace = self.get_workspace(workspace_id)
+        # Use database backend if available
+        if self.db_manager:
+            return await self.db_manager.delete_workspace(workspace_id)
+
+        # Fallback to file-based storage
+        workspace = await self.get_workspace(workspace_id)
         if not workspace:
             return False
 
@@ -452,12 +527,17 @@ class WorkspaceManager:
         else:
             return "v1beta"
 
-    def get_workspace_stats(self) -> dict[str, Any]:
+    async def get_workspace_stats(self) -> dict[str, Any]:
         """Get statistics about all workspaces.
 
         Returns:
             Dictionary containing workspace statistics
         """
+        # Use database backend if available
+        if self.db_manager:
+            return await self.db_manager.get_workspace_stats()
+
+        # Fallback to file-based storage
         total_workspaces = len(self._workspaces)
         status_counts = {}
 

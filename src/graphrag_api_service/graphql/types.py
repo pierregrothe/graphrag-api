@@ -95,6 +95,60 @@ class Entity:
     community_ids: list[str]
     text_unit_ids: list[str]
 
+    @strawberry.field
+    async def relationships(self, info) -> list["Relationship"]:
+        """Get relationships for this entity using DataLoader.
+
+        Args:
+            info: GraphQL context information
+
+        Returns:
+            List of relationships for this entity
+        """
+        dataloaders = info.context.get("dataloaders", {})
+        entity_relationships_loader = dataloaders.get("entity_relationships_loader")
+
+        if entity_relationships_loader:
+            # Use DataLoader to batch relationship requests
+            relationships_data = await entity_relationships_loader.load(self.id)
+            return [
+                Relationship(
+                    id=r["id"],
+                    source=r["source"],
+                    target=r["target"],
+                    type=r["type"],
+                    description=r["description"],
+                    weight=r["weight"],
+                    text_unit_ids=r.get("text_unit_ids", []),
+                )
+                for r in relationships_data
+            ]
+        else:
+            # Fallback to direct query if DataLoader not available
+            from ..config import settings
+            from ..graph.operations import GraphOperations
+
+            graph_ops: GraphOperations = info.context.get("graph_operations")
+            if not graph_ops or not settings.graphrag_data_path:
+                return []
+
+            result = await graph_ops.query_relationships(
+                data_path=settings.graphrag_data_path, source_entity=self.id, limit=100
+            )
+
+            return [
+                Relationship(
+                    id=r["id"],
+                    source=r["source"],
+                    target=r["target"],
+                    type=r["type"],
+                    description=r["description"],
+                    weight=r["weight"],
+                    text_unit_ids=r.get("text_unit_ids", []),
+                )
+                for r in result.get("relationships", [])
+            ]
+
 
 @strawberry.type
 class Relationship:

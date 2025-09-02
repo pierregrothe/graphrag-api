@@ -5,6 +5,7 @@
 
 """GraphQL module for GraphRAG API service."""
 
+from .dataloaders import create_dataloaders
 from .mutations import Mutation
 from .queries import Query
 from .schema import create_graphql_router, schema
@@ -43,6 +44,8 @@ __all__ = [
     # Query and Mutation
     "Query",
     "Mutation",
+    # DataLoaders
+    "create_dataloaders",
     # Types
     "Entity",
     "EntityConnection",

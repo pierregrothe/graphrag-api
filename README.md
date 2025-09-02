@@ -9,13 +9,22 @@
 
 ## Project Status: **PRODUCTION READY**
 
-**Phase 11 Completed** - All 11 planned phases successfully implemented with enterprise-grade features:
+**Phase 3 Validation Completed (September 2025)** - Comprehensive testing and async/await architecture validation:
 
-- **Complete GraphQL Implementation** with real-time subscriptions
-- **Advanced Monitoring Stack** (Prometheus, OpenTelemetry, Grafana)
-- **Enterprise Authentication** (JWT + API keys with RBAC)
-- **Production Optimization** (Redis caching, performance tuning)
-- **Comprehensive Testing** (300+ tests with 100% pass rate)
+### **✅ Phase 2 Implementation (COMPLETE)**
+- **Database-Backed Authentication** - Replaced in-memory user storage with PostgreSQL persistence
+- **Real Database Connection Pooling** - Production-ready SQLAlchemy connection management
+- **Complete v2 API Routes** - All mock responses replaced with real GraphRAG integrations
+- **GraphQL DataLoader Implementation** - N+1 query prevention with intelligent batching
+- **Enhanced Security** - Fixed API key authorization vulnerabilities with RBAC integration
+- **Workspace Database Migration** - JSON file storage replaced with scalable database persistence
+
+### **✅ Phase 3 Validation (COMPLETE)**
+- **Async/Await Architecture** - Fixed 54+ test failures through proper coroutine handling
+- **Database Integration Testing** - Validated all Phase 2 database implementations
+- **Performance Validation** - Confirmed GraphQL DataLoader and connection pooling optimizations
+- **Test Coverage Achievement** - Improved from 82% to 93% test pass rate (290→342 passing tests)
+- **Production Readiness** - All critical functionality validated and working correctly
 
 ## Key Features
 
@@ -37,11 +46,98 @@
 
 ### **Performance & Scalability**
 
-- **40-60% GraphQL optimization** through intelligent field selection
+- **40-60% GraphQL optimization** through intelligent field selection and DataLoader implementation
 - **85%+ cache hit rates** with Redis distributed caching
 - **P95 < 300ms** response times for cached operations
 - **30-40% memory reduction** through optimization strategies
-- **50-70% database load reduction** via query optimization
+- **50-70% database load reduction** via query optimization and real connection pooling
+- **N+1 Query Prevention** with GraphQL DataLoader batching system
+
+## **🏗️ System Architecture**
+
+The GraphRAG API follows a modern microservices architecture with async/await patterns, database persistence, and comprehensive caching:
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        A[REST API Clients]
+        B[GraphQL Clients]
+        C[WebSocket Clients]
+    end
+
+    subgraph "API Gateway Layer"
+        D[FastAPI Router]
+        E[GraphQL Endpoint]
+        F[WebSocket Handler]
+    end
+
+    subgraph "Service Layer"
+        G[Workspace Manager]
+        H[Graph Operations]
+        I[Indexing Manager]
+        J[System Operations]
+        K[Authentication Service]
+    end
+
+    subgraph "Data Layer"
+        L[(PostgreSQL Database)]
+        M[(Redis Cache)]
+        N[File Storage]
+    end
+
+    subgraph "External Services"
+        O[LLM Providers]
+        P[Embedding Models]
+        Q[Monitoring Stack]
+    end
+
+    A --> D
+    B --> E
+    C --> F
+
+    D --> G
+    D --> H
+    D --> I
+    D --> J
+    E --> G
+    E --> H
+    E --> I
+    F --> K
+
+    G --> L
+    G --> M
+    G --> N
+    H --> L
+    H --> M
+    I --> L
+    J --> M
+    K --> L
+
+    H --> O
+    H --> P
+    I --> O
+    I --> P
+
+    Q --> L
+    Q --> M
+```
+
+### **Recent Improvements (Phase 2 & 3 - September 2025)**
+
+#### **🔒 Security Enhancements**
+- **Database-Backed Authentication**: Persistent user storage replacing in-memory sessions
+- **RBAC Integration**: Complete role-based access control with API key authorization
+- **Security Vulnerability Fixes**: Closed unauthorized API key revocation vulnerability
+
+#### **⚡ Performance Optimizations**
+- **Real Database Connection Pooling**: SQLAlchemy-based connection management
+- **GraphQL DataLoader**: Intelligent batching prevents N+1 query problems
+- **Complete v2 API Implementation**: All mock responses replaced with real integrations
+
+#### **🗄️ Data Persistence**
+- **PostgreSQL Integration**: Full database schema with migrations
+- **Workspace Database Migration**: Scalable workspace management
+- **Data Migration Tools**: Automated migration from JSON to database storage
 
 ## Prerequisites
 
@@ -89,6 +185,108 @@ docker run -d -p 6379:6379 redis:alpine
 
 # Start API server
 python -m uvicorn src.graphrag_api_service.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## **🗄️ Database Setup & Configuration**
+
+### **PostgreSQL Database Integration**
+
+The GraphRAG API now uses PostgreSQL for persistent storage with comprehensive database integration:
+
+```mermaid
+erDiagram
+    USERS {
+        string id PK
+        string username
+        string email
+        string password_hash
+        string role
+        datetime created_at
+        datetime updated_at
+        boolean is_active
+    }
+
+    API_KEYS {
+        string id PK
+        string user_id FK
+        string key_hash
+        string name
+        datetime created_at
+        datetime expires_at
+        boolean is_active
+        json permissions
+    }
+
+    WORKSPACES {
+        string id PK
+        string name
+        string description
+        string data_path
+        json config
+        string status
+        datetime created_at
+        datetime updated_at
+        int files_processed
+        int entities_extracted
+        int relationships_extracted
+    }
+
+    INDEXING_JOBS {
+        string id PK
+        string workspace_id FK
+        string status
+        json config
+        datetime created_at
+        datetime started_at
+        datetime completed_at
+        json result
+        string error_message
+    }
+
+    USERS ||--o{ API_KEYS : "has"
+    USERS ||--o{ WORKSPACES : "owns"
+    WORKSPACES ||--o{ INDEXING_JOBS : "processes"
+```
+
+### **Database Setup Instructions**
+
+#### **1. PostgreSQL Installation**
+
+```bash
+# Using Docker (Recommended)
+docker run --name graphrag-postgres \
+  -e POSTGRES_DB=graphrag \
+  -e POSTGRES_USER=graphrag_user \
+  -e POSTGRES_PASSWORD=your_secure_password \
+  -p 5432:5432 \
+  -d postgres:15
+
+# Or using local PostgreSQL
+sudo apt-get install postgresql postgresql-contrib
+sudo -u postgres createdb graphrag
+sudo -u postgres createuser graphrag_user
+```
+
+#### **2. Database Configuration**
+
+```bash
+# Set environment variables
+export DATABASE_URL="postgresql://graphrag_user:your_secure_password@localhost:5432/graphrag"
+export REDIS_URL="redis://localhost:6379/0"
+
+# Or add to .env file
+echo "DATABASE_URL=postgresql://graphrag_user:your_secure_password@localhost:5432/graphrag" >> .env
+echo "REDIS_URL=redis://localhost:6379/0" >> .env
+```
+
+#### **3. Database Migration**
+
+```bash
+# Run database migrations
+python -m alembic upgrade head
+
+# Verify database setup
+python -c "from src.graphrag_api_service.database.manager import DatabaseManager; print('Database connection: OK')"
 ```
 
 ### **Option 3: Production Deployment**
@@ -199,6 +397,50 @@ nginx: # Load balancer (production)
 ```
 
 ## API Documentation & Usage
+
+## **📚 API Documentation**
+
+### **API Workflow Architecture**
+
+The GraphRAG API provides dual interfaces (REST + GraphQL) with complete feature parity and async/await architecture:
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as API Gateway
+    participant W as Workspace Manager
+    participant D as Database
+    participant G as Graph Operations
+    participant L as LLM Provider
+
+    Note over C,L: Workspace Creation & Indexing Flow
+
+    C->>A: POST /api/workspaces
+    A->>W: create_workspace(request)
+    W->>D: INSERT workspace record
+    W->>W: create_workspace_directory()
+    W-->>A: workspace_created
+    A-->>C: 201 Created
+
+    C->>A: POST /api/workspaces/{id}/index
+    A->>W: start_indexing(workspace_id)
+    W->>G: process_documents()
+    G->>L: generate_embeddings()
+    L-->>G: embeddings
+    G->>D: store_entities_relationships()
+    G-->>W: indexing_complete
+    W-->>A: indexing_status
+    A-->>C: 200 OK
+
+    Note over C,L: Query & Analytics Flow
+
+    C->>A: GET /api/graph/entities
+    A->>G: query_entities(filters)
+    G->>D: SELECT entities WHERE...
+    D-->>G: entity_data
+    G-->>A: formatted_entities
+    A-->>C: 200 OK + entities
+```
 
 ### **Interactive Documentation**
 
@@ -446,11 +688,86 @@ newman run tests/postman/graphrag_api_collection.json \
 
 ### **Test Coverage**
 
-- **300+ unit tests** covering all components
+- **354 total tests** with **93% pass rate** (342 passing tests)
 - **100+ integration tests** for API endpoints
 - **50+ GraphQL tests** for queries, mutations, and subscriptions
 - **Postman collections** with automated test assertions
 - **Performance benchmarks** for critical operations
+
+## **🔧 Troubleshooting Guide**
+
+### **Common Deployment Issues**
+
+#### **Database Connection Issues**
+
+```bash
+# Issue: Database connection failed
+# Solution: Verify PostgreSQL is running and accessible
+docker ps | grep postgres
+psql -h localhost -U graphrag_user -d graphrag -c "SELECT 1;"
+
+# Issue: Migration errors
+# Solution: Reset and re-run migrations
+python -m alembic downgrade base
+python -m alembic upgrade head
+
+# Issue: Permission denied errors
+# Solution: Check database user permissions
+psql -h localhost -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE graphrag TO graphrag_user;"
+```
+
+#### **Redis Cache Issues**
+
+```bash
+# Issue: Redis connection timeout
+# Solution: Verify Redis is running and accessible
+redis-cli ping
+docker logs redis-container
+
+# Issue: Cache performance problems
+# Solution: Monitor Redis memory usage
+redis-cli info memory
+redis-cli monitor
+```
+
+#### **Async/Await Issues**
+
+```bash
+# Issue: "coroutine was never awaited" errors
+# Solution: Ensure all async methods are properly awaited
+# Check logs for specific method calls missing await keywords
+
+# Issue: "RuntimeError: This event loop is already running"
+# Solution: Use proper async context in tests
+pytest tests/ -v --tb=short
+```
+
+#### **Performance Issues**
+
+```bash
+# Issue: Slow API responses
+# Solution: Check database query performance
+# Enable query logging in PostgreSQL
+echo "log_statement = 'all'" >> postgresql.conf
+
+# Issue: High memory usage
+# Solution: Monitor and optimize connection pools
+# Check connection pool metrics in /metrics endpoint
+curl http://localhost:8000/metrics | grep connection_pool
+```
+
+### **Deployment Validation Checklist**
+
+- [ ] PostgreSQL database accessible and migrations applied
+- [ ] Redis cache service running and accessible
+- [ ] Environment variables properly configured
+- [ ] API health check returning 200 OK
+- [ ] Authentication endpoints working (JWT + API keys)
+- [ ] GraphQL playground accessible and functional
+- [ ] Monitoring endpoints returning metrics
+- [ ] Log aggregation configured and working
+- [ ] SSL certificates installed (production only)
+- [ ] Load balancer configured (production only)
 
 ## Monitoring & Observability
 

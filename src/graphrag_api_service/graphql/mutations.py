@@ -5,6 +5,7 @@
 
 """GraphQL mutation resolvers for GraphRAG operations."""
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 import strawberry
@@ -24,6 +25,9 @@ from ..workspace.manager import WorkspaceManager
 from ..workspace.models import WorkspaceCreateRequest
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
 from ..workspace.models import WorkspaceUpdateRequest
+from .optimization import get_query_cache
+
+logger = logging.getLogger(__name__)
 from .types import (
     CacheClearResult,
     ConfigValidationResult,
@@ -96,7 +100,7 @@ class Mutation:
             community_levels=None,
         )
 
-        workspace = workspace_manager.create_workspace(request)
+        workspace = await workspace_manager.create_workspace(request)
 
         # Handle case where workspace.config might be None (for testing)
         if workspace.config:
@@ -158,7 +162,7 @@ class Mutation:
             community_levels=None,
         )
 
-        workspace = workspace_manager.update_workspace(id, update_request)
+        workspace = await workspace_manager.update_workspace(id, update_request)
 
         if workspace:
             return Workspace(
@@ -185,7 +189,7 @@ class Mutation:
             True if deleted, False otherwise
         """
         workspace_manager: WorkspaceManager = info.context["workspace_manager"]
-        return workspace_manager.delete_workspace(id)
+        return await workspace_manager.delete_workspace(id)
 
     @strawberry.mutation
     async def set_active_workspace(self, id: str, info: Info) -> Workspace | None:
@@ -199,7 +203,7 @@ class Mutation:
             Active workspace if successful
         """
         workspace_manager: WorkspaceManager = info.context["workspace_manager"]
-        workspace = workspace_manager.get_workspace(id)
+        workspace = await workspace_manager.get_workspace(id)
 
         if workspace:
             # Update global data path
@@ -244,7 +248,7 @@ class Mutation:
         # Use workspace data path if workspace_id provided
         if workspace_id:
             workspace_manager: WorkspaceManager = info.context["workspace_manager"]
-            workspace = workspace_manager.get_workspace(workspace_id)
+            workspace = await workspace_manager.get_workspace(workspace_id)
             if workspace and workspace.config:
                 root_directory = workspace.config.data_path
 
@@ -389,7 +393,7 @@ class Mutation:
         data_path = settings.graphrag_data_path
         if workspace_id:
             workspace_manager: WorkspaceManager = info.context["workspace_manager"]
-            workspace = workspace_manager.get_workspace(workspace_id)
+            workspace = await workspace_manager.get_workspace(workspace_id)
             if workspace and workspace.config:
                 data_path = workspace.config.data_path
 
@@ -506,9 +510,42 @@ class Mutation:
         Returns:
             True if cache cleared successfully
         """
-        # GraphOperations doesn't have clear_cache method, return success for now
-        # TODO: Implement cache clearing functionality
-        return True
+        try:
+            # Clear GraphQL query cache
+            query_cache = get_query_cache()
+            query_cache.clear()
+            logger.info("GraphQL query cache cleared")
+
+            # Clear DataLoader caches
+            dataloaders = info.context.get("dataloaders", {})
+            for loader_name, loader in dataloaders.items():
+                if hasattr(loader, "clear"):
+                    loader.clear()
+                    logger.debug(f"Cleared DataLoader cache: {loader_name}")
+
+            # Clear system cache if available
+            system_operations = info.context.get("system_operations")
+            if system_operations and hasattr(system_operations, "clear_cache"):
+                await system_operations.clear_cache()
+                logger.info("System cache cleared")
+
+            # Clear connection pool cache if available
+            from ..performance.connection_pool import get_connection_pool
+
+            try:
+                connection_pool = await get_connection_pool()
+                if hasattr(connection_pool, "clear_cache"):
+                    await connection_pool.clear_cache()
+                    logger.info("Connection pool cache cleared")
+            except Exception as e:
+                logger.warning(f"Could not clear connection pool cache: {e}")
+
+            logger.info("All graph caches cleared successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to clear graph cache: {e}")
+            return False
 
     @strawberry.mutation
     async def rebuild_graph_index(
@@ -528,11 +565,21 @@ class Mutation:
         graphrag_integration: GraphRAGIntegration = info.context["graphrag_integration"]
 
         # Get workspace and data path
-        root_directory = settings.graphrag_data_path or "/tmp/graphrag"
+        import os
+        import tempfile
+
+        if settings.graphrag_data_path:
+            root_directory = settings.graphrag_data_path
+        else:
+            # Use secure temporary directory with proper permissions
+            temp_dir = tempfile.mkdtemp(prefix="graphrag_", suffix="_data")
+            root_directory = temp_dir
+            os.chmod(temp_dir, 0o700)  # Restrict access to owner only
+
         config_file = None
 
         if workspace_id:
-            workspace = workspace_manager.get_workspace(workspace_id)
+            workspace = await workspace_manager.get_workspace(workspace_id)
             if workspace:
                 root_directory = workspace.config.data_path
 

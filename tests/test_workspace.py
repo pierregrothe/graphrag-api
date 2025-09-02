@@ -122,9 +122,10 @@ class TestWorkspaceManager:
     def workspace_manager(self, settings: Settings, temp_dir: Path):
         """Create workspace manager with temporary directory."""
         # Patch the base workspaces path to use temp directory
-        with patch.object(WorkspaceManager, "__init__", lambda self, settings: None):
+        with patch.object(WorkspaceManager, "__init__", lambda self, settings, db_manager=None: None):
             manager = WorkspaceManager.__new__(WorkspaceManager)
             manager.settings = settings
+            manager.db_manager = None  # Use file-based storage for tests
             manager.base_workspaces_path = temp_dir / "workspaces"
             manager.workspaces_index_file = manager.base_workspaces_path / "workspaces.json"
             manager._workspaces = {}
@@ -147,7 +148,7 @@ class TestWorkspaceManager:
 
         return data_dir
 
-    def test_create_workspace_success(
+    async def test_create_workspace_success(
         self, workspace_manager: WorkspaceManager, test_data_dir: Path
     ):
         """Test successful workspace creation."""
@@ -164,7 +165,7 @@ class TestWorkspaceManager:
             community_levels=None,
         )
 
-        workspace = workspace_manager.create_workspace(request)
+        workspace = await workspace_manager.create_workspace(request)
 
         # Verify workspace properties
         assert workspace.config.name == "test-workspace"
@@ -193,7 +194,7 @@ class TestWorkspaceManager:
         assert config_content["chunks"]["size"] == 800
         assert str(test_data_dir) in config_content["input"]["base_dir"]
 
-    def test_create_workspace_duplicate_name(
+    async def test_create_workspace_duplicate_name(
         self, workspace_manager: WorkspaceManager, test_data_dir: Path
     ):
         """Test workspace creation with duplicate name fails."""
@@ -211,7 +212,7 @@ class TestWorkspaceManager:
         )
 
         # Create first workspace
-        workspace_manager.create_workspace(request)
+        await workspace_manager.create_workspace(request)
 
         # Try to create second workspace with same name
         request2 = WorkspaceCreateRequest(
@@ -228,9 +229,9 @@ class TestWorkspaceManager:
         )
 
         with pytest.raises(ValueError, match="already exists"):
-            workspace_manager.create_workspace(request2)
+            await workspace_manager.create_workspace(request2)
 
-    def test_create_workspace_invalid_data_path(self, workspace_manager: WorkspaceManager):
+    async def test_create_workspace_invalid_data_path(self, workspace_manager: WorkspaceManager):
         """Test workspace creation with invalid data path fails."""
         request = WorkspaceCreateRequest(
             name="invalid-path-workspace",
@@ -246,9 +247,9 @@ class TestWorkspaceManager:
         )
 
         with pytest.raises(ValueError, match="Data path does not exist"):
-            workspace_manager.create_workspace(request)
+            await workspace_manager.create_workspace(request)
 
-    def test_get_workspace_by_id(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
+    async def test_get_workspace_by_id(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
         """Test retrieving workspace by ID."""
         request = WorkspaceCreateRequest(
             name="retrieve-test",
@@ -263,19 +264,19 @@ class TestWorkspaceManager:
             community_levels=None,
         )
 
-        created_workspace = workspace_manager.create_workspace(request)
+        created_workspace = await workspace_manager.create_workspace(request)
 
         # Test successful retrieval
-        retrieved_workspace = workspace_manager.get_workspace(created_workspace.id)
+        retrieved_workspace = await workspace_manager.get_workspace(created_workspace.id)
         assert retrieved_workspace is not None
         assert retrieved_workspace.id == created_workspace.id
         assert retrieved_workspace.config.name == "retrieve-test"
 
         # Test retrieval of non-existent workspace
-        non_existent = workspace_manager.get_workspace("non-existent-id")
+        non_existent = await workspace_manager.get_workspace("non-existent-id")
         assert non_existent is None
 
-    def test_get_workspace_by_name(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
+    async def test_get_workspace_by_name(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
         """Test retrieving workspace by name."""
         request = WorkspaceCreateRequest(
             name="name-lookup-test",
@@ -290,21 +291,21 @@ class TestWorkspaceManager:
             community_levels=None,
         )
 
-        created_workspace = workspace_manager.create_workspace(request)
+        created_workspace = await workspace_manager.create_workspace(request)
 
         # Test successful retrieval by name
-        retrieved_workspace = workspace_manager.get_workspace_by_name("name-lookup-test")
+        retrieved_workspace = await workspace_manager.get_workspace_by_name("name-lookup-test")
         assert retrieved_workspace is not None
         assert retrieved_workspace.id == created_workspace.id
 
         # Test retrieval of non-existent workspace
-        non_existent = workspace_manager.get_workspace_by_name("non-existent-name")
+        non_existent = await workspace_manager.get_workspace_by_name("non-existent-name")
         assert non_existent is None
 
-    def test_list_workspaces(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
+    async def test_list_workspaces(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
         """Test listing workspaces."""
         # Initially empty
-        workspaces = workspace_manager.list_workspaces()
+        workspaces = await workspace_manager.list_workspaces()
         assert len(workspaces) == 0
 
         # Create multiple workspaces
@@ -322,10 +323,10 @@ class TestWorkspaceManager:
                 embedding_model_override=None,
                 community_levels=None,
             )
-            workspace_manager.create_workspace(request)
+            await workspace_manager.create_workspace(request)
 
         # List workspaces
-        workspaces = workspace_manager.list_workspaces()
+        workspaces = await workspace_manager.list_workspaces()
         assert len(workspaces) == 3
 
         # Verify workspace names
@@ -339,7 +340,7 @@ class TestWorkspaceManager:
             assert workspace.description
             assert workspace.status == WorkspaceStatus.CREATED
 
-    def test_update_workspace(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
+    async def test_update_workspace(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
         """Test workspace configuration updates."""
         request = WorkspaceCreateRequest(
             name="update-test",
@@ -354,7 +355,7 @@ class TestWorkspaceManager:
             community_levels=None,
         )
 
-        workspace = workspace_manager.create_workspace(request)
+        workspace = await workspace_manager.create_workspace(request)
         original_updated_at = workspace.updated_at
 
         # Update workspace
@@ -370,7 +371,7 @@ class TestWorkspaceManager:
             community_levels=None,
         )
 
-        updated_workspace = workspace_manager.update_workspace(workspace.id, update_request)
+        updated_workspace = await workspace_manager.update_workspace(workspace.id, update_request)
 
         # Verify updates
         assert updated_workspace.config.description == "Updated description"
@@ -385,7 +386,7 @@ class TestWorkspaceManager:
 
         assert config_content["chunks"]["size"] == 1500
 
-    def test_update_nonexistent_workspace(self, workspace_manager: WorkspaceManager):
+    async def test_update_nonexistent_workspace(self, workspace_manager: WorkspaceManager):
         """Test updating non-existent workspace fails."""
         update_request = WorkspaceUpdateRequest(
             description="New description",
@@ -400,9 +401,9 @@ class TestWorkspaceManager:
         )
 
         with pytest.raises(ValueError, match="Workspace not found"):
-            workspace_manager.update_workspace("non-existent-id", update_request)
+            await workspace_manager.update_workspace("non-existent-id", update_request)
 
-    def test_delete_workspace_without_files(
+    async def test_delete_workspace_without_files(
         self, workspace_manager: WorkspaceManager, test_data_dir: Path
     ):
         """Test workspace deletion without removing files."""
@@ -419,22 +420,22 @@ class TestWorkspaceManager:
             community_levels=None,
         )
 
-        workspace = workspace_manager.create_workspace(request)
+        workspace = await workspace_manager.create_workspace(request)
         workspace_dir = workspace.get_workspace_directory(workspace_manager.base_workspaces_path)
 
         # Verify workspace exists
         assert workspace_dir.exists()
-        assert workspace_manager.get_workspace(workspace.id) is not None
+        assert await workspace_manager.get_workspace(workspace.id) is not None
 
         # Delete workspace without removing files
-        success = workspace_manager.delete_workspace(workspace.id, remove_files=False)
+        success = await workspace_manager.delete_workspace(workspace.id, remove_files=False)
         assert success
 
         # Verify workspace removed from index but files remain
-        assert workspace_manager.get_workspace(workspace.id) is None
+        assert await workspace_manager.get_workspace(workspace.id) is None
         assert workspace_dir.exists()  # Files should remain
 
-    def test_delete_workspace_with_files(
+    async def test_delete_workspace_with_files(
         self, workspace_manager: WorkspaceManager, test_data_dir: Path
     ):
         """Test workspace deletion with file removal."""
@@ -451,29 +452,29 @@ class TestWorkspaceManager:
             community_levels=None,
         )
 
-        workspace = workspace_manager.create_workspace(request)
+        workspace = await workspace_manager.create_workspace(request)
         workspace_dir = workspace.get_workspace_directory(workspace_manager.base_workspaces_path)
 
         # Verify workspace exists
         assert workspace_dir.exists()
 
         # Delete workspace with file removal
-        success = workspace_manager.delete_workspace(workspace.id, remove_files=True)
+        success = await workspace_manager.delete_workspace(workspace.id, remove_files=True)
         assert success
 
         # Verify workspace and files removed
-        assert workspace_manager.get_workspace(workspace.id) is None
+        assert await workspace_manager.get_workspace(workspace.id) is None
         assert not workspace_dir.exists()
 
-    def test_delete_nonexistent_workspace(self, workspace_manager: WorkspaceManager):
+    async def test_delete_nonexistent_workspace(self, workspace_manager: WorkspaceManager):
         """Test deleting non-existent workspace returns False."""
-        success = workspace_manager.delete_workspace("non-existent-id")
+        success = await workspace_manager.delete_workspace("non-existent-id")
         assert not success
 
-    def test_workspace_stats(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
+    async def test_workspace_stats(self, workspace_manager: WorkspaceManager, test_data_dir: Path):
         """Test workspace statistics calculation."""
         # Initial stats
-        stats = workspace_manager.get_workspace_stats()
+        stats = await workspace_manager.get_workspace_stats()
         assert stats["total_workspaces"] == 0
 
         # Create workspaces with different statuses
@@ -489,7 +490,7 @@ class TestWorkspaceManager:
             embedding_model_override=None,
             community_levels=None,
         )
-        workspace1 = workspace_manager.create_workspace(request1)
+        workspace1 = await workspace_manager.create_workspace(request1)
 
         request2 = WorkspaceCreateRequest(
             name="stats-test-2",
@@ -503,7 +504,7 @@ class TestWorkspaceManager:
             embedding_model_override=None,
             community_levels=None,
         )
-        workspace_manager.create_workspace(request2)
+        await workspace_manager.create_workspace(request2)
 
         # Update one workspace status
         workspace1.status = WorkspaceStatus.INDEXED
@@ -513,7 +514,7 @@ class TestWorkspaceManager:
         workspace_manager._save_workspaces_index()
 
         # Get updated stats
-        stats = workspace_manager.get_workspace_stats()
+        stats = await workspace_manager.get_workspace_stats()
         assert stats["total_workspaces"] == 2
         assert stats["status_distribution"]["created"] == 1
         assert stats["status_distribution"]["indexed"] == 1
@@ -521,7 +522,7 @@ class TestWorkspaceManager:
         assert stats["total_entities_extracted"] == 100
         assert stats["total_relationships_extracted"] == 200
 
-    def test_workspace_index_persistence(
+    async def test_workspace_index_persistence(
         self, workspace_manager: WorkspaceManager, test_data_dir: Path
     ):
         """Test workspace index persistence across manager instances."""
@@ -539,7 +540,7 @@ class TestWorkspaceManager:
             community_levels=None,
         )
 
-        workspace = workspace_manager.create_workspace(request)
+        workspace = await workspace_manager.create_workspace(request)
         workspace_id = workspace.id
 
         # Create new manager instance (simulating restart)
@@ -551,6 +552,6 @@ class TestWorkspaceManager:
         new_manager._load_workspaces_index()
 
         # Verify workspace persisted
-        persisted_workspace = new_manager.get_workspace(workspace_id)
+        persisted_workspace = await new_manager.get_workspace(workspace_id)
         assert persisted_workspace is not None
         assert persisted_workspace.config.name == "persistence-test"

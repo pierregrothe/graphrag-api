@@ -14,9 +14,11 @@ from fastapi import FastAPI
 warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
 
 from .auth.api_keys import get_api_key_manager
-from .auth.jwt_auth import AuthenticationService, JWTConfig
+from .auth.database_auth import DatabaseAuthenticationService
+from .auth.jwt_auth import JWTConfig
 from .caching.redis_cache import RedisCacheConfig, get_redis_cache, initialize_redis_cache
 from .config import settings
+from .database import get_database_manager
 from .graph import GraphOperations
 from .graphql.subscriptions import get_subscription_manager
 from .graphrag_integration import GraphRAGIntegration
@@ -40,6 +42,8 @@ class ServiceContainer:
     """Container for all application services and dependencies."""
 
     def __init__(self):
+        self.database_manager = None
+        self.auth_service = None
         self.workspace_manager = None
         self.indexing_manager = None
         self.graphrag_integration = None
@@ -52,8 +56,23 @@ class ServiceContainer:
         """Initialize all services."""
         logger.info(f"Initializing services for {settings.app_name} v{settings.app_version}")
 
+        # Initialize database manager first
+        try:
+            from ..deployment.config import DeploymentSettings
+
+            deployment_settings = DeploymentSettings()
+            self.database_manager = get_database_manager(deployment_settings)
+            await self.database_manager.initialize()
+            await self.database_manager.create_tables()
+            logger.info("Database manager initialized successfully")
+        except Exception as e:
+            logger.warning(
+                f"Database initialization failed, falling back to file-based storage: {e}"
+            )
+            self.database_manager = None
+
         # Initialize core services
-        self.workspace_manager = WorkspaceManager(settings)
+        self.workspace_manager = WorkspaceManager(settings, self.database_manager)
         self.indexing_manager = IndexingManager(settings)
         self.graph_operations = GraphOperations(settings)
 
@@ -125,19 +144,39 @@ class ServiceContainer:
                         settings, "access_token_expire_minutes", 30
                     ),
                 )
-                auth_service = AuthenticationService(jwt_config)
 
-                # Create default admin user if none exists
-                try:
-                    await auth_service.create_user(
-                        username="admin",
-                        email="admin@graphrag.local",
-                        password=getattr(settings, "default_admin_password", "admin123"),
-                        roles=["admin"],
+                # Use database-backed authentication if database is available
+                if self.database_manager:
+                    self.auth_service = DatabaseAuthenticationService(
+                        jwt_config, self.database_manager.async_session_factory
                     )
-                    logger.info("Default admin user created")
-                except Exception:
-                    logger.debug("Admin user already exists or creation failed")
+
+                    # Create default roles
+                    await self.auth_service.create_default_roles()
+
+                    # Initialize API key manager with RBAC
+                    api_key_manager = get_api_key_manager(self.auth_service.rbac)
+                    logger.info("Database-backed authentication service initialized")
+
+                    # Create default admin user if none exists
+                    try:
+                        await self.auth_service.create_user(
+                            username="admin",
+                            email="admin@graphrag.local",
+                            password=getattr(settings, "default_admin_password", "admin123"),
+                            roles=["admin"],
+                        )
+                        logger.info("Default admin user created")
+                    except Exception as e:
+                        logger.debug(f"Admin user already exists or creation failed: {e}")
+
+                else:
+                    # Fallback to in-memory authentication
+                    from .auth.jwt_auth import AuthenticationService
+
+                    self.auth_service = AuthenticationService(jwt_config)
+                    api_key_manager = get_api_key_manager(self.auth_service.rbac)
+                    logger.warning("Using in-memory authentication (database not available)")
 
             logger.info("Advanced features initialized successfully")
 
@@ -148,8 +187,8 @@ class ServiceContainer:
     async def _initialize_performance_components(self):
         """Initialize performance monitoring components."""
         try:
-            # Initialize connection pool
-            connection_pool = await get_connection_pool()
+            # Initialize connection pool with database manager
+            connection_pool = await get_connection_pool(self.database_manager)
             logger.info("Connection pool initialized successfully")
 
             # Initialize cache manager
@@ -171,6 +210,14 @@ class ServiceContainer:
     async def shutdown(self):
         """Shutdown all services."""
         logger.info("Shutting down services")
+
+        # Shutdown database connections
+        try:
+            if self.database_manager:
+                await self.database_manager.close()
+                logger.info("Database connections closed")
+        except Exception as e:
+            logger.error(f"Error closing database connections: {e}")
 
         # Shutdown performance components
         try:

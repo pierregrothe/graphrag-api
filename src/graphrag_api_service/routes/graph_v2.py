@@ -24,6 +24,7 @@ async def get_entities(
     offset: int = Query(0, ge=0),
     entity_name: str | None = Query(None),
     entity_type: str | None = Query(None),
+    workspace_id: str = Query("default"),
     graph_operations: GraphOperationsDep = None,
 ) -> dict[str, Any]:
     """Get entities from the knowledge graph.
@@ -33,6 +34,7 @@ async def get_entities(
         offset: Number of entities to skip
         entity_name: Optional entity name filter
         entity_type: Optional entity type filter
+        workspace_id: Workspace ID
         graph_operations: Graph operations (injected)
 
     Returns:
@@ -40,8 +42,39 @@ async def get_entities(
     """
     logger.debug(f"Getting entities: limit={limit}, offset={offset}")
 
-    # Return mock response structure for tests
-    return {"entities": [], "total_count": 0, "limit": limit, "offset": offset}
+    if not graph_operations:
+        return {
+            "entities": [],
+            "total_count": 0,
+            "limit": limit,
+            "offset": offset,
+            "error": "Graph operations not available",
+        }
+
+    try:
+        # Build filters
+        filters = {}
+        if entity_name:
+            filters["name"] = entity_name
+        if entity_type:
+            filters["type"] = entity_type
+
+        # Get entities from graph operations
+        result = await graph_operations.get_entities(
+            limit=limit, offset=offset, filters=filters, workspace_id=workspace_id
+        )
+
+        return {
+            "entities": result.get("entities", []),
+            "total_count": result.get("total_count", 0),
+            "limit": limit,
+            "offset": offset,
+            "workspace_id": workspace_id,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get entities: {e}")
+        return {"entities": [], "total_count": 0, "limit": limit, "offset": offset, "error": str(e)}
 
 
 @router.get("/relationships")
@@ -50,6 +83,7 @@ async def get_relationships(
     offset: int = Query(0, ge=0),
     source_entity: str | None = Query(None),
     target_entity: str | None = Query(None),
+    workspace_id: str = Query("default"),
     graph_operations: GraphOperationsDep = None,
 ) -> dict[str, Any]:
     """Get relationships from the knowledge graph.
@@ -59,6 +93,7 @@ async def get_relationships(
         offset: Number of relationships to skip
         source_entity: Optional source entity filter
         target_entity: Optional target entity filter
+        workspace_id: Workspace ID
         graph_operations: Graph operations (injected)
 
     Returns:
@@ -66,31 +101,88 @@ async def get_relationships(
     """
     logger.debug(f"Getting relationships: limit={limit}, offset={offset}")
 
-    # Return mock response structure for tests
-    return {"relationships": [], "total_count": 0, "limit": limit, "offset": offset}
+    if not graph_operations:
+        return {
+            "relationships": [],
+            "total_count": 0,
+            "limit": limit,
+            "offset": offset,
+            "error": "Graph operations not available",
+        }
+
+    try:
+        # Build filters
+        filters = {}
+        if source_entity:
+            filters["source"] = source_entity
+        if target_entity:
+            filters["target"] = target_entity
+
+        # Get relationships from graph operations
+        result = await graph_operations.get_relationships(
+            limit=limit, offset=offset, filters=filters, workspace_id=workspace_id
+        )
+
+        return {
+            "relationships": result.get("relationships", []),
+            "total_count": result.get("total_count", 0),
+            "limit": limit,
+            "offset": offset,
+            "workspace_id": workspace_id,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get relationships: {e}")
+        return {
+            "relationships": [],
+            "total_count": 0,
+            "limit": limit,
+            "offset": offset,
+            "error": str(e),
+        }
 
 
 @router.get("/communities")
-async def get_communities(graph_operations: GraphOperationsDep = None) -> list[dict[str, Any]]:
+async def get_communities(
+    workspace_id: str = Query("default"), graph_operations: GraphOperationsDep = None
+) -> dict[str, Any]:
     """Get communities from the knowledge graph.
 
     Args:
+        workspace_id: Workspace ID
         graph_operations: Graph operations (injected)
 
     Returns:
-        List of communities
+        Dict with communities and metadata
     """
     logger.debug("Getting communities")
 
-    # Return empty list for now
-    return []
+    if not graph_operations:
+        return {"communities": [], "total_count": 0, "error": "Graph operations not available"}
+
+    try:
+        # Get communities from graph operations
+        result = await graph_operations.get_communities(workspace_id=workspace_id)
+
+        return {
+            "communities": result.get("communities", []),
+            "total_count": result.get("total_count", 0),
+            "workspace_id": workspace_id,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get communities: {e}")
+        return {"communities": [], "total_count": 0, "error": str(e)}
 
 
 @router.get("/stats")
-async def get_statistics(graph_operations: GraphOperationsDep = None) -> dict[str, Any]:
+async def get_statistics(
+    workspace_id: str = Query("default"), graph_operations: GraphOperationsDep = None
+) -> dict[str, Any]:
     """Get graph statistics.
 
     Args:
+        workspace_id: Workspace ID
         graph_operations: Graph operations (injected)
 
     Returns:
@@ -98,16 +190,48 @@ async def get_statistics(graph_operations: GraphOperationsDep = None) -> dict[st
     """
     logger.debug("Getting graph statistics")
 
-    return {
-        "total_entities": 0,
-        "total_relationships": 0,
-        "total_communities": 0,
-        "entity_types": {},
-        "relationship_types": {},
-        "community_levels": {},
-        "graph_density": 0.0,
-        "connected_components": 0,
-    }
+    if not graph_operations:
+        return {
+            "total_entities": 0,
+            "total_relationships": 0,
+            "total_communities": 0,
+            "entity_types": {},
+            "relationship_types": {},
+            "community_levels": {},
+            "graph_density": 0.0,
+            "connected_components": 0,
+            "error": "Graph operations not available",
+        }
+
+    try:
+        # Get statistics from graph operations
+        result = await graph_operations.get_graph_statistics(workspace_id=workspace_id)
+
+        return {
+            "total_entities": result.get("total_entities", 0),
+            "total_relationships": result.get("total_relationships", 0),
+            "total_communities": result.get("total_communities", 0),
+            "entity_types": result.get("entity_types", {}),
+            "relationship_types": result.get("relationship_types", {}),
+            "community_levels": result.get("community_levels", {}),
+            "graph_density": result.get("graph_density", 0.0),
+            "connected_components": result.get("connected_components", 0),
+            "workspace_id": workspace_id,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get graph statistics: {e}")
+        return {
+            "total_entities": 0,
+            "total_relationships": 0,
+            "total_communities": 0,
+            "entity_types": {},
+            "relationship_types": {},
+            "community_levels": {},
+            "graph_density": 0.0,
+            "connected_components": 0,
+            "error": str(e),
+        }
 
 
 @router.post("/visualization")

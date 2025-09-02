@@ -48,7 +48,7 @@ def setup_workspace_routes(workspace_manager):
         logger.info(f"Creating workspace: {request.name}")
 
         try:
-            workspace = workspace_manager.create_workspace(request)
+            workspace = await workspace_manager.create_workspace(request)
             logger.info(f"Successfully created workspace: {workspace.id}")
             return workspace
         except ValueError as e:
@@ -68,7 +68,7 @@ def setup_workspace_routes(workspace_manager):
             List of workspace summaries with key information
         """
         logger.info("Listing workspaces")
-        workspaces = workspace_manager.list_workspaces()
+        workspaces = await workspace_manager.list_workspaces()
         logger.info(f"Found {len(workspaces)} workspaces")
         return workspaces
 
@@ -87,7 +87,7 @@ def setup_workspace_routes(workspace_manager):
         """
         logger.info(f"Getting workspace: {workspace_id}")
 
-        workspace = workspace_manager.get_workspace(workspace_id)
+        workspace = await workspace_manager.get_workspace(workspace_id)
         if not workspace:
             logger.warning(f"Workspace not found: {workspace_id}")
             raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
@@ -111,7 +111,7 @@ def setup_workspace_routes(workspace_manager):
         logger.info(f"Updating workspace: {workspace_id}")
 
         try:
-            workspace = workspace_manager.update_workspace(workspace_id, request)
+            workspace = await workspace_manager.update_workspace(workspace_id, request)
             logger.info(f"Successfully updated workspace: {workspace_id}")
             return workspace
         except ValueError as e:
@@ -134,7 +134,7 @@ def setup_workspace_routes(workspace_manager):
         """
         logger.info(f"Deleting workspace: {workspace_id} (remove_files={remove_files})")
 
-        success = workspace_manager.delete_workspace(workspace_id, remove_files)
+        success = await workspace_manager.delete_workspace(workspace_id, remove_files)
         if not success:
             logger.warning(f"Workspace not found for deletion: {workspace_id}")
             raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")
@@ -162,7 +162,7 @@ def setup_workspace_routes(workspace_manager):
         """
         logger.info(f"Getting workspace config: {workspace_id}")
 
-        workspace = workspace_manager.get_workspace(workspace_id)
+        workspace = await workspace_manager.get_workspace(workspace_id)
         if not workspace:
             logger.warning(f"Workspace not found: {workspace_id}")
             raise HTTPException(status_code=404, detail=f"Workspace not found: {workspace_id}")

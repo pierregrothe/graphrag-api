@@ -49,7 +49,7 @@ async def create_workspace(
     logger.info(f"Creating workspace: {request.name}")
 
     try:
-        workspace = workspace_manager.create_workspace(request)
+        workspace = await workspace_manager.create_workspace(request)
         logger.info(f"Successfully created workspace: {workspace.id}")
         return workspace
     except ValueError as e:
@@ -80,7 +80,7 @@ async def list_workspaces(workspace_manager: WorkspaceManagerDep) -> list[Worksp
     logger.debug("Listing all workspaces")
 
     try:
-        workspaces = workspace_manager.list_workspaces()
+        workspaces = await workspace_manager.list_workspaces()
         logger.info(f"Found {len(workspaces)} workspaces")
         return workspaces
     except Exception as e:
@@ -110,7 +110,7 @@ async def get_workspace(
     logger.debug(f"Getting workspace: {workspace_id}")
 
     try:
-        workspace = workspace_manager.get_workspace(workspace_id)
+        workspace = await workspace_manager.get_workspace(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
         return workspace
@@ -145,7 +145,7 @@ async def update_workspace(
     logger.info(f"Updating workspace: {workspace_id}")
 
     try:
-        workspace = workspace_manager.update_workspace(workspace_id, request)
+        workspace = await workspace_manager.update_workspace(workspace_id, request)
         if not workspace:
             raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
         logger.info(f"Successfully updated workspace: {workspace_id}")
@@ -181,7 +181,7 @@ async def delete_workspace(
     logger.info(f"Deleting workspace: {workspace_id} (remove_files={remove_files})")
 
     try:
-        success = workspace_manager.delete_workspace(workspace_id, remove_files)
+        success = await workspace_manager.delete_workspace(workspace_id, remove_files)
         if not success:
             raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
         logger.info(f"Successfully deleted workspace: {workspace_id}")
@@ -215,7 +215,7 @@ async def get_workspace_config(
     logger.debug(f"Getting config for workspace: {workspace_id}")
 
     try:
-        workspace = workspace_manager.get_workspace(workspace_id)
+        workspace = await workspace_manager.get_workspace(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
 

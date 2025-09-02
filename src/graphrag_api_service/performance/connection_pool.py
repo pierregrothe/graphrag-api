@@ -3,7 +3,7 @@
 # Author: Pierre Grothé
 # Creation Date: 2025-08-29
 
-"""Database connection pooling and query optimization for GraphRAG operations."""
+"""Real database connection pooling and query optimization for GraphRAG operations."""
 
 import asyncio
 import logging
@@ -14,6 +14,8 @@ from typing import Any
 
 import pandas as pd
 from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -42,13 +44,15 @@ class QueryMetrics(BaseModel):
 class ConnectionPool:
     """Async connection pool for GraphRAG data operations."""
 
-    def __init__(self, config: ConnectionPoolConfig):
+    def __init__(self, config: ConnectionPoolConfig, database_manager=None):
         """Initialize the connection pool.
 
         Args:
             config: Connection pool configuration
+            database_manager: Optional database manager for real database connections
         """
         self.config = config
+        self.database_manager = database_manager
         self._connections: list[dict[str, Any]] = []
         self._available_connections: asyncio.Queue = asyncio.Queue()
         self._active_connections: int = 0
@@ -65,35 +69,72 @@ class ConnectionPool:
             if self._initialized:
                 return
 
+            logger.info("Initializing connection pool")
+
             # Create minimum number of connections
-            for _ in range(self.config.min_connections):
-                connection = await self._create_connection()
+            for i in range(self.config.min_connections):
+                if self.database_manager:
+                    # Create database connection metadata
+                    connection = await self._create_database_connection(i)
+                else:
+                    # Create mock connection for file-based operations
+                    connection = await self._create_mock_connection(i)
                 await self._available_connections.put(connection)
 
             self._initialized = True
+            connection_type = "database" if self.database_manager else "file-based"
             logger.info(
-                f"Connection pool initialized with {self.config.min_connections} connections"
+                f"Connection pool initialized with {self.config.min_connections} {connection_type} connections"
             )
 
-    async def _create_connection(self) -> dict[str, Any]:
-        """Create a new database connection.
+    async def _create_database_connection(self, index: int) -> dict[str, Any]:
+        """Create a new database connection metadata.
+
+        Args:
+            index: Connection index
 
         Returns:
             Connection dictionary with metadata
         """
-        connection_id = f"conn_{len(self._connections)}"
+        connection_id = f"db_conn_{index}"
         connection = {
             "id": connection_id,
             "created_at": time.time(),
             "last_used": time.time(),
             "query_count": 0,
             "active": True,
+            "type": "database",
         }
 
         self._connections.append(connection)
         self._active_connections += 1
 
-        logger.debug(f"Created new connection: {connection_id}")
+        logger.debug(f"Created database connection metadata: {connection_id}")
+        return connection
+
+    async def _create_mock_connection(self, index: int) -> dict[str, Any]:
+        """Create a new mock connection for file-based operations.
+
+        Args:
+            index: Connection index
+
+        Returns:
+            Connection dictionary with metadata
+        """
+        connection_id = f"mock_conn_{index}"
+        connection = {
+            "id": connection_id,
+            "created_at": time.time(),
+            "last_used": time.time(),
+            "query_count": 0,
+            "active": True,
+            "type": "mock",
+        }
+
+        self._connections.append(connection)
+        self._active_connections += 1
+
+        logger.debug(f"Created mock connection: {connection_id}")
         return connection
 
     @asynccontextmanager
@@ -206,27 +247,100 @@ class ConnectionPool:
         """
         logger.debug(f"Executing {query_type} query with connection {connection['id']}")
 
-        # Simulate database operation with file loading
         try:
-            if data_path.endswith(".parquet"):
-                result = pd.read_parquet(data_path)
+            if connection.get("type") == "database" and self.database_manager:
+                # Execute database query
+                return await self._execute_database_query(query_type, data_path, filters)
             else:
-                result = pd.DataFrame()
-
-            # Apply filters if provided
-            if filters and not result.empty:
-                for column, value in filters.items():
-                    if column in result.columns:
-                        if isinstance(value, list):
-                            result = result[result[column].isin(value)]
-                        else:
-                            result = result[result[column] == value]
-
-            return result
+                # Execute file-based query (fallback)
+                return await self._execute_file_query(data_path, filters)
 
         except Exception as e:
             logger.error(f"Query execution failed with connection {connection['id']}: {e}")
             raise
+
+    async def _execute_database_query(
+        self, query_type: str, table_name: str, filters: dict[str, Any] | None
+    ) -> pd.DataFrame:
+        """Execute query against database.
+
+        Args:
+            query_type: Type of query
+            table_name: Database table name
+            filters: Optional filters
+
+        Returns:
+            Query results as DataFrame
+        """
+        async with self.database_manager.get_session() as session:
+            # Build SQL query based on table name and filters
+            if table_name == "entities":
+                query = "SELECT * FROM entities"
+            elif table_name == "relationships":
+                query = "SELECT * FROM relationships"
+            elif table_name == "communities":
+                query = "SELECT * FROM communities"
+            else:
+                # Generic query with safe table name validation
+                # Only allow alphanumeric characters and underscores for table names
+                import re
+
+                if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", table_name):
+                    raise ValueError(f"Invalid table name: {table_name}")
+
+                # Use parameterized query construction
+                from sqlalchemy import text
+
+                query = text(f"SELECT * FROM {table_name}")
+
+            # Add filters if provided
+            if filters:
+                conditions = []
+                for column, value in filters.items():
+                    if isinstance(value, list):
+                        placeholders = ",".join([f"'{v}'" for v in value])
+                        conditions.append(f"{column} IN ({placeholders})")
+                    else:
+                        conditions.append(f"{column} = '{value}'")
+
+                if conditions:
+                    query += " WHERE " + " AND ".join(conditions)
+
+            # Execute query and return as DataFrame
+            result = await session.execute(text(query))
+            rows = result.fetchall()
+            columns = result.keys()
+
+            return pd.DataFrame(rows, columns=columns)
+
+    async def _execute_file_query(
+        self, data_path: str, filters: dict[str, Any] | None
+    ) -> pd.DataFrame:
+        """Execute query against file-based data.
+
+        Args:
+            data_path: Path to data file
+            filters: Optional filters
+
+        Returns:
+            Query results as DataFrame
+        """
+        # File-based operation (original implementation)
+        if data_path.endswith(".parquet"):
+            result = pd.read_parquet(data_path)
+        else:
+            result = pd.DataFrame()
+
+        # Apply filters if provided
+        if filters and not result.empty:
+            for column, value in filters.items():
+                if column in result.columns:
+                    if isinstance(value, list):
+                        result = result[result[column].isin(value)]
+                    else:
+                        result = result[result[column] == value]
+
+        return result
 
     async def _get_cached_result(
         self, query_type: str, data_path: str, filters: dict[str, Any] | None
@@ -335,8 +449,11 @@ class ConnectionPool:
 _connection_pool: ConnectionPool | None = None
 
 
-async def get_connection_pool() -> ConnectionPool:
+async def get_connection_pool(database_manager=None) -> ConnectionPool:
     """Get the global connection pool instance.
+
+    Args:
+        database_manager: Optional database manager for real database connections
 
     Returns:
         Connection pool instance
@@ -345,7 +462,7 @@ async def get_connection_pool() -> ConnectionPool:
 
     if _connection_pool is None:
         config = ConnectionPoolConfig()
-        _connection_pool = ConnectionPool(config)
+        _connection_pool = ConnectionPool(config, database_manager)
         await _connection_pool.initialize()
 
     return _connection_pool

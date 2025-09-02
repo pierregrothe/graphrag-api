@@ -58,11 +58,16 @@ class APIKeyResponse(BaseModel):
 class APIKeyManager:
     """Manages API key lifecycle and validation."""
 
-    def __init__(self):
-        """Initialize API key manager."""
+    def __init__(self, rbac_system=None):
+        """Initialize API key manager.
+
+        Args:
+            rbac_system: Optional RBAC system for permission checking
+        """
         self.api_keys: dict[str, APIKey] = {}
         self.key_hash_to_id: dict[str, str] = {}
         self.usage_tracking: dict[str, list[datetime]] = {}
+        self.rbac = rbac_system
 
     def generate_api_key(self) -> tuple[str, str, str]:
         """Generate a new API key.
@@ -71,7 +76,6 @@ class APIKeyManager:
             Tuple of (full_key, prefix, hash)
         """
         # Generate random key
-        key_bytes = secrets.token_bytes(32)
         key = secrets.token_urlsafe(32)
 
         # Create prefix for identification
@@ -193,12 +197,15 @@ class APIKeyManager:
 
         return len(recent_usage) <= rate_limit
 
-    async def revoke_api_key(self, key_id: str, user_id: str) -> bool:
+    async def revoke_api_key(
+        self, key_id: str, user_id: str, user_permissions: list[str] = None
+    ) -> bool:
         """Revoke an API key.
 
         Args:
             key_id: API key ID to revoke
             user_id: User ID requesting revocation
+            user_permissions: User's permissions for admin check
 
         Returns:
             True if successfully revoked
@@ -208,14 +215,36 @@ class APIKeyManager:
             return False
 
         # Check if user owns the key or is admin
-        if api_key.user_id != user_id:
-            # TODO: Check if user is admin
+        if api_key.user_id != user_id and not self._is_admin_user(user_permissions):
+            logger.warning(
+                f"User {user_id} attempted to revoke API key {key_id} without permission"
+            )
             return False
 
         api_key.is_active = False
         logger.info(f"Revoked API key: {api_key.name} by user: {user_id}")
 
         return True
+
+    def _is_admin_user(self, user_permissions: list[str] = None) -> bool:
+        """Check if user has admin permissions.
+
+        Args:
+            user_permissions: User's permissions list
+
+        Returns:
+            True if user has admin permissions
+        """
+        if not user_permissions:
+            return False
+
+        # Check if user has admin permissions
+        if self.rbac:
+            return self.rbac.has_permission(user_permissions, "manage:users")
+
+        # Fallback: check for admin-like permissions
+        admin_permissions = ["manage:users", "manage:all", "delete:all"]
+        return any(perm in user_permissions for perm in admin_permissions)
 
     async def list_user_keys(self, user_id: str) -> list[APIKey]:
         """List API keys for a user.
@@ -367,8 +396,11 @@ class APIKeyPermissions:
 _api_key_manager: APIKeyManager | None = None
 
 
-def get_api_key_manager() -> APIKeyManager:
+def get_api_key_manager(rbac_system=None) -> APIKeyManager:
     """Get the global API key manager.
+
+    Args:
+        rbac_system: Optional RBAC system for permission checking
 
     Returns:
         APIKeyManager instance
@@ -376,6 +408,6 @@ def get_api_key_manager() -> APIKeyManager:
     global _api_key_manager
 
     if _api_key_manager is None:
-        _api_key_manager = APIKeyManager()
+        _api_key_manager = APIKeyManager(rbac_system)
 
     return _api_key_manager

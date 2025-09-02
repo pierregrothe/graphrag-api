@@ -182,7 +182,7 @@ class Query:
 
     @strawberry.field
     async def entity(self, id: str, info: Info) -> Entity | None:
-        """Get a specific entity by ID with optimization.
+        """Get a specific entity by ID with DataLoader optimization.
 
         Args:
             id: Entity ID
@@ -199,8 +199,6 @@ class Query:
         field_selector = get_field_selector()
         query_cache = get_query_cache()
 
-        graph_ops: GraphOperations = info.context["graph_operations"]
-
         if not settings.graphrag_data_path:
             return None
 
@@ -214,32 +212,58 @@ class Query:
                 logger.debug(f"Cache hit for entity query: {cache_key}")
                 return cached_result["result"]
 
-        # Optimize query based on selected fields
-        base_query = {"entity_name": id, "limit": 1}
-        optimized_query = field_selector.optimize_entity_query(base_query, info)
+        # Use DataLoader for efficient batching
+        dataloaders = info.context.get("dataloaders", {})
+        entity_loader = dataloaders.get("entity_loader")
 
-        result = await graph_ops.query_entities(
-            data_path=settings.graphrag_data_path,
-            **optimized_query,
-        )
+        if entity_loader:
+            # Use DataLoader to batch entity requests
+            entity_data = await entity_loader.load(id)
+            if entity_data:
+                entity = Entity(
+                    id=entity_data["id"],
+                    title=entity_data["title"],
+                    type=entity_data["type"],
+                    description=entity_data["description"],
+                    degree=entity_data["degree"],
+                    community_ids=entity_data.get("community_ids", []),
+                    text_unit_ids=entity_data.get("text_unit_ids", []),
+                )
 
-        if result["entities"]:
-            e = result["entities"][0]
-            entity = Entity(
-                id=e["id"],
-                title=e["title"],
-                type=e["type"],
-                description=e["description"],
-                degree=e["degree"],
-                community_ids=e.get("community_ids", []),
-                text_unit_ids=e.get("text_unit_ids", []),
+                # Cache the result
+                query_cache.set(cache_key, entity, ttl=600)
+                logger.debug(f"Cached entity result: {cache_key}")
+
+                return entity
+        else:
+            # Fallback to direct query if DataLoader not available
+            graph_ops: GraphOperations = info.context["graph_operations"]
+            base_query = {"entity_name": id, "limit": 1}
+            optimized_query = field_selector.optimize_entity_query(base_query, info)
+
+            result = await graph_ops.query_entities(
+                data_path=settings.graphrag_data_path,
+                **optimized_query,
             )
 
-            # Cache the result
-            query_cache.set(cache_key, entity, ttl=600)
-            logger.debug(f"Cached entity result: {cache_key}")
+            if result["entities"]:
+                e = result["entities"][0]
+                entity = Entity(
+                    id=e["id"],
+                    title=e["title"],
+                    type=e["type"],
+                    description=e["description"],
+                    degree=e["degree"],
+                    community_ids=e.get("community_ids", []),
+                    text_unit_ids=e.get("text_unit_ids", []),
+                )
 
-            return entity
+                # Cache the result
+                query_cache.set(cache_key, entity, ttl=600)
+                logger.debug(f"Cached entity result: {cache_key}")
+
+                return entity
+
         return None
 
     # Relationship Queries
