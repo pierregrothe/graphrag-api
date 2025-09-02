@@ -68,7 +68,7 @@ def create_app() -> FastAPI:
         graphrag_integration=container.graphrag_integration,
         indexing_manager=container.indexing_manager,
     )
-    app.include_router(graphql_router, prefix="/graphql/playground")
+    app.include_router(graphql_router, prefix="/graphql")
 
     # Root endpoint
     @app.get("/", tags=["Root"])

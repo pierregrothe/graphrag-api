@@ -27,7 +27,8 @@
       "Bash(find:*)",
       "Bash(sed:*)",
       "Bash(test:*)",
-      "Bash(poetry run flake8:*)"
+      "Bash(poetry run flake8:*)",
+      "Bash(dir tests*.py /b)"
     ],
     "deny": [],
     "ask": []

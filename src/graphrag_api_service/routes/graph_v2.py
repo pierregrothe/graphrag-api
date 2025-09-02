@@ -366,7 +366,7 @@ async def create_visualization(
 
 @router.post("/export")
 async def export_graph(
-    format: str = Query("json", regex="^(json|csv|graphml)$"),
+    format: str = Query("json", pattern="^(json|csv|graphml)$"),
     include_entities: bool = True,
     include_relationships: bool = True,
     workspace_id: str = Query("default"),
