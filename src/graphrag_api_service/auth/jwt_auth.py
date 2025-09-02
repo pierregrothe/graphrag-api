@@ -14,8 +14,8 @@ import jwt
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 
-from ..database.connection import DatabaseManager
 from ..database.models import User
+from ..database.simple_connection import SimpleDatabaseManager
 
 # Suppress bcrypt version warning
 with warnings.catch_warnings():
@@ -307,7 +307,7 @@ class RoleBasedAccessControl:
 class AuthenticationService:
     """Authentication service combining JWT and RBAC."""
 
-    def __init__(self, jwt_config: JWTConfig, database_manager: DatabaseManager):
+    def __init__(self, jwt_config: JWTConfig, database_manager: SimpleDatabaseManager):
         """Initialize authentication service.
 
         Args:

@@ -47,16 +47,9 @@ class WorkspaceManager:
         self.base_workspaces_path.mkdir(exist_ok=True)
 
         # Initialize storage backend
-        if database_manager:
-            from .database_manager import DatabaseWorkspaceManager
-
-            self.db_manager = DatabaseWorkspaceManager(
-                settings, database_manager.async_session_factory
-            )
-            logger.info("Using database-backed workspace storage")
-        else:
-            self.db_manager = None
-            logger.info("Using file-based workspace storage")
+        # For now, always use file-based storage with the simplified architecture
+        self.db_manager = None
+        logger.info("Using file-based workspace storage")
 
         # Load existing workspaces (for file-based fallback)
         self._workspaces: dict[str, Workspace] = {}
@@ -114,8 +107,11 @@ class WorkspaceManager:
         if self.db_manager:
             return await self.db_manager.create_workspace(request, owner_id)
 
-        # Fallback to file-based storage
-        return self._create_workspace_file_based(request)
+        # Fallback to file-based storage (use sync method in async context)
+        import asyncio
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._create_workspace_file_based, request)
 
     def _create_workspace_file_based(self, request: WorkspaceCreateRequest) -> Workspace:
         """Create workspace using file-based storage (original implementation).

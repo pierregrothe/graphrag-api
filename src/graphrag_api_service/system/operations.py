@@ -369,7 +369,7 @@ class SystemOperations:
 
             if config_type in ["workspace", "all"]:
                 # Validate workspace configuration
-                workspaces = self.workspace_manager.list_workspaces()
+                workspaces = await self.workspace_manager.list_workspaces()
                 if not workspaces:
                     suggestions.append("No workspaces configured - create one to start indexing")
 

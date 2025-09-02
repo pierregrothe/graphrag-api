@@ -33,7 +33,9 @@ class TestAPIParity:
         ):
             # Reset security middleware to pick up new environment variables
             reset_security_middleware()
-            return TestClient(app)
+            # Use context manager to properly handle app lifespan
+            with TestClient(app) as test_client:
+                yield test_client
 
     def test_health_check_parity(self, client):
         """Test that health checks return consistent information."""
@@ -391,9 +393,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_stats_response = client.post(
-            "/graphql", json={"query": graphql_stats_query}
-        )
+        graphql_stats_response = client.post("/graphql", json={"query": graphql_stats_query})
 
         # Both should handle cache statistics consistently
         if rest_stats_response.status_code == 200:
@@ -427,9 +427,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_clear_response = client.post(
-            "/graphql", json={"query": graphql_clear_mutation}
-        )
+        graphql_clear_response = client.post("/graphql", json={"query": graphql_clear_mutation})
 
         # Both should handle cache clearing consistently
         if rest_clear_response.status_code == 200:

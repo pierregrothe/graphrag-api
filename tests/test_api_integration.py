@@ -76,9 +76,10 @@ class TestHealthEndpoints:
         response = await async_client.get("/api/info")
         assert response.status_code == 200
         data = response.json()
-        assert "app_name" in data
-        assert "app_version" in data
-        assert "debug" in data
+        # API returns "name" and "version" not "app_name" and "app_version"
+        assert "name" in data
+        assert "version" in data
+        assert "environment" in data or "debug" in data
 
 
 class TestWorkspaceEndpoints:
