@@ -22,26 +22,23 @@ Tests individual modules in isolation with mocked dependencies.
 - **test_config.py** - Configuration and settings validation
 - **test_workspace.py** - Workspace management operations
 - **test_providers.py** - LLM provider implementations
-- **test_cache.py** - Cache operations (pending)
-- **test_database.py** - Database operations (pending)
-- **test_graph.py** - Graph operations (pending)
-- **test_indexing.py** - Indexing operations (pending)
-- **test_middleware.py** - Middleware functionality (pending)
+- **test_graph.py** - Graph operations
+- **test_indexing.py** - Indexing operations
+- **test_logging.py** - Logging configuration
+- **test_middleware.py** - Middleware functionality
+- **test_system.py** - System operations
 
 ### Integration Tests (`tests/integration/`)
 Tests API endpoints and cross-module interactions.
 
 - **test_api_endpoints.py** - REST API endpoint testing
 - **test_graphql_endpoints.py** - GraphQL API testing
-- **test_workflow.py** - End-to-end workflow testing (pending)
-- **test_provider_integration.py** - Provider integration testing (pending)
 
 ### Performance Tests (`tests/performance/`)
 Tests system performance and scalability.
 
-- **test_load.py** - Load testing (pending)
-- **test_cache_performance.py** - Cache performance (pending)
-- **test_query_performance.py** - Query performance (pending)
+- **test_load.py** - Load testing
+- **test_optimization.py** - Performance optimization testing
 
 ## Running Tests
 
@@ -101,15 +98,15 @@ Format: `test_<action>_<condition>_<expected_result>`
 |--------|------------|------------------|-------------------|
 | Config | ✅ | ✅ | - |
 | Workspace | ✅ | ✅ | - |
-| Providers | ✅ | 🔄 | - |
-| Cache | 🔄 | ✅ | 🔄 |
-| Database | 🔄 | ✅ | - |
-| Graph | 🔄 | ✅ | 🔄 |
-| Indexing | 🔄 | ✅ | 🔄 |
-| Auth | 🔄 | ✅ | - |
-| Middleware | 🔄 | ✅ | - |
+| Providers | ✅ | ✅ | - |
+| Graph | ✅ | ✅ | - |
+| Indexing | ✅ | ✅ | - |
+| Logging | ✅ | - | - |
+| Middleware | ✅ | ✅ | - |
+| System | ✅ | ✅ | - |
+| Performance | - | - | ✅ |
 
-Legend: ✅ Complete | 🔄 In Progress | - Not Required
+Legend: ✅ Complete | - Not Required
 
 ## Test Fixtures
 
