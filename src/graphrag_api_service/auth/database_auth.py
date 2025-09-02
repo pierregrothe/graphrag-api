@@ -6,7 +6,7 @@
 """Database-backed authentication service for GraphRAG API."""
 
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -67,14 +67,17 @@ class DatabaseAuthenticationService:
             for role in user.roles:
                 permissions.extend(role.permissions)
 
-            # Create token data
+            # Create token data with expiration
+            expires_at = datetime.now(UTC) + timedelta(minutes=self.jwt_manager.config.access_token_expire_minutes)
+            
             token_data = TokenData(
                 user_id=str(user.id),
                 username=user.username,
                 email=user.email,
                 roles=[role.name for role in user.roles],
                 permissions=list(set(permissions)),  # Remove duplicates
-                tenant_id=user.tenant_id,
+                tenant_id=user.tenant_id if hasattr(user, 'tenant_id') else None,
+                expires_at=expires_at,
             )
 
             logger.info(f"User authenticated successfully: {user.username}")
@@ -85,9 +88,9 @@ class DatabaseAuthenticationService:
         username: str,
         email: str,
         password: str,
-        roles: list[str] = None,
-        full_name: str = None,
-        tenant_id: str = None,
+        roles: list[str] | None = None,
+        full_name: str | None = None,
+        tenant_id: str | None = None,
     ) -> User:
         """Create a new user.
 
@@ -279,4 +282,19 @@ class DatabaseAuthenticationService:
         Returns:
             Token data if valid, None otherwise
         """
-        return self.jwt_manager.verify_token(token)
+        try:
+            payload = self.jwt_manager.verify_token(token)
+            if payload:
+                # Convert dict to TokenData
+                return TokenData(
+                    user_id=payload.get("user_id"),
+                    username=payload.get("username"),
+                    email=payload.get("email"),
+                    roles=payload.get("roles", []),
+                    permissions=payload.get("permissions", []),
+                    tenant_id=payload.get("tenant_id"),
+                    expires_at=datetime.fromisoformat(payload.get("exp")),
+                )
+            return None
+        except Exception:
+            return None
