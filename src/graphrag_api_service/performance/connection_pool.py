@@ -158,7 +158,10 @@ class ConnectionPool:
             except TimeoutError as timeout_err:
                 # Create new connection if under max limit
                 if self._active_connections < self.config.max_connections:
-                    connection = await self._create_connection()
+                    if self.database_manager:
+                        connection = await self._create_database_connection(len(self._connections))
+                    else:
+                        connection = await self._create_mock_connection(len(self._connections))
                 else:
                     raise Exception("Connection pool exhausted") from timeout_err
 
@@ -292,7 +295,7 @@ class ConnectionPool:
                 # Use parameterized query construction
                 from sqlalchemy import text
 
-                query = text(f"SELECT * FROM {table_name}")
+                query_str = f"SELECT * FROM {table_name}"
 
             # Add filters if provided
             if filters:
@@ -305,10 +308,10 @@ class ConnectionPool:
                         conditions.append(f"{column} = '{value}'")
 
                 if conditions:
-                    query += " WHERE " + " AND ".join(conditions)
+                    query_str += " WHERE " + " AND ".join(conditions)
 
             # Execute query and return as DataFrame
-            result = await session.execute(text(query))
+            result = await session.execute(text(query_str))
             rows = result.fetchall()
             columns = result.keys()
 

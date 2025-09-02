@@ -9,7 +9,7 @@ import hashlib
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -198,7 +198,7 @@ class APIKeyManager:
         return len(recent_usage) <= rate_limit
 
     async def revoke_api_key(
-        self, key_id: str, user_id: str, user_permissions: list[str] = None
+        self, key_id: str, user_id: str, user_permissions: Optional[list[str]] = None
     ) -> bool:
         """Revoke an API key.
 
@@ -226,7 +226,7 @@ class APIKeyManager:
 
         return True
 
-    def _is_admin_user(self, user_permissions: list[str] = None) -> bool:
+    def _is_admin_user(self, user_permissions: Optional[list[str]] = None) -> bool:
         """Check if user has admin permissions.
 
         Args:
@@ -240,7 +240,7 @@ class APIKeyManager:
 
         # Check if user has admin permissions
         if self.rbac:
-            return self.rbac.has_permission(user_permissions, "manage:users")
+            return bool(self.rbac.has_permission(user_permissions, "manage:users"))
 
         # Fallback: check for admin-like permissions
         admin_permissions = ["manage:users", "manage:all", "delete:all"]

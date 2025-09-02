@@ -9,7 +9,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import select
 
@@ -38,7 +38,7 @@ class DatabaseWorkspaceManager:
         self.base_workspaces_path.mkdir(exist_ok=True)
 
     async def create_workspace(
-        self, request: WorkspaceCreateRequest, owner_id: str = None
+        self, request: WorkspaceCreateRequest, owner_id: Optional[str] = None
     ) -> Workspace:
         """Create a new GraphRAG workspace.
 
@@ -151,7 +151,7 @@ class DatabaseWorkspaceManager:
 
             return self._db_to_api_model(db_workspace)
 
-    async def list_workspaces(self, owner_id: str = None) -> list[Workspace]:
+    async def list_workspaces(self, owner_id: Optional[str] = None) -> list[Workspace]:
         """List all workspaces.
 
         Args:
@@ -263,9 +263,9 @@ class DatabaseWorkspaceManager:
         return Workspace(
             id=str(db_workspace.id),
             config=config,
-            last_error=db_workspace.last_error,
-            workspace_path=db_workspace.workspace_path,
-            config_file_path=db_workspace.config_file_path,
+            last_error=str(db_workspace.last_error) if db_workspace.last_error else None,
+            workspace_path=str(db_workspace.workspace_path) if db_workspace.workspace_path else None,
+            config_file_path=str(db_workspace.config_file_path) if db_workspace.config_file_path else None,
         )
 
     def _generate_graphrag_config(self, config: WorkspaceConfig, config_file_path: Path) -> None:
@@ -277,11 +277,11 @@ class DatabaseWorkspaceManager:
         """
         # Generate YAML configuration for GraphRAG
         graphrag_config = {
-            "encoding_model": config.embedding_model_override or self.settings.embedding_model,
+            "encoding_model": config.embedding_model_override or self._get_embedding_model(),
             "llm": {
                 "api_key": "${GRAPHRAG_API_KEY}",
                 "type": "openai_chat",
-                "model": config.llm_model_override or self.settings.llm_model,
+                "model": config.llm_model_override or self._get_llm_model(),
                 "max_tokens": 4000,
                 "temperature": 0,
             },
@@ -367,3 +367,29 @@ class DatabaseWorkspaceManager:
 
         with open(config_file_path, "w", encoding="utf-8") as f:
             yaml.dump(graphrag_config, f, default_flow_style=False, indent=2)
+
+    def _get_embedding_model(self) -> str:
+        """Get the embedding model based on the current provider.
+
+        Returns:
+            Embedding model name
+        """
+        if self.settings.is_ollama_provider():
+            return self.settings.ollama_embedding_model
+        elif self.settings.is_google_gemini_provider():
+            return self.settings.gemini_embedding_model
+        else:
+            return "nomic-embed-text"  # Fallback default
+
+    def _get_llm_model(self) -> str:
+        """Get the LLM model based on the current provider.
+
+        Returns:
+            LLM model name
+        """
+        if self.settings.is_ollama_provider():
+            return self.settings.ollama_llm_model
+        elif self.settings.is_google_gemini_provider():
+            return self.settings.gemini_model
+        else:
+            return "gemma:4b"  # Fallback default

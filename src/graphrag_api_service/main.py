@@ -74,7 +74,7 @@ def create_app() -> FastAPI:
             "status": "healthy",
             "interfaces": {
                 "rest_api": API_PREFIX,
-                "graphql": f"{GRAPHQL_PREFIX}/playground",
+                "graphql": GRAPHQL_PREFIX,
                 "documentation": {
                     "swagger_ui": "/docs",
                     "redoc": "/redoc",

@@ -51,7 +51,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+        graphql_response = client.post("/graphql", json={"query": graphql_query})
         assert graphql_response.status_code == 200
         graphql_data = graphql_response.json()
 
@@ -88,7 +88,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+        graphql_response = client.post("/graphql", json={"query": graphql_query})
         assert graphql_response.status_code == 200
         graphql_data = graphql_response.json()
 
@@ -133,7 +133,7 @@ class TestAPIParity:
                 }}
             }}
             """
-            graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+            graphql_response = client.post("/graphql", json={"query": graphql_query})
             assert graphql_response.status_code == 200
             graphql_data = graphql_response.json()
 
@@ -176,7 +176,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+        graphql_response = client.post("/graphql", json={"query": graphql_query})
 
         # Both should handle the case where no data is available consistently
         if rest_response.status_code == 200:
@@ -205,7 +205,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+        graphql_response = client.post("/graphql", json={"query": graphql_query})
 
         # Both should handle invalid IDs gracefully
         # REST should return 404 or appropriate error
@@ -229,7 +229,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+        graphql_response = client.post("/graphql", json={"query": graphql_query})
 
         if rest_response.status_code == 200 and graphql_response.status_code == 200:
             rest_data = rest_response.json()
@@ -268,7 +268,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+        graphql_response = client.post("/graphql", json={"query": graphql_query})
 
         # Both should handle pagination parameters appropriately
         # Even if no data is available, the structure should be consistent
@@ -311,7 +311,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+        graphql_response = client.post("/graphql", json={"query": graphql_query})
 
         # Both should handle indexing statistics consistently
         if rest_response.status_code == 200:
@@ -355,7 +355,7 @@ class TestAPIParity:
             }
         }
         """
-        graphql_response = client.post("/graphql/playground/", json={"query": graphql_query})
+        graphql_response = client.post("/graphql", json={"query": graphql_query})
 
         # Both should handle job listing consistently
         if rest_response.status_code == 200:
@@ -392,7 +392,7 @@ class TestAPIParity:
         }
         """
         graphql_stats_response = client.post(
-            "/graphql/playground/", json={"query": graphql_stats_query}
+            "/graphql", json={"query": graphql_stats_query}
         )
 
         # Both should handle cache statistics consistently
@@ -428,7 +428,7 @@ class TestAPIParity:
         }
         """
         graphql_clear_response = client.post(
-            "/graphql/playground/", json={"query": graphql_clear_mutation}
+            "/graphql", json={"query": graphql_clear_mutation}
         )
 
         # Both should handle cache clearing consistently

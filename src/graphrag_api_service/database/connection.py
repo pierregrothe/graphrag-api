@@ -8,6 +8,7 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Optional, Any
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -29,10 +30,10 @@ class DatabaseManager:
             settings: Deployment settings containing database configuration
         """
         self.settings = settings
-        self.async_engine = None
-        self.sync_engine = None
-        self.async_session_factory = None
-        self.sync_session_factory = None
+        self.async_engine: Any = None
+        self.sync_engine: Any = None
+        self.async_session_factory: Any = None
+        self.sync_session_factory: Any = None
 
     async def initialize(self):
         """Initialize database connections."""
@@ -78,6 +79,8 @@ class DatabaseManager:
 
     async def create_tables(self):
         """Create all database tables."""
+        if not self.async_engine:
+            raise RuntimeError("Database not initialized. Call initialize() first.")
         try:
             async with self.async_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
@@ -132,7 +135,8 @@ class DatabaseManager:
         """
         try:
             async with self.get_session() as session:
-                await session.execute("SELECT 1")
+                from sqlalchemy import text
+                await session.execute(text("SELECT 1"))
             return True
         except Exception as e:
             logger.error(f"Database health check failed: {e}")
@@ -143,7 +147,7 @@ class DatabaseManager:
 _database_manager: DatabaseManager | None = None
 
 
-def get_database_manager(settings: DeploymentSettings = None) -> DatabaseManager:
+def get_database_manager(settings: Optional[DeploymentSettings] = None) -> DatabaseManager:
     """Get the global database manager.
 
     Args:
