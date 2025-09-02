@@ -26,7 +26,8 @@
       "Bash(tree:*)",
       "Bash(find:*)",
       "Bash(sed:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(poetry run flake8:*)"
     ],
     "deny": [],
     "ask": []

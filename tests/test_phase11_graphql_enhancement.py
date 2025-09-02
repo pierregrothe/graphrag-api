@@ -391,7 +391,10 @@ class TestIntegration:
         """Test integration between authentication and caching."""
         # Initialize JWT auth
         jwt_config = JWTConfig(secret_key="test-secret")
-        auth_service = AuthenticationService(jwt_config)
+        # Create a mock database manager for testing
+        from unittest.mock import MagicMock
+        mock_db_manager = MagicMock()
+        auth_service = AuthenticationService(jwt_config, mock_db_manager)
 
         # Initialize API key manager
         api_key_manager = APIKeyManager()

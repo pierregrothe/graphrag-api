@@ -58,7 +58,8 @@ class TestIndexingModels:
         assert job.status == IndexingJobStatus.QUEUED
         assert job.is_active  # QUEUED is considered active
         job.start_job()
-        assert job.status == IndexingJobStatus.RUNNING
+        # After calling start_job(), status changes to RUNNING
+        assert job.status == IndexingJobStatus.RUNNING  # type: ignore[comparison-overlap]
         assert job.started_at is not None
         assert job.is_active
 
@@ -91,7 +92,8 @@ class TestIndexingModels:
         assert job.can_retry()
         job.increment_retry()
         assert job.retry_count == 1
-        assert job.status == IndexingJobStatus.QUEUED
+        # After increment_retry(), status changes back to QUEUED
+        assert job.status == IndexingJobStatus.QUEUED  # type: ignore[comparison-overlap]
         assert job.error_message is None
 
         # Test max retries
