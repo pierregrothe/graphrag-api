@@ -19,6 +19,35 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/api", tags=["System"])
 
 
+# Basic health endpoints (consolidated from system.py)
+@router.get("/health", tags=["Health"])
+async def health_check() -> dict[str, str]:
+    """Basic health check endpoint.
+    
+    Returns:
+        Dict containing health status
+    """
+    logger.debug("Health check accessed")
+    return {"status": "healthy"}
+
+
+@router.get("/info", tags=["Health"])
+async def app_info() -> dict[str, Any]:
+    """Application information endpoint.
+    
+    Returns:
+        Dict containing application info
+    """
+    from ..config import settings
+    
+    return {
+        "name": settings.app_name,
+        "version": settings.app_version,
+        "provider": settings.llm_provider,
+        "environment": "production" if not settings.debug else "development",
+    }
+
+
 class ProviderSwitchRequest(BaseModel):
     """Request model for switching LLM provider."""
 

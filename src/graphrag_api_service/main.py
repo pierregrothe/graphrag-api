@@ -7,7 +7,7 @@
 
 from fastapi import FastAPI
 
-from .config import API_PREFIX, settings
+from .config import API_PREFIX, GRAPHQL_PREFIX, settings
 from .dependencies import get_service_container, lifespan
 from .logging_config import get_logger, setup_logging
 from .middleware import setup_auth_middleware, setup_cors_middleware, setup_error_handlers
@@ -41,7 +41,6 @@ def create_app() -> FastAPI:
     from .routes.graph_v2 import router as graph_router
     from .routes.graphrag_v2 import router as graphrag_router
     from .routes.indexing_v2 import router as indexing_router
-    from .routes.system import setup_system_routes
     from .routes.system_v2 import router as system_router
     from .routes.workspace_v2 import router as workspace_router
 
@@ -49,14 +48,8 @@ def create_app() -> FastAPI:
     app.include_router(workspace_router)
     app.include_router(graphrag_router)
     app.include_router(graph_router)
-    app.include_router(system_router)
+    app.include_router(system_router)  # Now includes health endpoints
     app.include_router(indexing_router)
-
-    # Also register old system routes for health endpoints
-    system_router_configured = setup_system_routes(
-        container.workspace_manager, container.system_operations
-    )
-    app.include_router(system_router_configured)
 
     # Setup GraphQL router
     from .graphql import create_graphql_router
@@ -68,7 +61,7 @@ def create_app() -> FastAPI:
         graphrag_integration=container.graphrag_integration,
         indexing_manager=container.indexing_manager,
     )
-    app.include_router(graphql_router, prefix="/graphql")
+    app.include_router(graphql_router, prefix=GRAPHQL_PREFIX)
 
     # Root endpoint
     @app.get("/", tags=["Root"])
@@ -81,7 +74,7 @@ def create_app() -> FastAPI:
             "status": "healthy",
             "interfaces": {
                 "rest_api": API_PREFIX,
-                "graphql": "/graphql/playground",
+                "graphql": f"{GRAPHQL_PREFIX}/playground",
                 "documentation": {
                     "swagger_ui": "/docs",
                     "redoc": "/redoc",

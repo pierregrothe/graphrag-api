@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     # Server Settings
     host: str = "0.0.0.0"
-    port: int = 8001  # Changed from 8000 to avoid common Docker conflicts
+    port: int = 8000  # Standard port aligned with documentation
 
     # GraphRAG Settings
     graphrag_config_path: str | None = None
@@ -86,6 +86,110 @@ class Settings(BaseSettings):
     gemini_embedding_model: str = Field(
         default="text-embedding-004",
         description="Gemini embedding model",
+    )
+
+    # Authentication & Security Settings
+    jwt_secret_key: str = Field(
+        default="your-secret-key-change-in-production",
+        description="Secret key for JWT token signing",
+    )
+    jwt_algorithm: str = Field(
+        default="HS256",
+        description="Algorithm for JWT token signing",
+    )
+    jwt_access_token_expire_minutes: int = Field(
+        default=30,
+        description="Access token expiration time in minutes",
+    )
+    jwt_refresh_token_expire_days: int = Field(
+        default=7,
+        description="Refresh token expiration time in days",
+    )
+    api_key_prefix: str = Field(
+        default="grag_",
+        description="Prefix for generated API keys",
+    )
+    default_rate_limit: int = Field(
+        default=1000,
+        description="Default rate limit (requests per window)",
+    )
+    rate_limit_window: int = Field(
+        default=3600,
+        description="Rate limit window in seconds",
+    )
+
+    # Monitoring & Observability Settings
+    prometheus_enabled: bool = Field(
+        default=True,
+        description="Enable Prometheus metrics endpoint",
+    )
+    tracing_enabled: bool = Field(
+        default=False,
+        description="Enable distributed tracing",
+    )
+    tracing_service_name: str = Field(
+        default="graphrag-api",
+        description="Service name for tracing",
+    )
+    jaeger_endpoint: str = Field(
+        default="http://localhost:14268/api/traces",
+        description="Jaeger collector endpoint",
+    )
+
+    # Performance Tuning Settings
+    max_request_size: int = Field(
+        default=10485760,  # 10MB
+        description="Maximum request size in bytes",
+    )
+    request_timeout: int = Field(
+        default=300,
+        description="Request timeout in seconds",
+    )
+    graphql_max_complexity: int = Field(
+        default=1000,
+        description="Maximum GraphQL query complexity",
+    )
+    cache_default_ttl: int = Field(
+        default=300,
+        description="Default cache TTL in seconds",
+    )
+
+    # Feature Flags
+    enable_subscriptions: bool = Field(
+        default=True,
+        description="Enable GraphQL subscriptions",
+    )
+    enable_real_time_updates: bool = Field(
+        default=True,
+        description="Enable real-time updates via WebSocket",
+    )
+    enable_advanced_analytics: bool = Field(
+        default=True,
+        description="Enable advanced analytics features",
+    )
+    enable_performance_monitoring: bool = Field(
+        default=True,
+        description="Enable performance monitoring",
+    )
+
+    # Database Settings
+    database_url: str = Field(
+        default="postgresql://user:pass@localhost/graphrag",
+        description="Database connection URL",
+    )
+    database_pool_size: int = Field(
+        default=10,
+        description="Database connection pool size",
+    )
+
+    # Redis Settings
+    redis_url: str = Field(
+        default="redis://localhost:6379",
+        description="Redis connection URL",
+    )
+    redis_enabled: bool = Field(
+        default=False,
+        description="Enable Redis for distributed caching",
     )
 
     # Logging Settings
