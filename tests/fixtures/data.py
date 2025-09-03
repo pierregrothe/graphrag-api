@@ -7,15 +7,14 @@
 
 import tempfile
 import uuid
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 
-from src.graphrag_api_service.workspace.models import WorkspaceConfig
-
 
 @pytest.fixture
-def test_data_path() -> Path:
+def test_data_path() -> Generator[Path, None, None]:
     """Create a temporary directory for test data."""
     with tempfile.TemporaryDirectory() as temp_dir:
         path = Path(temp_dir)

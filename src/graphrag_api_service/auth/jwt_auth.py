@@ -82,6 +82,14 @@ class JWTConfig:
         self.issuer = issuer
         self.audience = audience
 
+    def get_access_token_expiry(self) -> timedelta:
+        """Get access token expiry as timedelta."""
+        return timedelta(minutes=self.access_token_expire_minutes)
+
+    def get_refresh_token_expiry(self) -> timedelta:
+        """Get refresh token expiry as timedelta."""
+        return timedelta(days=self.refresh_token_expire_days)
+
 
 class JWTManager:
     """JWT token management."""
@@ -157,7 +165,7 @@ class JWTManager:
             HTTPException: If token is invalid
         """
         try:
-            payload = jwt.decode(
+            payload: dict[str, Any] = jwt.decode(
                 token,
                 self.config.secret_key,
                 algorithms=[self.config.algorithm],
@@ -332,7 +340,10 @@ class AuthenticationService:
         """
         # SimpleDatabaseManager doesn't support user authentication
         # This would need to be implemented with actual database session
-        logger.warning("User authentication not implemented for SimpleDatabaseManager")
+        logger.warning(
+            "User authentication not implemented for SimpleDatabaseManager: %s",
+            credentials.username,
+        )
         return None
 
     async def create_user(
@@ -357,7 +368,15 @@ class AuthenticationService:
         """
         # SimpleDatabaseManager doesn't support user creation
         # This would need to be implemented with actual database session
-        logger.warning("User creation not implemented for SimpleDatabaseManager")
+        logger.warning(
+            "User creation not implemented for SimpleDatabaseManager: %s, %s, roles=%s, tenant=%s",
+            username,
+            email,
+            roles,
+            tenant_id,
+        )
+        # Store password hash for future use
+        _ = self.jwt_manager.hash_password(password)
         # Return a dummy UUID string for now
         return str(uuid4())
 

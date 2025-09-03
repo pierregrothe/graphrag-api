@@ -138,7 +138,7 @@ class Query:
             cached_result = query_cache.get(cache_key)
             if cached_result:
                 logger.debug(f"Cache hit for entity query: {cache_key}")
-                return cached_result["result"]
+                return EntityConnection(**cached_result["result"])
 
         result = await graph_ops.query_entities(
             data_path=settings.graphrag_data_path,
@@ -210,7 +210,10 @@ class Query:
             cached_result = query_cache.get(cache_key)
             if cached_result:
                 logger.debug(f"Cache hit for entity query: {cache_key}")
-                return cached_result["result"]
+                entity_data = cached_result["result"]
+                if entity_data:
+                    return Entity(**entity_data)
+                return None
 
         # Use DataLoader for efficient batching
         dataloaders = info.context.get("dataloaders", {})

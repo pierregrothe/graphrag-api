@@ -164,7 +164,7 @@ class GraphQLTestRunner:
         Returns:
             Test result with status and details
         """
-        result = {
+        result: dict[str, Any] = {
             "name": test_case.name,
             "status": "passed",
             "errors": [],
@@ -254,7 +254,7 @@ class GraphQLTestRunner:
             return True
 
         else:
-            return actual == expected
+            return bool(actual == expected)
 
     async def run_test_suite(self, test_cases: list[GraphQLTestCase]) -> dict[str, Any]:
         """Run a complete test suite.
@@ -265,7 +265,7 @@ class GraphQLTestRunner:
         Returns:
             Test suite results
         """
-        results = {
+        results: dict[str, Any] = {
             "total_tests": len(test_cases),
             "passed": 0,
             "failed": 0,

@@ -47,6 +47,10 @@ async def create_workspace(
     """
     logger.info(f"Creating workspace: {request.name}")
 
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
+
     try:
         workspace = await workspace_manager.create_workspace(request)
         logger.info(f"Successfully created workspace: {workspace.id}")
@@ -76,6 +80,10 @@ async def list_workspaces(workspace_manager: WorkspaceManagerDep) -> list[Worksp
     """
     logger.debug("Listing all workspaces")
 
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
+
     try:
         workspaces = await workspace_manager.list_workspaces()
         logger.info(f"Found {len(workspaces)} workspaces")
@@ -100,6 +108,10 @@ async def get_workspace(workspace_id: str, workspace_manager: WorkspaceManagerDe
         HTTPException: If workspace not found or access fails
     """
     logger.debug(f"Getting workspace: {workspace_id}")
+
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
 
     try:
         workspace = await workspace_manager.get_workspace(workspace_id)
@@ -131,6 +143,10 @@ async def update_workspace(
         HTTPException: If workspace not found or update fails
     """
     logger.info(f"Updating workspace: {workspace_id}")
+
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
 
     try:
         workspace = await workspace_manager.update_workspace(workspace_id, request)
@@ -164,6 +180,10 @@ async def delete_workspace(
     """
     logger.info(f"Deleting workspace: {workspace_id} (remove_files={remove_files})")
 
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
+
     try:
         success = await workspace_manager.delete_workspace(workspace_id, remove_files)
         if not success:
@@ -195,13 +215,17 @@ async def get_workspace_config(
     """
     logger.debug(f"Getting config for workspace: {workspace_id}")
 
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
+
     try:
         workspace = await workspace_manager.get_workspace(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail=f"Workspace {workspace_id} not found")
 
         # Read the settings.yaml file
-        config_path = Path(workspace.data_path) / "settings.yaml"
+        config_path = Path(workspace.config.data_path) / "settings.yaml"
         if not config_path.exists():
             raise HTTPException(
                 status_code=404, detail=f"Configuration file not found for workspace {workspace_id}"

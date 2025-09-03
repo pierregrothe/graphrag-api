@@ -72,7 +72,7 @@ def setup_auth_middleware(app: FastAPI, security_middleware, performance_middlew
                 for header_name, header_value in security_headers.items():
                     response.headers[header_name] = header_value
 
-            return response
+            return response  # type: ignore[no-any-return]
 
         except Exception as e:
             process_time = time.time() - start_time

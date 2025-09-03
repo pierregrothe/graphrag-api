@@ -38,9 +38,7 @@ class QueryOptimizationConfig(BaseModel):
     """Query optimization settings."""
 
     enable_query_cache: bool = Field(default=True, description="Enable query result caching")
-    enable_prepared_statements: bool = Field(
-        default=True, description="Use prepared statements"
-    )
+    enable_prepared_statements: bool = Field(default=True, description="Use prepared statements")
     batch_size: int = Field(default=100, description="Default batch size for bulk operations")
     enable_connection_pooling: bool = Field(default=True, description="Enable connection pooling")
     enable_async_queries: bool = Field(default=True, description="Enable async query execution")
@@ -49,9 +47,7 @@ class QueryOptimizationConfig(BaseModel):
 class MemoryOptimizationConfig(BaseModel):
     """Memory optimization settings."""
 
-    gc_threshold: float = Field(
-        default=0.75, description="Memory usage threshold for GC trigger"
-    )
+    gc_threshold: float = Field(default=0.75, description="Memory usage threshold for GC trigger")
     gc_interval: int = Field(default=300, description="GC interval in seconds")
     cache_memory_limit: int = Field(
         default=500 * 1024 * 1024, description="Cache memory limit in bytes"
@@ -67,9 +63,7 @@ class CompressionConfig(BaseModel):
     algorithms: list[str] = Field(
         default=["gzip", "br"], description="Supported compression algorithms"
     )
-    minimum_size: int = Field(
-        default=1024, description="Minimum response size for compression"
-    )
+    minimum_size: int = Field(default=1024, description="Minimum response size for compression")
     compression_level: int = Field(default=6, description="Compression level (1-9)")
 
 
@@ -89,9 +83,7 @@ class PerformanceConfig(BaseModel):
     cache: CacheConfig = Field(default_factory=CacheConfig)
     connection_pool: ConnectionPoolConfig = Field(default_factory=ConnectionPoolConfig)
     query_optimization: QueryOptimizationConfig = Field(default_factory=QueryOptimizationConfig)
-    memory_optimization: MemoryOptimizationConfig = Field(
-        default_factory=MemoryOptimizationConfig
-    )
+    memory_optimization: MemoryOptimizationConfig = Field(default_factory=MemoryOptimizationConfig)
     compression: CompressionConfig = Field(default_factory=CompressionConfig)
     rate_limit: RateLimitConfig = Field(default_factory=RateLimitConfig)
 
@@ -99,18 +91,15 @@ class PerformanceConfig(BaseModel):
     enable_performance_monitoring: bool = Field(
         default=True, description="Enable performance monitoring"
     )
-    enable_request_profiling: bool = Field(
-        default=False, description="Enable request profiling"
-    )
-    slow_query_threshold: float = Field(
-        default=1.0, description="Slow query threshold in seconds"
-    )
+    enable_request_profiling: bool = Field(default=False, description="Enable request profiling")
+    slow_query_threshold: float = Field(default=1.0, description="Slow query threshold in seconds")
     enable_optimizations: bool = Field(
         default=True, description="Enable all performance optimizations"
     )
 
     def get_optimization_settings(self) -> dict[str, Any]:
         """Get optimization settings as dictionary."""
+        # pylint: disable=no-member
         if not self.enable_optimizations:
             return {
                 "cache_enabled": False,

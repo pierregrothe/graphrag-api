@@ -88,9 +88,7 @@ class AuthenticationConfig(BaseModel):
     refresh_token_expire_days: int = Field(
         default=7, description="Refresh token expiration in days"
     )
-    require_strong_passwords: bool = Field(
-        default=True, description="Require strong passwords"
-    )
+    require_strong_passwords: bool = Field(default=True, description="Require strong passwords")
     min_password_length: int = Field(default=8, description="Minimum password length")
     require_mfa: bool = Field(default=False, description="Require multi-factor authentication")
     max_login_attempts: int = Field(default=5, description="Maximum login attempts")
@@ -116,9 +114,7 @@ class SQLInjectionProtection(BaseModel):
     use_parameterized_queries: bool = Field(
         default=True, description="Use parameterized queries only"
     )
-    escape_special_characters: bool = Field(
-        default=True, description="Escape special characters"
-    )
+    escape_special_characters: bool = Field(default=True, description="Escape special characters")
     validate_query_structure: bool = Field(default=True, description="Validate query structure")
     block_suspicious_patterns: bool = Field(
         default=True, description="Block suspicious SQL patterns"

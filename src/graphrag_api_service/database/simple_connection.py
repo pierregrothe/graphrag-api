@@ -6,7 +6,6 @@
 """Simplified database connection management supporting SQLite and PostgreSQL."""
 
 import logging
-from typing import Optional
 
 from ..config import Settings
 from .sqlite_models import SQLiteManager
@@ -25,7 +24,7 @@ class SimpleDatabaseManager:
         """
         self.settings = settings
         self.db_type = settings.database_type.lower()
-        self.db: Optional[SQLiteManager] = None
+        self.db: SQLiteManager | None = None
         self._initialized = False
 
     def initialize(self):
@@ -77,7 +76,7 @@ class SimpleDatabaseManager:
             if not self._initialized:
                 self.initialize()
 
-            if self.db_type == "sqlite":
+            if self.db_type == "sqlite" and self.db is not None:
                 # Simple SQLite health check
                 self.db.list_workspaces(limit=1)
                 return True
@@ -97,10 +96,10 @@ class SimpleDatabaseManager:
 
 
 # Global database manager
-_simple_db_manager: Optional[SimpleDatabaseManager] = None
+_simple_db_manager: SimpleDatabaseManager | None = None
 
 
-def get_simple_database_manager(settings: Optional[Settings] = None) -> SimpleDatabaseManager:
+def get_simple_database_manager(settings: Settings | None = None) -> SimpleDatabaseManager:
     """Get the global simple database manager.
 
     Args:

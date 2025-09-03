@@ -9,9 +9,8 @@ import json
 import logging
 import shutil
 import uuid
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from ..config import Settings
 from ..database.sqlite_models import SQLiteManager
@@ -37,7 +36,7 @@ class SQLiteWorkspaceManager:
         self.base_workspaces_path.mkdir(exist_ok=True)
 
     def create_workspace(
-        self, request: WorkspaceCreateRequest, owner_id: Optional[str] = None
+        self, request: WorkspaceCreateRequest, owner_id: str | None = None
     ) -> Workspace:
         """Create a new GraphRAG workspace.
 
@@ -129,7 +128,7 @@ class SQLiteWorkspaceManager:
                 shutil.rmtree(workspace_dir, ignore_errors=True)
             raise OSError(f"Failed to create workspace directories: {e}") from e
 
-    def get_workspace(self, workspace_id: str) -> Optional[Workspace]:
+    def get_workspace(self, workspace_id: str) -> Workspace | None:
         """Get workspace by ID.
 
         Args:
@@ -144,7 +143,7 @@ class SQLiteWorkspaceManager:
 
         return self._db_to_api_model(db_workspace)
 
-    def get_workspace_by_name(self, name: str) -> Optional[Workspace]:
+    def get_workspace_by_name(self, name: str) -> Workspace | None:
         """Get workspace by name.
 
         Args:
@@ -172,7 +171,7 @@ class SQLiteWorkspaceManager:
         db_workspaces = self.db.list_workspaces(limit=limit, offset=offset)
         return [self._db_to_api_model(ws) for ws in db_workspaces]
 
-    def update_workspace(self, workspace_id: str, **updates) -> Optional[Workspace]:
+    def update_workspace(self, workspace_id: str, **updates) -> Workspace | None:
         """Update workspace.
 
         Args:

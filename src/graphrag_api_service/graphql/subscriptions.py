@@ -62,7 +62,7 @@ class SubscriptionManager:
         if topic not in self._subscribers:
             raise ValueError(f"Unknown subscription topic: {topic}")
 
-        queue = asyncio.Queue(maxsize=100)
+        queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=100)
         self._subscribers[topic].append(queue)
 
         try:

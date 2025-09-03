@@ -132,7 +132,7 @@ class ChunkedProcessor:
         results = []
         total_chunks = (len(df) + self.chunk_size - 1) // self.chunk_size
 
-        logger.info(f"Processing {len(df)} rows in {total_chunks} chunks of {self.chunk_size}")
+        logger.info("Processing %s rows in %s chunks of %s", len(df), total_chunks, self.chunk_size)
 
         for i in range(0, len(df), self.chunk_size):
             chunk = df.iloc[i : i + self.chunk_size]
@@ -143,7 +143,7 @@ class ChunkedProcessor:
             gc.collect()
 
             if (i // self.chunk_size + 1) % 10 == 0:
-                logger.debug(f"Processed chunk {i // self.chunk_size + 1}/{total_chunks}")
+                logger.debug("Processed chunk %s/%s", i // self.chunk_size + 1, total_chunks)
 
         return results
 
@@ -243,6 +243,14 @@ class MemoryMonitor:
         self._tracked_objects -= dead_refs
         return len(dead_refs)
 
+    def get_tracked_objects_count(self) -> int:
+        """Get the number of currently tracked objects.
+
+        Returns:
+            Number of tracked objects
+        """
+        return len(self._tracked_objects)
+
     @contextmanager
     def memory_limit_context(self, max_memory_mb: float) -> Generator[None, None, None]:
         """Context manager to enforce memory limits.
@@ -263,8 +271,9 @@ class MemoryMonitor:
 
             if memory_used > max_memory_mb:
                 logger.warning(
-                    f"Memory limit exceeded: {memory_used:.1f}MB used, "
-                    f"limit was {max_memory_mb:.1f}MB"
+                    "Memory limit exceeded: %.1fMB used, limit was %.1fMB",
+                    memory_used,
+                    max_memory_mb,
                 )
 
                 # Force garbage collection
@@ -277,16 +286,12 @@ class MemoryMonitor:
         Returns:
             Garbage collection statistics
         """
-        {f"gen_{i}": gc.get_count()[i] for i in range(3)}
-
         # Force collection for all generations
         collected = {}
         for generation in range(3):
             collected[f"gen_{generation}"] = gc.collect(generation)
 
-        {f"gen_{i}": gc.get_count()[i] for i in range(3)}
-
-        logger.debug(f"Garbage collection completed: {collected}")
+        logger.debug("Garbage collection completed: %s", collected)
         return collected
 
     def optimize_memory_usage(self) -> dict[str, Any]:
@@ -316,7 +321,7 @@ class MemoryMonitor:
             "final_memory_mb": final_stats.process_memory_mb,
         }
 
-        logger.info(f"Memory optimization completed: {memory_freed:.1f}MB freed")
+        logger.info("Memory optimization completed: %.1fMB freed", memory_freed)
         return results
 
 
@@ -351,7 +356,7 @@ class MemoryOptimizer:
         final_memory = self.dataframe_optimizer.get_memory_usage(optimized_df)
 
         memory_saved = initial_memory["total_mb"] - final_memory["total_mb"]
-        logger.debug(f"DataFrame optimized: {memory_saved:.2f}MB saved")
+        logger.debug("DataFrame optimized: %.2fMB saved", memory_saved)
 
         return optimized_df
 
@@ -376,12 +381,12 @@ class MemoryOptimizer:
         ):  # 100MB threshold
 
             logger.info(
-                f"Using chunked processing for large dataset ({df_memory['total_mb']:.1f}MB)"
+                "Using chunked processing for large dataset (%.1fMB)",
+                df_memory["total_mb"],
             )
             results = self.chunked_processor.process_dataframe_chunks(df, processor_func, **kwargs)
             return self.chunked_processor.aggregate_chunked_results(results)
-        else:
-            return processor_func(df, **kwargs)
+        return processor_func(df, **kwargs)
 
     async def get_optimization_status(self) -> dict[str, Any]:
         """Get current optimization status.
@@ -395,11 +400,15 @@ class MemoryOptimizer:
             "memory_stats": memory_stats.model_dump(),
             "memory_pressure": self.monitor.check_memory_pressure(),
             "config": self.config.model_dump(),
-            "tracked_objects": len(self.monitor._tracked_objects),
+            "tracked_objects": self.monitor.get_tracked_objects_count(),
         }
 
 
 # Global memory optimizer instance
+# Rationale: Using a global instance for the memory optimizer simplifies access
+# throughout the application and ensures a single, consistent state for memory
+# management. While 'global' is generally discouraged, it's a common and acceptable pattern
+# for managing singletons like this in Python applications.
 _memory_optimizer: MemoryOptimizer | None = None
 
 

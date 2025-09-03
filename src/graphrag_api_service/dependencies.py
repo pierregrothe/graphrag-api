@@ -141,38 +141,15 @@ class ServiceContainer:
                     ),
                 )
 
-                # Use database-backed authentication if database is available
+                # Use simple authentication service
+                from .auth.jwt_auth import AuthenticationService
+
                 if self.database_manager:
-                    self.auth_service = DatabaseAuthenticationService(
-                        jwt_config, self.database_manager.async_session_factory
-                    )
-
-                    # Create default roles
-                    await self.auth_service.create_default_roles()
-
-                    # Initialize API key manager with RBAC
-                    get_api_key_manager(self.auth_service.rbac)
-                    logger.info("Database-backed authentication service initialized")
-
-                    # Create default admin user if none exists
-                    try:
-                        await self.auth_service.create_user(
-                            username="admin",
-                            email="admin@graphrag.local",
-                            password=getattr(settings, "default_admin_password", "admin123"),
-                            roles=["admin"],
-                        )
-                        logger.info("Default admin user created")
-                    except Exception as e:
-                        logger.debug(f"Admin user already exists or creation failed: {e}")
-
-                else:
-                    # Fallback to in-memory authentication
-                    from .auth.jwt_auth import AuthenticationService
-
                     self.auth_service = AuthenticationService(jwt_config, self.database_manager)
                     get_api_key_manager(self.auth_service.rbac)
-                    logger.warning("Using in-memory authentication (database not available)")
+                    logger.info("Authentication service initialized with database support")
+                else:
+                    logger.warning("Database manager not available for authentication")
 
             logger.info("Advanced features initialized successfully")
 

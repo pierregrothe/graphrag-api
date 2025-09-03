@@ -30,7 +30,9 @@
       "Bash(poetry run flake8:*)",
       "Bash(dir tests*.py /b)",
       "Bash(dir:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(poetry run isort:*)",
+      "Bash(poetry run pylint:*)"
     ],
     "deny": [],
     "ask": []

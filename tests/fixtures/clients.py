@@ -6,7 +6,7 @@
 """Test client fixtures for API testing."""
 
 import os
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 from unittest.mock import patch
 
 import httpx

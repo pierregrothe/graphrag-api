@@ -9,7 +9,7 @@ import hashlib
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -123,7 +123,7 @@ class APIKeyManager:
         self.key_hash_to_id[key_hash] = key_id
         self.usage_tracking[key_id] = []
 
-        logger.info(f"Created API key: {request.name} for user: {user_id}")
+        logger.info("Created API key: %s for user: %s", request.name, user_id)
 
         return APIKeyResponse(
             id=key_id,
@@ -160,12 +160,12 @@ class APIKeyManager:
 
         # Check if key has expired
         if api_key.expires_at and datetime.utcnow() > api_key.expires_at:
-            logger.warning(f"API key {api_key.name} has expired")
+            logger.warning("API key %s has expired", api_key.name)
             return None
 
         # Check rate limit
         if not await self._check_rate_limit(key_id, api_key.rate_limit):
-            logger.warning(f"Rate limit exceeded for API key: {api_key.name}")
+            logger.warning("Rate limit exceeded for API key: %s", api_key.name)
             return None
 
         # Update usage statistics
@@ -198,7 +198,7 @@ class APIKeyManager:
         return len(recent_usage) <= rate_limit
 
     async def revoke_api_key(
-        self, key_id: str, user_id: str, user_permissions: Optional[list[str]] = None
+        self, key_id: str, user_id: str, user_permissions: list[str] | None = None
     ) -> bool:
         """Revoke an API key.
 
@@ -217,16 +217,18 @@ class APIKeyManager:
         # Check if user owns the key or is admin
         if api_key.user_id != user_id and not self._is_admin_user(user_permissions):
             logger.warning(
-                f"User {user_id} attempted to revoke API key {key_id} without permission"
+                "User %s attempted to revoke API key %s without permission",
+                user_id,
+                key_id,
             )
             return False
 
         api_key.is_active = False
-        logger.info(f"Revoked API key: {api_key.name} by user: {user_id}")
+        logger.info("Revoked API key: %s by user: %s", api_key.name, user_id)
 
         return True
 
-    def _is_admin_user(self, user_permissions: Optional[list[str]] = None) -> bool:
+    def _is_admin_user(self, user_permissions: list[str] | None = None) -> bool:
         """Check if user has admin permissions.
 
         Args:

@@ -16,8 +16,6 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-from tests.fixtures.clients import async_test_client, test_client
-
 
 class TestHealthEndpoints:
     """Test health and status endpoints."""
@@ -65,10 +63,10 @@ class TestWorkspaceEndpoints:
                 "description": "Integration test workspace",
                 "data_path": temp_dir,
             }
-            
+
             response = await async_test_client.post("/api/workspaces", json=workspace_data)
             assert response.status_code == 200
-            
+
             data = response.json()
             assert "id" in data
             assert data["config"]["name"] == workspace_data["name"]
@@ -82,28 +80,20 @@ class TestWorkspaceEndpoints:
         assert isinstance(data, list)
 
     @pytest.mark.asyncio
-    async def test_get_workspace_invalid_id_returns_404(
-        self, async_test_client: AsyncClient
-    ):
+    async def test_get_workspace_invalid_id_returns_404(self, async_test_client: AsyncClient):
         """Test getting workspace with invalid ID returns 404."""
         response = await async_test_client.get("/api/workspaces/invalid-id")
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_update_workspace_invalid_id_returns_404(
-        self, async_test_client: AsyncClient
-    ):
+    async def test_update_workspace_invalid_id_returns_404(self, async_test_client: AsyncClient):
         """Test updating workspace with invalid ID returns 404."""
         update_data = {"description": "Updated description"}
-        response = await async_test_client.put(
-            "/api/workspaces/invalid-id", json=update_data
-        )
+        response = await async_test_client.put("/api/workspaces/invalid-id", json=update_data)
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_delete_workspace_invalid_id_returns_404(
-        self, async_test_client: AsyncClient
-    ):
+    async def test_delete_workspace_invalid_id_returns_404(self, async_test_client: AsyncClient):
         """Test deleting workspace with invalid ID returns 404."""
         response = await async_test_client.delete("/api/workspaces/invalid-id")
         assert response.status_code == 404
@@ -205,7 +195,5 @@ class TestSystemOperationEndpoints:
             "provider": "ollama",
             "validate_connection": False,
         }
-        response = await async_test_client.post(
-            "/api/system/provider/switch", json=switch_data
-        )
+        response = await async_test_client.post("/api/system/provider/switch", json=switch_data)
         assert response.status_code == 200

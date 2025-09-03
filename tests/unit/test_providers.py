@@ -26,14 +26,14 @@ class TestLLMProviderFactory:
     def test_create_ollama_provider_returns_correct_type(self):
         """Test creating Ollama provider returns correct type."""
         from src.graphrag_api_service.providers.registry import register_providers
-        
+
         # Register providers first
         register_providers()
-        
+
         with patch.dict(os.environ, {"LLM_PROVIDER": "ollama"}):
             settings = Settings()
             provider = LLMProviderFactory.create_provider(settings)
-            
+
             assert provider is not None
             assert isinstance(provider, GraphRAGLLM)
             assert provider.__class__.__name__ == "OllamaProvider"
@@ -41,10 +41,10 @@ class TestLLMProviderFactory:
     def test_create_gemini_provider_returns_correct_type(self):
         """Test creating Gemini provider returns correct type."""
         from src.graphrag_api_service.providers.registry import register_providers
-        
+
         # Register providers first
         register_providers()
-        
+
         with patch.dict(
             os.environ,
             {
@@ -55,7 +55,7 @@ class TestLLMProviderFactory:
         ):
             settings = Settings()
             provider = LLMProviderFactory.create_provider(settings)
-            
+
             assert provider is not None
             assert isinstance(provider, GraphRAGLLM)
             assert provider.__class__.__name__ == "GeminiProvider"
@@ -64,7 +64,7 @@ class TestLLMProviderFactory:
         """Test creating invalid provider raises error."""
         settings = MagicMock()
         settings.llm_provider.value = "invalid_provider"
-        
+
         with pytest.raises(ValueError, match="Unsupported LLM provider"):
             LLMProviderFactory.create_provider(settings)
 
@@ -75,10 +75,15 @@ class TestOllamaProvider:
     @pytest.fixture
     def ollama_provider(self):
         """Create an Ollama provider instance for testing."""
-        from src.graphrag_api_service.providers.ollama_provider import OllamaProvider
-        
+        from src.graphrag_api_service.providers import OllamaGraphRAGLLM
+
         settings = Settings()
-        return OllamaProvider(settings)
+        config = {
+            "base_url": settings.ollama_base_url,
+            "llm_model": settings.ollama_llm_model,
+            "embedding_model": settings.ollama_embedding_model,
+        }
+        return OllamaGraphRAGLLM(config)
 
     @pytest.mark.asyncio
     async def test_validate_connection_success(self, ollama_provider):
@@ -88,7 +93,7 @@ class TestOllamaProvider:
                 status_code=200,
                 json=AsyncMock(return_value={"status": "ok"}),
             )
-            
+
             result = await ollama_provider.validate_connection()
             assert result is True
 
@@ -97,7 +102,7 @@ class TestOllamaProvider:
         """Test failed connection validation."""
         with patch("httpx.AsyncClient.get") as mock_get:
             mock_get.side_effect = Exception("Connection failed")
-            
+
             result = await ollama_provider.validate_connection()
             assert result is False
 
@@ -109,7 +114,7 @@ class TestOllamaProvider:
                 status_code=200,
                 json=AsyncMock(return_value={"response": "Generated text"}),
             )
-            
+
             result = await ollama_provider.generate_text("Test prompt")
             assert result == "Generated text"
 
@@ -121,7 +126,7 @@ class TestOllamaProvider:
                 status_code=200,
                 json=AsyncMock(return_value={"embedding": [0.1, 0.2, 0.3]}),
             )
-            
+
             result = await ollama_provider.generate_embeddings(["Test text"])
             assert len(result) == 1
             assert len(result[0]) == 3
@@ -133,8 +138,8 @@ class TestGeminiProvider:
     @pytest.fixture
     def gemini_provider(self):
         """Create a Gemini provider instance for testing."""
-        from src.graphrag_api_service.providers.gemini_provider import GeminiProvider
-        
+        from src.graphrag_api_service.providers import GeminiGraphRAGLLM
+
         with patch.dict(
             os.environ,
             {
@@ -144,14 +149,19 @@ class TestGeminiProvider:
             },
         ):
             settings = Settings()
-            return GeminiProvider(settings)
+            config = {
+                "api_key": settings.google_api_key,
+                "project_id": settings.google_project_id,
+                "model": settings.gemini_model,
+            }
+            return GeminiGraphRAGLLM(config)
 
     @pytest.mark.asyncio
     async def test_validate_connection_with_api_key(self, gemini_provider):
         """Test connection validation with API key."""
         with patch.object(gemini_provider, "_validate_with_api_key") as mock_validate:
             mock_validate.return_value = True
-            
+
             result = await gemini_provider.validate_connection()
             assert result is True
 
@@ -162,14 +172,14 @@ class TestGeminiProvider:
             mock_response = MagicMock()
             mock_response.text = "Generated response"
             mock_generate.return_value = mock_response
-            
+
             result = await gemini_provider.generate_text("Test prompt")
             assert result == "Generated response"
 
     def test_get_model_info_returns_correct_data(self, gemini_provider):
         """Test getting model info returns correct data."""
         info = gemini_provider.get_model_info()
-        
+
         assert "name" in info
         assert "version" in info
         assert "max_tokens" in info

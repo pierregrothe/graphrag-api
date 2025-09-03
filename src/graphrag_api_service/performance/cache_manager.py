@@ -6,6 +6,7 @@
 """Advanced caching system with TTL, LRU eviction, and performance monitoring."""
 
 import asyncio
+import gzip  # Moved from inside set method
 import hashlib
 import json
 import logging
@@ -16,6 +17,14 @@ from typing import Any
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+
+class CacheKeyComponents(BaseModel):
+    """Components that form a cache key."""
+
+    namespace: str
+    identifier: str
+    params: dict[str, Any] | None = None
 
 
 class CacheConfig(BaseModel):
@@ -88,46 +97,35 @@ class CacheManager:
             self._cleanup_task = None
             logger.info("Cache manager stopped")
 
-    def _generate_key(
-        self, namespace: str, identifier: str, params: dict[str, Any] | None = None
-    ) -> str:
+    def _generate_key(self, components: CacheKeyComponents) -> str:
         """Generate a cache key.
 
         Args:
-            namespace: Cache namespace
-            identifier: Unique identifier
-            params: Optional parameters
+            components: Components for the cache key (namespace, identifier, params)
 
         Returns:
             Generated cache key
         """
         key_data = {
-            "namespace": namespace,
-            "identifier": identifier,
-            "params": params or {},
+            "namespace": components.namespace,
+            "identifier": components.identifier,
+            "params": components.params or {},
         }
 
         key_string = json.dumps(key_data, sort_keys=True)
         return hashlib.sha256(key_string.encode()).hexdigest()[:16]
 
-    async def get(
-        self,
-        namespace: str,
-        identifier: str,
-        params: dict[str, Any] | None = None,
-    ) -> Any | None:
+    async def get(self, components: CacheKeyComponents) -> Any | None:
         """Get an item from the cache.
 
         Args:
-            namespace: Cache namespace
-            identifier: Unique identifier
-            params: Optional parameters
+            components: Components for the cache key (namespace, identifier, params)
 
         Returns:
             Cached item if found and valid
         """
         start_time = time.time()
-        key = self._generate_key(namespace, identifier, params)
+        key = self._generate_key(components)
 
         async with self._lock:
             self._metrics.total_requests += 1
@@ -157,30 +155,26 @@ class CacheManager:
             self._metrics.cache_hits += 1
             self._record_response_time(time.time() - start_time)
 
-            logger.debug(f"Cache hit for key: {key}")
+            logger.debug("Cache hit for key: %s", key)
             return entry.data
 
     async def set(
         self,
-        namespace: str,
-        identifier: str,
+        components: CacheKeyComponents,
         data: Any,
-        params: dict[str, Any] | None = None,
         ttl: int | None = None,
     ) -> bool:
         """Set an item in the cache.
 
         Args:
-            namespace: Cache namespace
-            identifier: Unique identifier
+            components: Components for the cache key (namespace, identifier, params)
             data: Data to cache
-            params: Optional parameters
             ttl: Time to live in seconds
 
         Returns:
             True if successfully cached
         """
-        key = self._generate_key(namespace, identifier, params)
+        key = self._generate_key(components)
         ttl = ttl or self.config.default_ttl
 
         try:
@@ -189,8 +183,6 @@ class CacheManager:
             compressed = False
 
             if self.config.compression_enabled and len(serialized_data) > 1024:
-                import gzip
-
                 serialized_data = gzip.compress(serialized_data)
                 compressed = True
 
@@ -198,7 +190,7 @@ class CacheManager:
 
             # Check memory limits
             if size_bytes > self.config.max_memory_mb * 1024 * 1024:
-                logger.warning(f"Item too large to cache: {size_bytes} bytes")
+                logger.warning("Item too large to cache: %s bytes", size_bytes)
                 return False
 
             async with self._lock:
@@ -226,35 +218,28 @@ class CacheManager:
 
                 await self._update_memory_usage()
 
-                logger.debug(f"Cached item with key: {key}, size: {size_bytes} bytes")
+                logger.debug("Cached item with key: %s, size: %s bytes", key, size_bytes)
                 return True
 
-        except Exception as e:
-            logger.error(f"Failed to cache item: {e}")
+        except (pickle.PicklingError, OSError) as e:  # Catch specific exceptions
+            logger.error("Failed to cache item: %s", e)
             return False
 
-    async def delete(
-        self,
-        namespace: str,
-        identifier: str,
-        params: dict[str, Any] | None = None,
-    ) -> bool:
+    async def delete(self, components: CacheKeyComponents) -> bool:
         """Delete an item from the cache.
 
         Args:
-            namespace: Cache namespace
-            identifier: Unique identifier
-            params: Optional parameters
+            components: Components for the cache key (namespace, identifier, params)
 
         Returns:
             True if item was deleted
         """
-        key = self._generate_key(namespace, identifier, params)
+        key = self._generate_key(components)
 
         async with self._lock:
             if key in self._cache:
                 await self._remove_entry(key)
-                logger.debug(f"Deleted cache entry: {key}")
+                logger.debug("Deleted cache entry: %s", key)
                 return True
 
         return False
@@ -281,7 +266,7 @@ class CacheManager:
                 await self._remove_entry(key)
                 cleared_count += 1
 
-        logger.info(f"Cleared {cleared_count} entries from namespace: {namespace}")
+        logger.info("Cleared %s entries from namespace: %s", cleared_count, namespace)
         return cleared_count
 
     async def _ensure_space(self, required_bytes: int) -> None:
@@ -353,7 +338,10 @@ class CacheManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Cache cleanup error: {e}")
+                # Catching a general Exception here to prevent the background cleanup loop
+                # from crashing due to unforeseen errors, ensuring its continuous operation.
+                # Specific exceptions should be handled if known.
+                logger.error("Cache cleanup error: %s", e)
 
     async def _cleanup_expired(self) -> None:
         """Clean up expired cache entries."""
@@ -370,7 +358,7 @@ class CacheManager:
 
             if expired_keys:
                 await self._update_memory_usage()
-                logger.debug(f"Cleaned up {len(expired_keys)} expired cache entries")
+                logger.debug("Cleaned up %s expired cache entries", len(expired_keys))
 
     async def get_metrics(self) -> CacheMetrics:
         """Get cache performance metrics.
@@ -410,6 +398,10 @@ class CacheManager:
 
 
 # Global cache manager instance
+# Rationale: Using a global instance for the cache manager simplifies access
+# throughout the application and ensures a single, consistent cache state.
+# While 'global' is generally discouraged, it's a common and acceptable pattern
+# for managing singletons like this in Python applications.
 _cache_manager: CacheManager | None = None
 
 

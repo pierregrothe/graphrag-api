@@ -16,8 +16,6 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-from tests.fixtures.clients import async_test_client
-
 
 class TestGraphQLQueries:
     """Test GraphQL query operations."""
@@ -35,10 +33,10 @@ class TestGraphQLQueries:
             }
         }
         """
-        
+
         response = await async_test_client.post("/graphql", json={"query": query})
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "data" in data
         assert "applicationInfo" in data["data"]
@@ -58,10 +56,10 @@ class TestGraphQLQueries:
             }
         }
         """
-        
+
         response = await async_test_client.post("/graphql", json={"query": query})
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "data" in data
         assert "workspaces" in data["data"]
@@ -80,7 +78,7 @@ class TestGraphQLQueries:
             }
         }
         """
-        
+
         variables = {"id": "test-workspace-id"}
         response = await async_test_client.post(
             "/graphql", json={"query": query, "variables": variables}
@@ -100,10 +98,10 @@ class TestGraphQLQueries:
             }
         }
         """
-        
+
         response = await async_test_client.post("/graphql", json={"query": query})
         assert response.status_code == 200
-        
+
         data = response.json()
         if "data" in data and data["data"]:
             stats = data["data"].get("graphStatistics")
@@ -129,7 +127,7 @@ class TestGraphQLMutations:
                 }
             }
             """
-            
+
             variables = {
                 "input": {
                     "name": f"graphql-workspace-{uuid.uuid4().hex[:8]}",
@@ -137,7 +135,7 @@ class TestGraphQLMutations:
                     "dataPath": temp_dir,
                 }
             }
-            
+
             response = await async_test_client.post(
                 "/graphql", json={"query": mutation, "variables": variables}
             )
@@ -155,14 +153,14 @@ class TestGraphQLMutations:
             }
         }
         """
-        
+
         variables = {
             "id": "test-workspace-id",
             "input": {
                 "description": "Updated via GraphQL",
-            }
+            },
         }
-        
+
         response = await async_test_client.post(
             "/graphql", json={"query": mutation, "variables": variables}
         )
@@ -179,7 +177,7 @@ class TestGraphQLMutations:
             }
         }
         """
-        
+
         variables = {"id": "test-workspace-id"}
         response = await async_test_client.post(
             "/graphql", json={"query": mutation, "variables": variables}
@@ -198,7 +196,7 @@ class TestGraphQLMutations:
             }
         }
         """
-        
+
         variables = {
             "input": {
                 "query": "What are the main topics?",
@@ -206,7 +204,7 @@ class TestGraphQLMutations:
                 "workspaceId": "test-workspace",
             }
         }
-        
+
         response = await async_test_client.post(
             "/graphql", json={"query": mutation, "variables": variables}
         )
@@ -224,7 +222,7 @@ class TestGraphQLMutations:
             }
         }
         """
-        
+
         variables = {"workspaceId": "test-workspace"}
         response = await async_test_client.post(
             "/graphql", json={"query": mutation, "variables": variables}
@@ -244,10 +242,10 @@ class TestGraphQLMutations:
             }
         }
         """
-        
+
         response = await async_test_client.post("/graphql", json={"query": mutation})
         assert response.status_code == 200
-        
+
         data = response.json()
         if "data" in data and data["data"]:
             result = data["data"].get("clearCache")

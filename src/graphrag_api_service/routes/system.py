@@ -82,8 +82,8 @@ async def clear_cache(
                 # Clear specific namespace (if supported)
                 cleared_count = await actual_cache_manager.clear_namespace(namespace)
             else:
-                # Clear all cache
-                cleared_count = await actual_cache_manager.clear_all()
+                # Clear all cache by clearing root namespace
+                cleared_count = await actual_cache_manager.clear_namespace("")
 
             return {
                 "success": True,
@@ -136,17 +136,30 @@ async def get_cache_statistics(system_operations: SystemOperationsDep = None) ->
         }
 
     try:
-        # Get cache statistics from system operations
-        result = await system_operations.get_cache_statistics()
+        # Get cache statistics directly from cache manager
+        from ..performance.cache_manager import get_cache_manager
 
-        return {
-            "total_size_bytes": result.get("total_size_bytes", 0),
-            "total_files": result.get("total_files", 0),
-            "cache_hit_rate": result.get("cache_hit_rate", 0.0),
-            "last_cleared": result.get("last_cleared"),
-            "cache_types": result.get("cache_types", {}),
-            "namespaces": result.get("namespaces", []),
-        }
+        actual_cache_manager = await get_cache_manager()
+
+        if actual_cache_manager:
+            status = await actual_cache_manager.get_status()
+            return {
+                "total_size_bytes": int(status.get("memory_usage_mb", 0) * 1024 * 1024),
+                "total_files": status.get("entries", 0),
+                "cache_hit_rate": status.get("hit_rate", 0.0),
+                "last_cleared": None,  # Not tracked
+                "cache_types": {},
+                "namespaces": [],
+            }
+        else:
+            return {
+                "total_size_bytes": 0,
+                "total_files": 0,
+                "cache_hit_rate": 0.0,
+                "last_cleared": None,
+                "cache_types": {},
+                "namespaces": [],
+            }
 
     except Exception as e:
         logger.error(f"Failed to get cache statistics: {e}")
@@ -194,7 +207,7 @@ async def switch_provider(
 
     try:
         # Switch provider using system operations
-        result = await system_operations.switch_llm_provider(request.provider)
+        result = await system_operations.switch_provider(request.provider)
 
         return {
             "success": True,
@@ -430,16 +443,30 @@ async def delete_cache(system_operations: SystemOperationsDep = None) -> dict[st
         }
 
     try:
-        # Delete cache using system operations
-        result = await system_operations.delete_cache()
+        # Delete cache using cache manager directly
+        from ..performance.cache_manager import get_cache_manager
 
-        return {
-            "success": True,
-            "message": result.get("message", "Cache deleted successfully"),
-            "files_cleared": result.get("files_cleared", 0),
-            "bytes_freed": result.get("bytes_freed", 0),
-            "cache_types_cleared": result.get("cache_types_cleared", []),
-        }
+        actual_cache_manager = await get_cache_manager()
+
+        if actual_cache_manager:
+            # Clear all cache by clearing root namespace
+            cleared_count = await actual_cache_manager.clear_namespace("")
+
+            return {
+                "success": True,
+                "message": "Cache deleted successfully",
+                "files_cleared": cleared_count,
+                "bytes_freed": 0,  # Not tracked by cache manager
+                "cache_types_cleared": [],
+            }
+        else:
+            return {
+                "success": True,
+                "message": "No cache to delete",
+                "files_cleared": 0,
+                "bytes_freed": 0,
+                "cache_types_cleared": [],
+            }
 
     except Exception as e:
         logger.error(f"Failed to delete cache: {e}")

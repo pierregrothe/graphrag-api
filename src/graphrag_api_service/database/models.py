@@ -7,10 +7,9 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import declarative_base, relationship
@@ -181,7 +180,7 @@ class UserResponse(BaseModel):
     is_active: bool
     is_admin: bool
     created_at: datetime
-    roles: List[str] = []
+    roles: list[str] = []
 
     class Config:
         from_attributes = True
@@ -192,8 +191,8 @@ class RoleResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str]
-    permissions: List[str]
+    description: str | None
+    permissions: list[str]
     created_at: datetime
 
     class Config:
@@ -205,7 +204,7 @@ class WorkspaceResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str]
+    description: str | None
     status: str
     config: dict
     created_at: datetime

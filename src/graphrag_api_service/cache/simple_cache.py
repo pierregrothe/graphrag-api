@@ -7,7 +7,7 @@
 
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class SimpleMemoryCache:
         self.hits = 0
         self.misses = 0
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache.
 
         Args:
@@ -49,7 +49,7 @@ class SimpleMemoryCache:
         self.misses += 1
         return None
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Set value in cache.
 
         Args:
@@ -121,7 +121,7 @@ class SimpleCacheManager:
     """Simple cache manager supporting memory and Redis (optional)."""
 
     def __init__(
-        self, cache_type: str = "memory", cache_ttl: int = 3600, redis_url: Optional[str] = None
+        self, cache_type: str = "memory", cache_ttl: int = 3600, redis_url: str | None = None
     ):
         """Initialize cache manager.
 
@@ -144,11 +144,11 @@ class SimpleCacheManager:
         else:
             raise ValueError(f"Unknown cache type: {cache_type}")
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache."""
         return self.backend.get(key)
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Set value in cache."""
         self.backend.set(key, value, ttl)
 
@@ -168,13 +168,13 @@ class SimpleCacheManager:
 
 
 # Global cache manager
-_cache_manager: Optional[SimpleCacheManager] = None
+_cache_manager: SimpleCacheManager | None = None
 
 
 def get_cache_manager(
-    cache_type: Optional[str] = None,
-    cache_ttl: Optional[int] = None,
-    redis_url: Optional[str] = None,
+    cache_type: str | None = None,
+    cache_ttl: int | None = None,
+    redis_url: str | None = None,
 ) -> SimpleCacheManager:
     """Get the global cache manager.
 

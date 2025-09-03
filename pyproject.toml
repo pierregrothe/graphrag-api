@@ -34,6 +34,8 @@ httpx = "^0.28.1"
 pytest-httpx = "^0.35.0"
 gql = {extras = ["all"], version = "^4.0.0"}
 pytest-benchmark = "^5.1.0"
+pylint = "^3.3.8"
+types-passlib = "^1.7.7.20250602"
 
 [build-system]
 requires = ["poetry-core"]

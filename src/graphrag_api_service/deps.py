@@ -61,10 +61,17 @@ def get_cache_manager_dep():
         return None
 
 
+# Import the actual types for better type hinting
+from .graph.operations import GraphOperations
+from .graphrag_integration import GraphRAGIntegration
+from .indexing.manager import IndexingManager
+from .system.operations import SystemOperations
+from .workspace.manager import WorkspaceManager
+
 # Type aliases for dependency injection
-WorkspaceManagerDep = Annotated[object, Depends(get_workspace_manager)]
-IndexingManagerDep = Annotated[object, Depends(get_indexing_manager)]
-GraphOperationsDep = Annotated[object, Depends(get_graph_operations)]
-GraphRAGIntegrationDep = Annotated[object, Depends(get_graphrag_integration)]
-SystemOperationsDep = Annotated[object, Depends(get_system_operations)]
-CacheManagerDep = Annotated[object, Depends(get_cache_manager_dep)]
+WorkspaceManagerDep = Annotated[WorkspaceManager | None, Depends(get_workspace_manager)]
+IndexingManagerDep = Annotated[IndexingManager | None, Depends(get_indexing_manager)]
+GraphOperationsDep = Annotated[GraphOperations | None, Depends(get_graph_operations)]
+GraphRAGIntegrationDep = Annotated[GraphRAGIntegration | None, Depends(get_graphrag_integration)]
+SystemOperationsDep = Annotated[SystemOperations | None, Depends(get_system_operations)]
+CacheManagerDep = Annotated[object | None, Depends(get_cache_manager_dep)]

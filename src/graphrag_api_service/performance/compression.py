@@ -6,9 +6,11 @@
 """Response compression and pagination for improved API performance."""
 
 import asyncio
+import base64  # Moved from inside _generate_cursor
 import gzip
 import json
 import logging
+import zlib  # Moved from inside compress_response
 from typing import Any
 
 from fastapi import Request, Response
@@ -97,13 +99,10 @@ class ResponseCompressor:
         if encoding == "gzip":
             compressed = gzip.compress(content, compresslevel=self.config.compression_level)
             return compressed, "gzip"
-        elif encoding == "deflate":
-            import zlib
-
+        if encoding == "deflate":
             compressed = zlib.compress(content, level=self.config.compression_level)
             return compressed, "deflate"
-        else:
-            return content, "identity"
+        return content, "identity"
 
     def get_preferred_encoding(self, request: Request) -> str:
         """Get the preferred compression encoding from request.
@@ -190,7 +189,7 @@ class PaginationHandler:
         page_data = data[start_index:end_index]
 
         # Build pagination metadata
-        pagination = {
+        pagination: dict[str, Any] = {
             "page": params.page,
             "page_size": params.page_size,
             "total_pages": total_pages,
@@ -207,9 +206,9 @@ class PaginationHandler:
 
         # Add cursor pagination if enabled
         if self.config.enable_cursor_pagination and page_data:
-            pagination["next_cursor"] = self._generate_cursor(page_data[-1])
+            pagination["next_cursor"] = str(self._generate_cursor(page_data[-1]))
             if start_index > 0:
-                pagination["previous_cursor"] = self._generate_cursor(data[start_index - 1])
+                pagination["previous_cursor"] = str(self._generate_cursor(data[start_index - 1]))
 
         return PaginatedResponse(
             data=page_data,
@@ -226,7 +225,6 @@ class PaginationHandler:
         Returns:
             Base64 encoded cursor
         """
-        import base64
 
         if isinstance(item, dict):
             cursor_data = str(item.get("id", hash(str(item))))
@@ -291,8 +289,10 @@ class PerformanceMiddleware:
             # Calculate compression ratio
             compression_ratio = len(compressed_content) / len(content)
             logger.debug(
-                f"Response compressed: {len(content)} -> {len(compressed_content)} bytes "
-                f"(ratio: {compression_ratio:.2f})"
+                "Response compressed: %s -> %s bytes (ratio: %.2f)",
+                len(content),
+                len(compressed_content),
+                compression_ratio,
             )
 
             response = Response(
@@ -330,6 +330,10 @@ class PerformanceMiddleware:
 
 
 # Global performance middleware instance
+# Rationale: Using a global instance for the performance middleware simplifies access
+# throughout the application and ensures a single, consistent state for compression
+# and pagination configurations. While 'global' is generally discouraged, it's a common
+# and acceptable pattern for managing singletons like this in Python applications.
 _performance_middleware: PerformanceMiddleware | None = None
 
 

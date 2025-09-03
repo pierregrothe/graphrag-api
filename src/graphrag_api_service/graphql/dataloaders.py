@@ -52,7 +52,7 @@ class DataLoader:
             return await self._batch_promises[key]
 
         # Add to batch
-        future = asyncio.Future()
+        future: asyncio.Future[Any] = asyncio.Future()
         self._batch_promises[key] = future
         self._batch.append(key)
 
@@ -103,7 +103,7 @@ class DataLoader:
                     current_promises[key].set_result(result)
 
         except Exception as e:
-            logger.error(f"Batch load failed: {e}")
+            logger.error("Batch load failed: %s", e)
             # Reject all promises
             for key in current_batch:
                 if key in current_promises:
@@ -147,18 +147,23 @@ class EntityDataLoader(DataLoader):
 
         try:
             # Query entities in batch
+            # Note: query_entities doesn't support batch by IDs, need to fetch all and filter
             result = await self.graph_operations.query_entities(
-                data_path=settings.graphrag_data_path, entity_ids=entity_ids, limit=len(entity_ids)
+                data_path=settings.graphrag_data_path, limit=1000
             )
 
-            # Create lookup map
-            entity_map = {e["id"]: e for e in result.get("entities", [])}
+            # Filter entities to only those requested and create lookup map
+            all_entities = result.get("entities", [])
+            entity_map = {}
+            for entity in all_entities:
+                if entity.get("id") in entity_ids:
+                    entity_map[entity["id"]] = entity
 
             # Return results in the same order as requested
             return [entity_map.get(entity_id) for entity_id in entity_ids]
 
         except Exception as e:
-            logger.error(f"Failed to batch load entities: {e}")
+            logger.error("Failed to batch load entities: %s", e)
             return [None] * len(entity_ids)
 
 
@@ -190,20 +195,24 @@ class RelationshipDataLoader(DataLoader):
 
         try:
             # Query relationships in batch
+            # Note: query_relationships doesn't support batch by IDs, need to fetch all and filter
             result = await self.graph_operations.query_relationships(
                 data_path=settings.graphrag_data_path,
-                relationship_ids=relationship_ids,
-                limit=len(relationship_ids),
+                limit=1000,
             )
 
-            # Create lookup map
-            relationship_map = {r["id"]: r for r in result.get("relationships", [])}
+            # Filter relationships to only those requested and create lookup map
+            all_relationships = result.get("relationships", [])
+            relationship_map = {}
+            for rel in all_relationships:
+                if rel.get("id") in relationship_ids:
+                    relationship_map[rel["id"]] = rel
 
             # Return results in the same order as requested
             return [relationship_map.get(rel_id) for rel_id in relationship_ids]
 
         except Exception as e:
-            logger.error(f"Failed to batch load relationships: {e}")
+            logger.error("Failed to batch load relationships: %s", e)
             return [None] * len(relationship_ids)
 
 
@@ -235,9 +244,9 @@ class EntityRelationshipsDataLoader(DataLoader):
 
         try:
             # Query relationships for all entities at once
+            # Note: Need to fetch all relationships and filter by source entities
             result = await self.graph_operations.query_relationships(
                 data_path=settings.graphrag_data_path,
-                source_entities=entity_ids,
                 limit=1000,  # Large limit to get all relationships
             )
 
@@ -252,7 +261,7 @@ class EntityRelationshipsDataLoader(DataLoader):
             return [relationships_by_entity.get(entity_id, []) for entity_id in entity_ids]
 
         except Exception as e:
-            logger.error(f"Failed to batch load entity relationships: {e}")
+            logger.error("Failed to batch load entity relationships: %s", e)
             return [[] for _ in entity_ids]
 
 
@@ -297,7 +306,7 @@ class CommunityDataLoader(DataLoader):
             return [community_map.get(community_id) for community_id in community_ids]
 
         except Exception as e:
-            logger.error(f"Failed to batch load communities: {e}")
+            logger.error("Failed to batch load communities: %s", e)
             return [None] * len(community_ids)
 
 

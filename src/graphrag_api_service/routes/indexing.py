@@ -57,7 +57,9 @@ async def create_indexing_job(
         job = indexing_manager.create_indexing_job(request, workspace)
 
         # Update workspace status
-        workspace.status = "INDEXING"
+        from ..workspace.models import WorkspaceStatus
+
+        workspace.status = WorkspaceStatus.INDEXING
         workspace_manager._save_workspaces_index()
 
         logger.info(f"Created indexing job {job.id} for workspace {request.workspace_id}")
@@ -184,7 +186,11 @@ async def retry_indexing_job(
     try:
         retried = indexing_manager.retry_job(job_id)
         if retried:
-            return indexing_manager.get_job(job_id)
+            retried_job = indexing_manager.get_job(job_id)
+            if retried_job:
+                return retried_job
+            else:
+                raise HTTPException(status_code=500, detail=f"Failed to get retried job {job_id}")
         else:
             raise HTTPException(status_code=500, detail=f"Failed to retry job {job_id}")
 

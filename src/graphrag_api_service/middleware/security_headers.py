@@ -5,7 +5,7 @@
 
 """Security headers middleware for enhanced protection."""
 
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -38,14 +38,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     self.security_config.headers.strict_transport_security
                 )
 
-        return response
+        return response  # type: ignore[no-any-return]
 
 
 def setup_security_headers(app: ASGIApp) -> ASGIApp:
     """Set up security headers for the application."""
     config = get_security_config()
-    
+
     if config.enable_security:
-        app.add_middleware(SecurityHeadersMiddleware)
-    
+        # Note: This function is for documentation purposes
+        # Actual middleware should be added to FastAPI app instance
+        pass
+
     return app

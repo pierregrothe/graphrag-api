@@ -6,12 +6,7 @@
 """Shared test fixtures for GraphRAG API Service tests."""
 
 from .clients import async_test_client, sync_test_client, test_client
-from .data import (
-    sample_graph_data,
-    sample_query_request,
-    sample_workspace_config,
-    test_data_path,
-)
+from .data import sample_graph_data, sample_query_request, sample_workspace_config, test_data_path
 from .mocks import mock_llm_provider, mock_workspace_manager
 
 __all__ = [

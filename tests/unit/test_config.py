@@ -48,7 +48,7 @@ class TestConfigurationSettings:
         """Test GraphRAG data and config path settings."""
         test_data_path = "/test/data"
         test_config_path = "/test/config"
-        
+
         with patch.dict(
             os.environ,
             {
@@ -116,7 +116,7 @@ class TestLLMProviderConfiguration:
         """Test that get_provider_info returns correct provider information."""
         settings = Settings()
         info = settings.get_provider_info()
-        
+
         assert "provider" in info
         assert info["provider"] == "ollama"
         assert "base_url" in info or "project_id" in info

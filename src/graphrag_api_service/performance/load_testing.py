@@ -7,6 +7,7 @@
 
 import asyncio
 import logging
+import random  # Moved from inside _select_weighted_scenario
 import statistics
 import time
 from typing import Any
@@ -129,7 +130,9 @@ class BenchmarkSuite:
             Dictionary of test results by scenario name
         """
         logger.info(
-            f"Starting load test with {self.config.concurrent_users} users for {self.config.test_duration_seconds}s"
+            "Starting load test with %s users for %ss",
+            self.config.concurrent_users,
+            self.config.test_duration_seconds,
         )
 
         # Create user tasks
@@ -193,7 +196,7 @@ class BenchmarkSuite:
                 # Small delay between requests
                 await asyncio.sleep(0.1)
 
-        logger.debug(f"User {user_id} completed {request_count} requests")
+        logger.debug("User %s completed %s requests", user_id, request_count)
         return results
 
     def _select_weighted_scenario(self) -> LoadTestScenario:
@@ -202,12 +205,13 @@ class BenchmarkSuite:
         Returns:
             Selected test scenario
         """
-        import random
+        if not self.scenarios:
+            raise ValueError("No load test scenarios defined.")
 
         total_weight = sum(scenario.weight for scenario in self.scenarios)
         random_value = random.uniform(0, total_weight)
 
-        cumulative_weight = 0
+        cumulative_weight = 0.0
         for scenario in self.scenarios:
             cumulative_weight += scenario.weight
             if random_value <= cumulative_weight:
@@ -256,7 +260,7 @@ class BenchmarkSuite:
                 "timestamp": start_time,
             }
 
-        except Exception as e:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             response_time = time.time() - start_time
             return {
                 "scenario": scenario.name,
@@ -267,6 +271,12 @@ class BenchmarkSuite:
                 "error": str(e),
                 "timestamp": start_time,
             }
+
+    def _calculate_percentile(self, data: list[float], p: float) -> float:
+        if not data:
+            return 0.0
+        index = int(len(data) * p / 100)
+        return data[min(index, len(data) - 1)]
 
     def _aggregate_scenario_results(
         self, scenario_name: str, user_results: list[list[dict[str, Any]]]
@@ -322,16 +332,15 @@ class BenchmarkSuite:
             return data[min(index, len(data) - 1)]
 
         # Calculate requests per second
-        if scenario_requests:
-            start_time = min(req["timestamp"] for req in scenario_requests)
-            end_time = max(req["timestamp"] + req["response_time"] for req in scenario_requests)
-            duration = max(end_time - start_time, 1.0)
-            requests_per_second = total_requests / duration
+        timestamps = [req["timestamp"] for req in scenario_requests]
+        if timestamps:
+            duration = max(timestamps) - min(timestamps)
+            requests_per_second = total_requests / duration if duration > 0 else 0.0
         else:
             requests_per_second = 0.0
 
         # Count errors
-        errors = {}
+        errors: dict[str, int] = {}
         for req in scenario_requests:
             if not req["success"]:
                 error_key = req.get("error", f"HTTP_{req['status_code']}")

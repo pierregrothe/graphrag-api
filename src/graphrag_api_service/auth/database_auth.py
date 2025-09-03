@@ -51,11 +51,11 @@ class DatabaseAuthenticationService:
             user = result.scalar_one_or_none()
 
             if not user:
-                logger.warning(f"Authentication failed: user not found - {credentials.username}")
+                logger.warning("Authentication failed: user not found - %s", credentials.username)
                 return None
 
             if not self.jwt_manager.verify_password(credentials.password, user.password_hash):
-                logger.warning(f"Authentication failed: invalid password - {credentials.username}")
+                logger.warning("Authentication failed: invalid password - %s", credentials.username)
                 return None
 
             # Update last login time
@@ -82,7 +82,7 @@ class DatabaseAuthenticationService:
                 expires_at=expires_at,
             )
 
-            logger.info(f"User authenticated successfully: {user.username}")
+            logger.info("User authenticated successfully: %s", user.username)
             return token_data
 
     async def create_user(
@@ -153,7 +153,7 @@ class DatabaseAuthenticationService:
             await session.commit()
             await session.refresh(user)
 
-            logger.info(f"Created user: {username} with roles: {roles}")
+            logger.info("Created user: %s with roles: %s", username, roles)
             return user
 
     async def get_user_by_id(self, user_id: str) -> User | None:
@@ -168,7 +168,8 @@ class DatabaseAuthenticationService:
         async with self.session_factory() as session:
             stmt = select(User).options(selectinload(User.roles)).where(User.id == user_id)
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            user: User | None = result.scalar_one_or_none()
+            return user
 
     async def get_user_by_username(self, username: str) -> User | None:
         """Get user by username.
@@ -182,7 +183,8 @@ class DatabaseAuthenticationService:
         async with self.session_factory() as session:
             stmt = select(User).options(selectinload(User.roles)).where(User.username == username)
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            user: User | None = result.scalar_one_or_none()
+            return user
 
     async def update_user_password(self, user_id: str, new_password: str) -> bool:
         """Update user password.
@@ -203,7 +205,7 @@ class DatabaseAuthenticationService:
             user.updated_at = datetime.now(UTC)
             await session.commit()
 
-            logger.info(f"Updated password for user: {user.username}")
+            logger.info("Updated password for user: %s", user.username)
             return True
 
     async def deactivate_user(self, user_id: str) -> bool:
@@ -224,7 +226,7 @@ class DatabaseAuthenticationService:
             user.updated_at = datetime.now(UTC)
             await session.commit()
 
-            logger.info(f"Deactivated user: {user.username}")
+            logger.info("Deactivated user: %s", user.username)
             return True
 
     async def create_default_roles(self) -> None:
@@ -297,10 +299,13 @@ class DatabaseAuthenticationService:
                 if not all([user_id, username, email, exp_str]):
                     return None
 
-                # Convert exp timestamp to datetime
-                from datetime import datetime
+                # Type assert after validation - we know these are not None
+                assert isinstance(user_id, str)
+                assert isinstance(username, str)
+                assert isinstance(email, str)
 
-                if isinstance(exp_str, (int, float)):
+                # Convert exp timestamp to datetime
+                if isinstance(exp_str, int | float):
                     expires_at = datetime.fromtimestamp(exp_str, tz=UTC)
                 else:
                     expires_at = datetime.fromisoformat(str(exp_str))

@@ -54,6 +54,20 @@ async def query_graphrag(
             "error": "GraphRAG integration not configured",
         }
 
+    # Check if workspace_manager is available
+    if not workspace_manager:
+        return {
+            "query": query,
+            "response": "Workspace manager not available",
+            "context": None,
+            "query_type": query_type.upper(),
+            "processing_time": 0.0,
+            "entity_count": 0,
+            "relationship_count": 0,
+            "token_count": 0,
+            "error": "Workspace manager not configured",
+        }
+
     try:
         # Get workspace to determine data path
         workspace = await workspace_manager.get_workspace(workspace_id)
@@ -71,7 +85,7 @@ async def query_graphrag(
             }
 
         # Determine data path from workspace
-        data_path = workspace.get_output_directory_path()
+        data_path = workspace.get_output_directory(workspace_manager.base_workspaces_path)
         if not data_path or not data_path.exists():
             return {
                 "query": query,
@@ -149,6 +163,16 @@ async def index_data(
             "job_id": None,
             "workspace_id": workspace_id,
             "error": "GraphRAG integration not configured",
+        }
+
+    # Check if workspace_manager is available
+    if not workspace_manager:
+        return {
+            "success": False,
+            "message": "Workspace manager not available",
+            "job_id": None,
+            "workspace_id": workspace_id,
+            "error": "Workspace manager not configured",
         }
 
     try:
@@ -231,7 +255,9 @@ async def get_status(
                     "entities_extracted": workspace.entities_extracted,
                     "relationships_extracted": workspace.relationships_extracted,
                     "data_path": workspace.config.data_path,
-                    "output_path": workspace.get_output_directory_path(),
+                    "output_path": str(
+                        workspace.get_output_directory(workspace_manager.base_workspaces_path)
+                    ),
                 }
             else:
                 return {

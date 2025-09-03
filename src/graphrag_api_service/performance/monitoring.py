@@ -54,6 +54,77 @@ class AlertConfig(BaseModel):
     enabled: bool = True
 
 
+class MetricsStore:
+    """Manages storage and retrieval of performance and request metrics."""
+
+    def __init__(self):
+        """Initialize the MetricsStore."""
+        self._metrics_history: list[PerformanceMetrics] = []
+        self._request_history: list[RequestMetrics] = []
+        self._response_times: list[float] = []
+        self._request_count = 0
+        self._error_count = 0
+
+    def add_performance_metrics(self, metrics: PerformanceMetrics) -> None:
+        """Add performance metrics to history."""
+        self._metrics_history.append(metrics)
+        if len(self._metrics_history) > 1000:
+            self._metrics_history = self._metrics_history[-1000:]
+
+    def add_request_metrics(self, metrics: RequestMetrics) -> None:
+        """Add request metrics to history."""
+        self._request_history.append(metrics)
+        if len(self._request_history) > 10000:
+            self._request_history = self._request_history[-10000:]
+
+    def add_response_time(self, response_time: float) -> None:
+        """Add response time to history."""
+        self._response_times.append(response_time)
+        if len(self._response_times) > 1000:
+            self._response_times = self._response_times[-1000:]
+
+    def increment_request_count(self) -> None:
+        """Increment total request count."""
+        self._request_count += 1
+
+    def increment_error_count(self) -> None:
+        """Increment total error count."""
+        self._error_count += 1
+
+    def get_current_metrics(self) -> PerformanceMetrics | None:
+        """Get the most recent performance metrics."""
+        if self._metrics_history:
+            return self._metrics_history[-1]
+        return None
+
+    def get_metrics_history(self, limit: int = 100) -> list[PerformanceMetrics]:
+        """Get historical performance metrics."""
+        return self._metrics_history[-limit:].copy()
+
+    def get_request_metrics(self, limit: int = 100) -> list[RequestMetrics]:
+        """Get recent request metrics."""
+        return self._request_history[-limit:].copy()
+
+    def get_response_times(self) -> list[float]:
+        """Get historical response times."""
+        return self._response_times.copy()
+
+    def get_request_count(self) -> int:
+        """Get total request count."""
+        return self._request_count
+
+    def get_error_count(self) -> int:
+        """Get total error count."""
+        return self._error_count
+
+    def update_request_status_code(self, request_id: str, status_code: int) -> None:
+        """Update status code for a specific request."""
+        for request_metric in reversed(self._request_history):
+            if request_metric.endpoint in request_id:
+                request_metric.status_code = status_code
+                break
+
+
 class PerformanceMonitor:
     """Performance monitoring system with real-time metrics collection."""
 
@@ -64,14 +135,10 @@ class PerformanceMonitor:
             alert_config: Alert configuration
         """
         self.alert_config = alert_config or AlertConfig()
-        self._metrics_history: list[PerformanceMetrics] = []
-        self._request_history: list[RequestMetrics] = []
         self._monitoring_task: asyncio.Task | None = None
         self._active_requests: dict[str, float] = {}
-        self._request_count = 0
-        self._error_count = 0
-        self._response_times: list[float] = []
         self._lock = asyncio.Lock()
+        self._metrics_store = MetricsStore()  # Use the new MetricsStore class
 
     async def start_monitoring(self, interval: float = 30.0) -> None:
         """Start the performance monitoring task.
@@ -81,7 +148,7 @@ class PerformanceMonitor:
         """
         if self._monitoring_task is None:
             self._monitoring_task = asyncio.create_task(self._monitoring_loop(interval))
-            logger.info(f"Performance monitoring started with {interval}s interval")
+            logger.info("Performance monitoring started with %ss interval", interval)
 
     async def stop_monitoring(self) -> None:
         """Stop the performance monitoring task."""
@@ -118,13 +185,13 @@ class PerformanceMonitor:
 
         async with self._lock:
             self._active_requests[request_id] = start_time
-            self._request_count += 1
+            self._metrics_store.increment_request_count()
 
         try:
             yield request_id
         except Exception:
             async with self._lock:
-                self._error_count += 1
+                self._metrics_store.increment_error_count()
             raise
         finally:
             end_time = time.time()
@@ -134,9 +201,7 @@ class PerformanceMonitor:
                 if request_id in self._active_requests:
                     del self._active_requests[request_id]
 
-                self._response_times.append(response_time)
-                if len(self._response_times) > 1000:
-                    self._response_times = self._response_times[-1000:]
+                self._metrics_store.add_response_time(response_time)
 
                 # Record request metrics
                 request_metric = RequestMetrics(
@@ -149,9 +214,7 @@ class PerformanceMonitor:
                     ip_address=ip_address,
                 )
 
-                self._request_history.append(request_metric)
-                if len(self._request_history) > 10000:
-                    self._request_history = self._request_history[-10000:]
+                self._metrics_store.add_request_metrics(request_metric)
 
     async def record_error(self, request_id: str, status_code: int) -> None:
         """Record an error for a request.
@@ -161,13 +224,10 @@ class PerformanceMonitor:
             status_code: HTTP status code
         """
         async with self._lock:
-            self._error_count += 1
+            self._metrics_store.increment_error_count()
 
             # Update request metrics if found
-            for request_metric in reversed(self._request_history):
-                if request_metric.endpoint in request_id:
-                    request_metric.status_code = status_code
-                    break
+            self._metrics_store.update_request_status_code(request_id, status_code)
 
     async def _monitoring_loop(self, interval: float) -> None:
         """Main monitoring loop.
@@ -182,7 +242,10 @@ class PerformanceMonitor:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Monitoring loop error: {e}")
+                # Catching a general Exception here to prevent the background monitoring loop
+                # from crashing due to unforeseen errors, ensuring its continuous operation.
+                # Specific exceptions should be handled if known.
+                logger.error("Monitoring loop error: %s", e)
                 await asyncio.sleep(interval)
 
     async def _collect_metrics(self) -> None:
@@ -191,18 +254,24 @@ class PerformanceMonitor:
             # System metrics
             cpu_usage = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
-            disk = psutil.disk_usage("/")
+
+            # Get disk usage for the current working directory (cross-platform)
+            import os
+
+            current_path = os.getcwd()
+            disk = psutil.disk_usage(current_path)
 
             # Application metrics
             async with self._lock:
                 active_connections = len(self._active_requests)
-                request_count = self._request_count
-                error_count = self._error_count
+                request_count = self._metrics_store.get_request_count()
+                error_count = self._metrics_store.get_error_count()
 
                 # Calculate average response time
                 avg_response_time = 0.0
-                if self._response_times:
-                    avg_response_time = sum(self._response_times) / len(self._response_times)
+                response_times = self._metrics_store.get_response_times()
+                if response_times:
+                    avg_response_time = sum(response_times) / len(response_times)
 
                 # Calculate error rate
                 error_rate = 0.0
@@ -224,22 +293,23 @@ class PerformanceMonitor:
 
             # Store metrics
             async with self._lock:
-                self._metrics_history.append(metrics)
-                if len(self._metrics_history) > 1000:
-                    self._metrics_history = self._metrics_history[-1000:]
+                self._metrics_store.add_performance_metrics(metrics)
 
             # Check alerts
             await self._check_alerts(metrics)
 
             logger.debug(
-                f"Metrics collected - CPU: {cpu_usage:.1f}%, "
-                f"Memory: {memory.percent:.1f}%, "
-                f"Requests: {request_count}, "
-                f"Avg Response: {avg_response_time:.3f}s"
+                "Metrics collected - CPU: %.1f%%, Memory: %.1f%%, Requests: %s, Avg Response: %.3fs",
+                cpu_usage,
+                memory.percent,
+                request_count,
+                avg_response_time,
             )
 
-        except Exception as e:
-            logger.error(f"Failed to collect metrics: {e}")
+        except psutil.Error as e:
+            # Pylint might incorrectly flag psutil.Error as too general, but it is a specific exception
+            # provided by the psutil library for its own errors.
+            logger.error("Failed to collect metrics: %s", e)
 
     async def _check_alerts(self, metrics: PerformanceMetrics) -> None:
         """Check for alert conditions.
@@ -265,7 +335,7 @@ class PerformanceMonitor:
             alerts.append(f"High error rate: {metrics.error_rate:.1%}")
 
         for alert in alerts:
-            logger.warning(f"PERFORMANCE ALERT: {alert}")
+            logger.warning("PERFORMANCE ALERT: %s", alert)
 
     async def get_current_metrics(self) -> PerformanceMetrics | None:
         """Get the most recent performance metrics.
@@ -274,9 +344,7 @@ class PerformanceMonitor:
             Latest performance metrics
         """
         async with self._lock:
-            if self._metrics_history:
-                return self._metrics_history[-1]
-        return None
+            return self._metrics_store.get_current_metrics()
 
     async def get_metrics_history(self, limit: int = 100) -> list[PerformanceMetrics]:
         """Get historical performance metrics.
@@ -288,7 +356,7 @@ class PerformanceMonitor:
             List of performance metrics
         """
         async with self._lock:
-            return self._metrics_history[-limit:].copy()
+            return self._metrics_store.get_metrics_history(limit)
 
     async def get_request_metrics(self, limit: int = 100) -> list[RequestMetrics]:
         """Get recent request metrics.
@@ -300,7 +368,7 @@ class PerformanceMonitor:
             List of request metrics
         """
         async with self._lock:
-            return self._request_history[-limit:].copy()
+            return self._metrics_store.get_request_metrics(limit)
 
     async def get_performance_summary(self) -> dict[str, Any]:
         """Get a summary of performance metrics.
@@ -314,7 +382,7 @@ class PerformanceMonitor:
 
         async with self._lock:
             # Calculate percentiles for response times
-            response_times = sorted(self._response_times)
+            response_times = sorted(self._metrics_store.get_response_times())
             percentiles = {}
 
             if response_times:
@@ -327,7 +395,7 @@ class PerformanceMonitor:
 
             # Endpoint statistics
             endpoint_stats = {}
-            for request in self._request_history[-1000:]:
+            for request in self._metrics_store.get_request_metrics(limit=1000):
                 endpoint = request.endpoint
                 if endpoint not in endpoint_stats:
                     endpoint_stats[endpoint] = {
@@ -351,13 +419,17 @@ class PerformanceMonitor:
             "current_metrics": current_metrics.model_dump(),
             "response_time_percentiles": percentiles,
             "endpoint_statistics": endpoint_stats,
-            "total_requests": self._request_count,
-            "total_errors": self._error_count,
+            "total_requests": self._metrics_store.get_request_count(),
+            "total_errors": self._metrics_store.get_error_count(),
             "active_requests": len(self._active_requests),
         }
 
 
 # Global performance monitor instance
+# Rationale: Using a global instance for the performance monitor simplifies access
+# throughout the application and ensures a single, consistent state for monitoring
+# metrics. While 'global' is generally discouraged, it's a common and acceptable pattern
+# for managing singletons like this in Python applications.
 _performance_monitor: PerformanceMonitor | None = None
 
 

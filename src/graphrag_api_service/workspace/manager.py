@@ -88,7 +88,7 @@ class WorkspaceManager:
             json.dump(data, f, indent=2, default=str)
 
     async def create_workspace(
-        self, request: WorkspaceCreateRequest, owner_id: str = None
+        self, request: WorkspaceCreateRequest, owner_id: str | None = None
     ) -> Workspace:
         """Create a new GraphRAG workspace.
 
@@ -103,11 +103,7 @@ class WorkspaceManager:
             ValueError: If workspace name already exists or data path is invalid
             OSError: If workspace directories cannot be created
         """
-        # Use database backend if available
-        if self.db_manager:
-            return await self.db_manager.create_workspace(request, owner_id)
-
-        # Fallback to file-based storage (use sync method in async context)
+        # Use file-based storage (use sync method in async context)
         import asyncio
 
         loop = asyncio.get_event_loop()
@@ -199,11 +195,7 @@ class WorkspaceManager:
         Returns:
             Workspace if found, None otherwise
         """
-        # Use database backend if available
-        if self.db_manager:
-            return await self.db_manager.get_workspace(workspace_id)
-
-        # Fallback to file-based storage
+        # Use file-based storage
         return self._workspaces.get(workspace_id)
 
     async def get_workspace_by_name(self, name: str) -> Workspace | None:
@@ -215,17 +207,13 @@ class WorkspaceManager:
         Returns:
             Workspace if found, None otherwise
         """
-        if self.db_manager:
-            # Use database backend
-            return await self.db_manager.get_workspace_by_name(name)
-
-        # Fallback to file-based storage
+        # Use file-based storage
         for workspace in self._workspaces.values():
             if workspace.config.name == name:
                 return workspace
         return None
 
-    async def list_workspaces(self, owner_id: str = None) -> list[WorkspaceSummary]:
+    async def list_workspaces(self, owner_id: str | None = None) -> list[WorkspaceSummary]:
         """List all workspaces with summary information.
 
         Args:
@@ -234,26 +222,7 @@ class WorkspaceManager:
         Returns:
             List of workspace summaries
         """
-        # Use database backend if available
-        if self.db_manager:
-            workspaces = await self.db_manager.list_workspaces(owner_id)
-            summaries = []
-            for workspace in workspaces:
-                summary = WorkspaceSummary(
-                    id=workspace.id,
-                    name=workspace.config.name,
-                    description=workspace.config.description,
-                    status=workspace.status,
-                    created_at=workspace.created_at,
-                    updated_at=workspace.updated_at,
-                    files_processed=workspace.files_processed,
-                    entities_extracted=workspace.entities_extracted,
-                    relationships_extracted=workspace.relationships_extracted,
-                )
-                summaries.append(summary)
-            return summaries
-
-        # Fallback to file-based storage
+        # Use file-based storage
         summaries = []
         for workspace in self._workspaces.values():
             summary = WorkspaceSummary(
@@ -345,11 +314,7 @@ class WorkspaceManager:
         Returns:
             True if workspace was deleted, False if not found
         """
-        # Use database backend if available
-        if self.db_manager:
-            return await self.db_manager.delete_workspace(workspace_id)
-
-        # Fallback to file-based storage
+        # Use file-based storage
         workspace = await self.get_workspace(workspace_id)
         if not workspace:
             return False
@@ -531,11 +496,7 @@ class WorkspaceManager:
         Returns:
             Dictionary containing workspace statistics
         """
-        # Use database backend if available
-        if self.db_manager:
-            return await self.db_manager.get_workspace_stats()
-
-        # Fallback to file-based storage
+        # Use file-based storage
         total_workspaces = len(self._workspaces)
         status_counts = {}
 

@@ -9,7 +9,6 @@ import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 from uuid import uuid4
 
 
@@ -84,7 +83,9 @@ class SQLiteManager:
 
             conn.commit()
 
-    def create_workspace(self, name: str, description: str = None, config: dict = None) -> dict:
+    def create_workspace(
+        self, name: str, description: str | None = None, config: dict | None = None
+    ) -> dict:
         """Create a new workspace."""
         workspace_id = str(uuid4())
         config_json = json.dumps(config or {})
@@ -106,7 +107,7 @@ class SQLiteManager:
             "created_at": datetime.now().isoformat(),
         }
 
-    def get_workspace(self, workspace_id: str) -> Optional[dict]:
+    def get_workspace(self, workspace_id: str) -> dict | None:
         """Get workspace by ID."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -190,7 +191,7 @@ class SQLiteManager:
             conn.commit()
             return result.rowcount > 0
 
-    def get_workspace_by_name(self, name: str) -> Optional[dict]:
+    def get_workspace_by_name(self, name: str) -> dict | None:
         """Get workspace by name."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -214,9 +215,9 @@ class SQLiteManager:
         self,
         workspace_id: str,
         query_text: str,
-        response: str = None,
-        processing_time_ms: int = None,
-        tokens_used: int = None,
+        response: str | None = None,
+        processing_time_ms: int | None = None,
+        tokens_used: int | None = None,
     ) -> str:
         """Log a query for analytics."""
         query_id = str(uuid4())
@@ -252,7 +253,7 @@ class SQLiteManager:
                 "total_tokens": row[2] or 0,
             }
 
-    def create_api_key(self, name: str, key_hash: str, permissions: list = None) -> str:
+    def create_api_key(self, name: str, key_hash: str, permissions: list | None = None) -> str:
         """Create an API key."""
         key_id = str(uuid4())
         permissions_json = json.dumps(permissions or [])
@@ -267,7 +268,7 @@ class SQLiteManager:
 
         return key_id
 
-    def validate_api_key(self, key_hash: str) -> Optional[dict]:
+    def validate_api_key(self, key_hash: str) -> dict | None:
         """Validate an API key."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -297,7 +298,7 @@ class SQLiteManager:
 
 
 # Global instance for easy access
-_db_manager: Optional[SQLiteManager] = None
+_db_manager: SQLiteManager | None = None
 
 
 def get_db_manager(db_path: str = "data/graphrag.db") -> SQLiteManager:

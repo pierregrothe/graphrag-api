@@ -62,8 +62,18 @@ async def get_entities(
 
         # Get entities from graph operations
         settings = get_settings()
+        data_path = workspace_id or settings.graphrag_data_path
+        if not data_path:
+            return {
+                "entities": [],
+                "total_count": 0,
+                "limit": limit,
+                "offset": offset,
+                "error": "No data path configured",
+            }
+
         result = await graph_operations.query_entities(
-            data_path=workspace_id or settings.graphrag_data_path,
+            data_path=data_path,
             limit=limit,
             offset=offset,
             **filters,
@@ -125,8 +135,18 @@ async def get_relationships(
 
         # Get relationships from graph operations
         settings = get_settings()
+        data_path = workspace_id or settings.graphrag_data_path
+        if not data_path:
+            return {
+                "relationships": [],
+                "total_count": 0,
+                "limit": limit,
+                "offset": offset,
+                "error": "No data path configured",
+            }
+
         result = await graph_operations.query_relationships(
-            data_path=workspace_id or settings.graphrag_data_path,
+            data_path=data_path,
             limit=limit,
             offset=offset,
             **filters,
@@ -172,9 +192,16 @@ async def get_communities(
     try:
         # Get communities from graph operations
         settings = get_settings()
-        result = await graph_operations.query_communities(
-            data_path=workspace_id or settings.graphrag_data_path
-        )
+        data_path = workspace_id or settings.graphrag_data_path
+        if not data_path:
+            return {
+                "communities": [],
+                "total_count": 0,
+                "workspace_id": workspace_id,
+                "error": "No data path configured",
+            }
+
+        result = await graph_operations.query_communities(data_path=data_path)
 
         return {
             "communities": result.get("communities", []),
@@ -218,9 +245,21 @@ async def get_statistics(
     try:
         # Get statistics from graph operations
         settings = get_settings()
-        result = await graph_operations.get_graph_statistics(
-            data_path=workspace_id or settings.graphrag_data_path
-        )
+        data_path = workspace_id or settings.graphrag_data_path
+        if not data_path:
+            return {
+                "total_entities": 0,
+                "total_relationships": 0,
+                "total_communities": 0,
+                "entity_types": {},
+                "relationship_types": {},
+                "community_levels": {},
+                "graph_density": 0.0,
+                "workspace_id": workspace_id,
+                "error": "No data path configured",
+            }
+
+        result = await graph_operations.get_graph_statistics(data_path=data_path)
 
         return {
             "total_entities": result.get("total_entities", 0),
@@ -285,6 +324,15 @@ async def create_visualization(
     try:
         settings = get_settings()
         data_path = workspace_id or settings.graphrag_data_path
+
+        if not data_path:
+            return {
+                "nodes": [],
+                "edges": [],
+                "layout": layout_algorithm,
+                "metadata": {"total_nodes": 0, "total_edges": 0},
+                "error": "No data path configured",
+            }
 
         # Get entities and relationships
         entities_result = await graph_operations.query_entities(
@@ -403,8 +451,15 @@ async def export_graph(
         settings = get_settings()
         data_path = workspace_id or settings.graphrag_data_path
 
+        if not data_path:
+            return {
+                "success": False,
+                "error": "No data path configured",
+                "workspace_id": workspace_id,
+            }
+
         # Collect data to export
-        export_data = {
+        export_data: dict[str, Any] = {
             "metadata": {
                 "workspace_id": workspace_id,
                 "export_date": datetime.utcnow().isoformat(),
@@ -440,6 +495,9 @@ async def export_graph(
         temp_dir = Path(tempfile.gettempdir()) / "graphrag_exports"
         temp_dir.mkdir(exist_ok=True)
 
+        # Initialize file_path
+        file_path: Path
+
         if format == "json":
             file_path = temp_dir / f"graph_export_{export_id}.json"
             with open(file_path, "w", encoding="utf-8") as f:
@@ -450,21 +508,21 @@ async def export_graph(
             if include_entities and export_data["entities"]:
                 entities_file = temp_dir / f"entities_{export_id}.csv"
                 with open(entities_file, "w", newline="", encoding="utf-8") as f:
-                    if export_data["entities"]:
-                        writer = csv.DictWriter(f, fieldnames=export_data["entities"][0].keys())
+                    entities_list = export_data["entities"]
+                    if entities_list and isinstance(entities_list[0], dict):
+                        writer = csv.DictWriter(f, fieldnames=entities_list[0].keys())
                         writer.writeheader()
-                        writer.writerows(export_data["entities"])
+                        writer.writerows(entities_list)
 
             # Export relationships to CSV
             if include_relationships and export_data["relationships"]:
                 relationships_file = temp_dir / f"relationships_{export_id}.csv"
                 with open(relationships_file, "w", newline="", encoding="utf-8") as f:
-                    if export_data["relationships"]:
-                        writer = csv.DictWriter(
-                            f, fieldnames=export_data["relationships"][0].keys()
-                        )
+                    relationships_list = export_data["relationships"]
+                    if relationships_list and isinstance(relationships_list[0], dict):
+                        writer = csv.DictWriter(f, fieldnames=relationships_list[0].keys())
                         writer.writeheader()
-                        writer.writerows(export_data["relationships"])
+                        writer.writerows(relationships_list)
 
             file_path = temp_dir / f"graph_export_{export_id}.csv"
 
@@ -478,16 +536,22 @@ async def export_graph(
 
                 # Write nodes
                 for entity in export_data.get("entities", []):
-                    f.write(f'    <node id="{entity.get("id", "")}"/>\n')
+                    if isinstance(entity, dict):
+                        entity_id = entity.get("id", entity.get("title", ""))
+                        f.write(f'    <node id="{entity_id}"/>\n')
 
                 # Write edges
                 for rel in export_data.get("relationships", []):
-                    f.write(
-                        f'    <edge source="{rel.get("source", "")}" target="{rel.get("target", "")}"/>\n'
-                    )
+                    if isinstance(rel, dict):
+                        f.write(
+                            f'    <edge source="{rel.get("source", "")}" target="{rel.get("target", "")}"/>\n'
+                        )
 
                 f.write("  </graph>\n")
                 f.write("</graphml>\n")
+        else:
+            # This shouldn't happen due to Literal type, but handle it for safety
+            raise ValueError(f"Unsupported format: {format}")
 
         # Get file size
         file_size = file_path.stat().st_size if file_path.exists() else 0

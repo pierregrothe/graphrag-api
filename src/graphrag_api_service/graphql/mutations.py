@@ -513,8 +513,12 @@ class Mutation:
         try:
             # Clear GraphQL query cache
             query_cache = get_query_cache()
-            query_cache.clear()
-            logger.info("GraphQL query cache cleared")
+            # Clear the internal cache dictionary
+            if hasattr(query_cache, "_cache"):
+                query_cache._cache.clear()
+                logger.info("GraphQL query cache cleared")
+            else:
+                logger.warning("Query cache does not have a _cache attribute")
 
             # Clear DataLoader caches
             dataloaders = info.context.get("dataloaders", {})
@@ -534,9 +538,14 @@ class Mutation:
 
             try:
                 connection_pool = await get_connection_pool()
-                if hasattr(connection_pool, "clear_cache"):
-                    await connection_pool.clear_cache()
+                # Clear the connection pool's internal query cache
+                if hasattr(connection_pool, "_query_cache") and hasattr(
+                    connection_pool._query_cache, "_cache"
+                ):
+                    connection_pool._query_cache._cache.clear()
                     logger.info("Connection pool cache cleared")
+                else:
+                    logger.debug("Connection pool cache not available")
             except Exception as e:
                 logger.warning(f"Could not clear connection pool cache: {e}")
 

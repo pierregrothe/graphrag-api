@@ -5,11 +5,9 @@
 
 """Health check and monitoring endpoints."""
 
-import asyncio
-import os
 import platform
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import psutil
@@ -68,7 +66,7 @@ def create_health_router() -> APIRouter:
         """Basic health check endpoint."""
         return HealthStatus(
             status="healthy",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             uptime=time.time() - START_TIME,
             version=settings.app_version,
             environment="production" if not settings.debug else "development",
@@ -77,7 +75,7 @@ def create_health_router() -> APIRouter:
     @router.get("/live", response_model=dict)
     async def liveness_probe() -> dict:
         """Kubernetes liveness probe endpoint."""
-        return {"status": "alive", "timestamp": datetime.now(timezone.utc).isoformat()}
+        return {"status": "alive", "timestamp": datetime.now(UTC).isoformat()}
 
     @router.get("/ready", response_model=dict)
     async def readiness_probe(container=Depends(get_service_container)) -> dict:
@@ -120,7 +118,7 @@ def create_health_router() -> APIRouter:
 
         return {
             "ready": True,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "checks": checks,
         }
 
@@ -186,7 +184,7 @@ def create_health_router() -> APIRouter:
 
         return DetailedHealth(
             status="healthy" if services["api"] == "healthy" else "degraded",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             uptime=time.time() - START_TIME,
             version=settings.app_version,
             environment="production" if not settings.debug else "development",
@@ -199,41 +197,41 @@ def create_health_router() -> APIRouter:
     async def metrics_endpoint() -> dict:
         """Prometheus-compatible metrics endpoint."""
         metrics = []
-        
+
         # System metrics
-        metrics.append(f"# HELP graphrag_up Application up status")
-        metrics.append(f"# TYPE graphrag_up gauge")
-        metrics.append(f"graphrag_up 1")
-        
-        metrics.append(f"# HELP graphrag_uptime_seconds Application uptime in seconds")
-        metrics.append(f"# TYPE graphrag_uptime_seconds gauge")
+        metrics.append("# HELP graphrag_up Application up status")
+        metrics.append("# TYPE graphrag_up gauge")
+        metrics.append("graphrag_up 1")
+
+        metrics.append("# HELP graphrag_uptime_seconds Application uptime in seconds")
+        metrics.append("# TYPE graphrag_uptime_seconds gauge")
         metrics.append(f"graphrag_uptime_seconds {time.time() - START_TIME}")
-        
+
         # Memory metrics
         memory = psutil.virtual_memory()
-        metrics.append(f"# HELP graphrag_memory_usage_bytes Memory usage in bytes")
-        metrics.append(f"# TYPE graphrag_memory_usage_bytes gauge")
+        metrics.append("# HELP graphrag_memory_usage_bytes Memory usage in bytes")
+        metrics.append("# TYPE graphrag_memory_usage_bytes gauge")
         metrics.append(f"graphrag_memory_usage_bytes {memory.used}")
-        
-        metrics.append(f"# HELP graphrag_memory_percent Memory usage percentage")
-        metrics.append(f"# TYPE graphrag_memory_percent gauge")
+
+        metrics.append("# HELP graphrag_memory_percent Memory usage percentage")
+        metrics.append("# TYPE graphrag_memory_percent gauge")
         metrics.append(f"graphrag_memory_percent {memory.percent}")
-        
+
         # CPU metrics
-        metrics.append(f"# HELP graphrag_cpu_percent CPU usage percentage")
-        metrics.append(f"# TYPE graphrag_cpu_percent gauge")
+        metrics.append("# HELP graphrag_cpu_percent CPU usage percentage")
+        metrics.append("# TYPE graphrag_cpu_percent gauge")
         metrics.append(f"graphrag_cpu_percent {psutil.cpu_percent(interval=0.1)}")
-        
+
         # Process metrics
         process = psutil.Process()
-        metrics.append(f"# HELP graphrag_process_threads Number of threads")
-        metrics.append(f"# TYPE graphrag_process_threads gauge")
+        metrics.append("# HELP graphrag_process_threads Number of threads")
+        metrics.append("# TYPE graphrag_process_threads gauge")
         metrics.append(f"graphrag_process_threads {process.num_threads()}")
-        
-        metrics.append(f"# HELP graphrag_process_open_files Number of open files")
-        metrics.append(f"# TYPE graphrag_process_open_files gauge")
+
+        metrics.append("# HELP graphrag_process_open_files Number of open files")
+        metrics.append("# TYPE graphrag_process_open_files gauge")
         metrics.append(f"graphrag_process_open_files {len(process.open_files())}")
-        
+
         return {
             "metrics": "\n".join(metrics),
             "content_type": "text/plain; version=0.0.4",
@@ -245,7 +243,7 @@ def create_health_router() -> APIRouter:
         return SystemInfo(
             platform=platform.platform(),
             python_version=platform.python_version(),
-            cpu_count=psutil.cpu_count(),
+            cpu_count=psutil.cpu_count() or 0,
             memory_total=psutil.virtual_memory().total,
             memory_available=psutil.virtual_memory().available,
             memory_percent=psutil.virtual_memory().percent,
