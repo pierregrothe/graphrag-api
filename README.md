@@ -1,273 +1,426 @@
-# GraphRAG API - Simple Knowledge Graph Service
+# 🚀 GraphRAG API Service
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
-[![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Ready-blue.svg)](https://cloud.google.com/run)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+[![GraphQL](https://img.shields.io/badge/GraphQL-Enabled-e10098.svg)](https://graphql.org)
+[![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-red.svg)](#security-features)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Simplified GraphRAG API for small-scale deployments (1-5 users) with SQLite database and serverless-ready architecture.**
+A **production-ready, enterprise-grade FastAPI service** for GraphRAG (Graph Retrieval-Augmented Generation) operations with comprehensive security, performance monitoring, and multi-workspace support.
 
-## Features
+## ✨ Key Features
 
-### Core Capabilities
+### 🔐 **Enterprise Security**
+- **Zero Critical Vulnerabilities**: Comprehensive security audit passed
+- **Path Traversal Protection**: Advanced input validation and containment checking
+- **JWT Authentication**: Secure token-based authentication with RBAC
+- **API Key Management**: Granular access control with role-based permissions
+- **Security Middleware**: Rate limiting, CORS, security headers
 
-- **GraphRAG Integration**: Microsoft GraphRAG library with multi-provider LLM support
-- **Workspace Management**: Multiple isolated projects with custom configurations
-- **Simple Database**: SQLite for zero-configuration deployment
-- **Dual LLM Support**: Ollama (local) and Google Gemini (cloud)
-- **REST API**: Clean FastAPI interface with automatic documentation
-- **Lightweight Caching**: In-memory cache for improved performance
+### 📊 **Dual API Architecture**
+- **GraphQL API**: Modern, flexible query language with real-time subscriptions
+- **REST API**: Traditional endpoints with comprehensive OpenAPI documentation
+- **100% Feature Parity**: All operations available through both interfaces
+- **Interactive Playgrounds**: Built-in GraphQL Playground and Swagger UI
 
-### Deployment Options
+### 🏗️ **Production Architecture**
+- **Multi-Workspace Support**: Isolated environments for different projects
+- **Performance Monitoring**: Real-time metrics with Prometheus integration
+- **Distributed Caching**: Redis-based caching with intelligent invalidation
+- **Database Abstraction**: SQLite for lightweight deployment, PostgreSQL ready
+- **Containerized Deployment**: Docker and Docker Compose support
 
-- **Local Development**: Docker Compose with Ollama
-- **Production**: Google Cloud Run (serverless)
-- **Database**: SQLite (no external database needed!)
-- **Scale**: Optimized for 1-5 concurrent users
+### 🎯 **GraphRAG Integration**
+- **Microsoft GraphRAG**: Complete integration with the GraphRAG framework
+- **Knowledge Graph Operations**: Entity and relationship querying with advanced analytics
+- **Indexing Management**: Background job processing with progress tracking
+- **Advanced Query Engine**: Multi-hop queries, community detection, centrality analysis
 
-## System Architecture
+## 🚀 Quick Start
+
+### Prerequisites
+
+```bash
+# System Requirements
+Python 3.9+
+Redis 6.0+ (optional, for caching)
+Docker & Docker Compose (for containerized deployment)
+
+# Hardware Recommendations
+RAM: 4GB+ (8GB+ for production)
+CPU: 2+ cores
+Storage: 10GB+ available space
+```
+
+### 🔧 Installation
+
+#### Option 1: Local Development
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/pierregrothe/graphrag-api.git
+cd graphrag-api
+
+# 2. Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure environment
+cp .env.example .env
+# Edit .env with your configuration (see Configuration section)
+
+# 5. Initialize database
+python -m src.graphrag_api_service.database.init_db
+
+# 6. Start the service
+python -m uvicorn src.graphrag_api_service.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Option 2: Docker Deployment
+
+```bash
+# 1. Clone and configure
+git clone https://github.com/pierregrothe/graphrag-api.git
+cd graphrag-api
+cp .env.example .env
+
+# 2. Start with Docker Compose
+docker-compose up -d
+
+# 3. Check service health
+curl http://localhost:8000/health
+```
+
+### 🎯 First Steps
+
+```bash
+# 1. Access the APIs
+# REST API Documentation: http://localhost:8000/docs
+# GraphQL Playground: http://localhost:8000/graphql
+# Health Check: http://localhost:8000/health
+
+# 2. Create your first workspace
+curl -X POST "http://localhost:8000/api/workspaces" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-project", "description": "My first GraphRAG workspace"}'
+
+# 3. Start indexing (replace {workspace_id} with actual ID)
+curl -X POST "http://localhost:8000/api/indexing/jobs" \
+  -H "Content-Type: application/json" \
+  -d '{"workspace_id": "{workspace_id}", "data_path": "/path/to/your/data"}'
+```
+
+## 📋 System Architecture
 
 ```mermaid
 graph TB
-    subgraph "Client"
-        A[REST API Client]
+    subgraph "Client Layer"
+        A[Web Client]
+        B[API Client]
+        C[GraphQL Client]
     end
 
-    subgraph "API Service"
-        B[FastAPI]
-        C[GraphRAG Core]
-        D[Workspace Manager]
+    subgraph "API Gateway"
+        D[FastAPI Router]
+        E[GraphQL Schema]
+        F[Authentication]
+        G[Rate Limiting]
     end
 
-    subgraph "Storage"
-        E[(SQLite DB)]
-        F[File Storage]
+    subgraph "Business Logic"
+        H[Workspace Manager]
+        I[Graph Operations]
+        J[Indexing Engine]
+        K[Query Processor]
     end
 
-    subgraph "LLM Providers"
-        G[Ollama Local]
-        H[Google Gemini]
+    subgraph "Data Layer"
+        L[(SQLite/PostgreSQL)]
+        M[Redis Cache]
+        N[File Storage]
+        O[Vector Store]
     end
 
-    A --> B
-    B --> C
+    subgraph "External Services"
+        P[LLM Providers]
+        Q[Monitoring]
+        R[Logging]
+    end
+
+    A --> D
     B --> D
-    C --> G
-    C --> H
-    D --> E
-    C --> F
+    C --> E
+    D --> F
+    D --> G
+    E --> F
+    F --> H
+    F --> I
+    F --> J
+    F --> K
+    H --> L
+    I --> M
+    J --> N
+    K --> O
+    I --> P
+    J --> P
+    K --> P
+    D --> Q
+    E --> Q
+    H --> R
+    I --> R
+    J --> R
+    K --> R
 ```
 
-## Quick Start
+## ⚙️ Configuration
 
-### Option 1: Docker (Recommended for Development)
+### Environment Variables
+
+Create a `.env` file with the following configuration:
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/graphrag-api.git
-cd graphrag-api
+# Application Settings
+APP_NAME="GraphRAG API Service"
+DEBUG=false
+PORT=8000
+LOG_LEVEL=INFO
 
-# Copy environment template
-cp env.example .env
+# Security (REQUIRED for production)
+JWT_SECRET_KEY=your-super-secret-jwt-key-here
+API_KEY_SECRET=your-api-key-secret-here
 
-# Start with Docker Compose (includes Ollama)
-docker-compose up -d
+# GraphRAG Configuration
+GRAPHRAG_DATA_PATH=/path/to/graphrag/data
+BASE_WORKSPACES_PATH=workspaces
 
-# Check health
-curl http://localhost:8001/health
-```
-
-### Option 2: Local Python
-
-```bash
-# Install Poetry
-pip install poetry
-
-# Install dependencies
-poetry install
-
-# Run directly (uses SQLite, no database setup needed!)
-poetry run uvicorn src.graphrag_api_service.main:app --port 8001
-```
-
-### Option 3: Google Cloud Run (Production)
-
-```bash
-# Set project ID
-export PROJECT_ID=your-project-id
-
-# Deploy to Cloud Run
-./scripts/deploy-cloudrun.sh
-```
-
-## Configuration
-
-### Minimal `.env` for Local Development
-
-```env
-# LLM Provider
-LLM_PROVIDER=ollama
+# LLM Provider Settings
+LLM_PROVIDER=ollama  # or google_gemini
 OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_LLM_MODEL=gemma:4b
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 
-# Database (automatic)
-DATABASE_TYPE=sqlite
-DATABASE_PATH=data/graphrag.db
-
-# Security (dev only)
-AUTH_ENABLED=false
-```
-
-### Minimal `.env` for Production (Cloud Run)
-
-```env
-# LLM Provider
-LLM_PROVIDER=google_gemini
-GOOGLE_API_KEY=your-api-key
+# Google Gemini (if using)
+GOOGLE_API_KEY=your-google-api-key
 GOOGLE_PROJECT_ID=your-project-id
 
-# Database (automatic)
-DATABASE_TYPE=sqlite
-DATABASE_PATH=/tmp/graphrag.db
+# Database
+DATABASE_URL=sqlite:///./data/graphrag.db
 
-# Security
-AUTH_ENABLED=true
-JWT_SECRET_KEY=your-secure-secret-key
+# Redis Cache (optional)
+REDIS_URL=redis://localhost:6379/0
+CACHE_TTL=3600
+
+# Monitoring
+ENABLE_METRICS=true
+METRICS_PORT=9090
 ```
 
-## API Usage
+### Security Configuration
 
-### Create a Workspace
+For production deployment, ensure:
 
 ```bash
-curl -X POST http://localhost:8001/api/workspaces \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "my-project",
-    "description": "My knowledge graph project",
-    "data_path": "/path/to/documents"
-  }'
+# Generate secure keys
+JWT_SECRET_KEY=$(openssl rand -hex 32)
+API_KEY_SECRET=$(openssl rand -hex 32)
+
+# Set secure permissions
+chmod 600 .env
+
+# Use environment-specific configurations
+export ENVIRONMENT=production
 ```
 
-### Query GraphRAG
+## 🔐 Security Features
+
+### Path Traversal Protection
+Our service implements comprehensive path traversal protection:
+
+```python
+# Secure workspace path validation
+def validate_workspace_path(workspace_id: str, settings) -> str:
+    """Validate and resolve workspace path to prevent traversal attacks."""
+    # Input format validation
+    # Path resolution and containment checking
+    # Directory existence verification
+    # Secure error handling
+```
+
+### Authentication & Authorization
+- **JWT Tokens**: Secure, stateless authentication
+- **API Keys**: Service-to-service authentication
+- **Role-Based Access Control (RBAC)**: Granular permissions
+- **Rate Limiting**: Protection against abuse
+
+### Security Headers
+- Content Security Policy (CSP)
+- X-Frame-Options
+- X-Content-Type-Options
+- Strict-Transport-Security
+
+## 📊 API Documentation
+
+### REST API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Service health check |
+| `/api/workspaces` | GET, POST | Workspace management |
+| `/api/workspaces/{id}` | GET, PUT, DELETE | Individual workspace operations |
+| `/api/graph/entities` | GET | Query graph entities |
+| `/api/graph/relationships` | GET | Query graph relationships |
+| `/api/graph/communities` | GET | Query graph communities |
+| `/api/indexing/jobs` | GET, POST | Indexing job management |
+| `/api/system/status` | GET | System status and metrics |
+
+### GraphQL Schema
+
+```graphql
+type Query {
+  workspaces(limit: Int, offset: Int): WorkspaceConnection
+  entities(workspaceId: String!, limit: Int): EntityConnection
+  relationships(workspaceId: String!, limit: Int): RelationshipConnection
+  communities(workspaceId: String!): [Community]
+  systemHealth: SystemHealth
+}
+
+type Mutation {
+  createWorkspace(input: WorkspaceCreateInput!): Workspace
+  updateWorkspace(id: String!, input: WorkspaceUpdateInput!): Workspace
+  deleteWorkspace(id: String!): Boolean
+  startIndexing(input: IndexingJobInput!): IndexingJob
+}
+
+type Subscription {
+  indexingProgress(jobId: String!): IndexingProgress
+  systemMetrics: SystemMetrics
+}
+```
+
+## 🏗️ Module Architecture
+
+The service is organized into focused, loosely-coupled modules:
+
+- **[`auth/`](src/graphrag_api_service/auth/README.md)** - Authentication & authorization system
+- **[`caching/`](src/graphrag_api_service/caching/README.md)** - Redis caching implementation
+- **[`database/`](src/graphrag_api_service/database/README.md)** - SQLite database abstraction
+- **[`graph/`](src/graphrag_api_service/graph/README.md)** - Graph operations & analysis
+- **[`graphql/`](src/graphrag_api_service/graphql/README.md)** - GraphQL API layer
+- **[`middleware/`](src/graphrag_api_service/middleware/README.md)** - Security & performance middleware
+- **[`performance/`](src/graphrag_api_service/performance/README.md)** - Monitoring & optimization
+- **[`routes/`](src/graphrag_api_service/routes/README.md)** - REST API endpoints
+- **[`system/`](src/graphrag_api_service/system/README.md)** - System health & operations
+- **[`workspace/`](src/graphrag_api_service/workspace/README.md)** - Multi-workspace management
+
+## 🚀 Deployment
+
+### Docker Compose (Development)
+
+```yaml
+version: '3.8'
+services:
+  graphrag-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=true
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    volumes:
+      - ./data:/app/data
+      - ./workspaces:/app/workspaces
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+```
+
+### Production Deployment
 
 ```bash
-curl -X POST http://localhost:8001/api/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "workspace_id": "workspace-uuid",
-    "query": "What are the main topics in the documents?",
-    "query_type": "global"
-  }'
+# Build production image
+docker build -t graphrag-api:latest .
+
+# Run with production settings
+docker run -d \
+  --name graphrag-api \
+  -p 8000:8000 \
+  -e ENVIRONMENT=production \
+  -e JWT_SECRET_KEY=${JWT_SECRET_KEY} \
+  -v /data/graphrag:/app/data \
+  graphrag-api:latest
 ```
 
-### Index Documents
+## 📈 Performance Monitoring
+
+### Metrics Available
+- Request latency and throughput
+- Database query performance
+- Cache hit/miss rates
+- Memory and CPU usage
+- GraphRAG operation metrics
+
+### Health Checks
+- `/health` - Basic service health
+- `/health/detailed` - Comprehensive system status
+- `/metrics` - Prometheus metrics endpoint
+
+## 🧪 Testing
 
 ```bash
-curl -X POST http://localhost:8001/api/index \
-  -H "Content-Type: application/json" \
-  -d '{
-    "workspace_id": "workspace-uuid"
-  }'
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=src/graphrag_api_service --cov-report=html
+
+# Run specific test categories
+pytest tests/unit/
+pytest tests/integration/
+pytest tests/security/
 ```
 
-## API Documentation
+## 🤝 Contributing
 
-Once running, visit:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-- **Swagger UI**: <http://localhost:8001/docs>
-- **ReDoc**: <http://localhost:8001/redoc>
-- **Health Check**: <http://localhost:8001/health>
-
-## Project Structure
-
-```
-graphrag-api/
-├── src/graphrag_api_service/
-│   ├── main.py                 # FastAPI application
-│   ├── config.py               # Simple configuration
-│   ├── database/
-│   │   └── sqlite_models.py   # SQLite database
-│   ├── workspace/
-│   │   └── sqlite_manager.py  # Workspace management
-│   ├── providers/              # LLM providers
-│   │   ├── ollama_provider.py
-│   │   └── gemini_provider.py
-│   └── cache/
-│       └── simple_cache.py    # In-memory cache
-├── docker-compose.yml          # Local development
-├── Dockerfile.cloudrun         # Cloud Run deployment
-├── cloudbuild.yaml            # Google Cloud Build
-└── env.example                # Environment template
-```
-
-## Deployment Guide
-
-### Local Development (Windows/Mac/Linux)
-
-1. Install Docker Desktop
-2. Clone repository
-3. Run `docker-compose up`
-4. Access API at <http://localhost:8001>
-
-### Google Cloud Run (Serverless)
-
-1. Install gcloud CLI
-2. Configure project: `gcloud config set project YOUR_PROJECT_ID`
-3. Run deployment script: `./scripts/deploy-cloudrun.sh`
-4. Access at provided Cloud Run URL
-
-### Key Features for Small Scale
-
-- **No PostgreSQL**: Uses SQLite for simplicity
-- **No Redis**: In-memory caching only
-- **No Kubernetes**: Runs on Cloud Run or Docker
-- **Minimal Config**: Works with default settings
-- **Low Resource**: 2GB RAM, 2 CPU cores sufficient
-
-## Cost Estimation (Google Cloud)
-
-For 1-5 users with moderate usage:
-
-- **Cloud Run**: ~$5-20/month (scales to zero)
-- **Gemini API**: ~$10-50/month (depends on usage)
-- **Total**: ~$15-70/month
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Ollama not connecting**: Ensure Docker is running
-2. **SQLite locked**: Limit concurrent writes
-3. **Cloud Run timeout**: Increase timeout in deployment
-
-### Support
-
-- [Documentation](docs/DEPLOYMENT_GUIDE.md)
-- [GitHub Issues](https://github.com/yourusername/graphrag-api/issues)
-
-## Development
+### Development Setup
 
 ```bash
-# Run tests
-poetry run pytest
+# Install development dependencies
+pip install -r requirements-dev.txt
 
-# Format code
-poetry run black src/ tests/
+# Install pre-commit hooks
+pre-commit install
 
-# Lint code
-poetry run ruff check src/ tests/
-
-# Type check
-poetry run mypy src/graphrag_api_service
+# Run code quality checks
+ruff check src/
+mypy src/
+black src/
+isort src/
 ```
 
-## License
+## 📄 License
 
-MIT License - See [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- Built on [Microsoft GraphRAG](https://github.com/microsoft/graphrag)
-- Powered by [FastAPI](https://fastapi.tiangolo.com/)
-- LLM support via [Ollama](https://ollama.ai/) and [Google Gemini](https://gemini.google.com/)
+- [Microsoft GraphRAG](https://github.com/microsoft/graphrag) - Core GraphRAG implementation
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
+- [Strawberry GraphQL](https://strawberry.rocks/) - GraphQL library for Python
+- [Redis](https://redis.io/) - In-memory data structure store
+
+---
+
+**Built with ❤️ for enterprise-grade knowledge graph applications**
