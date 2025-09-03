@@ -6,11 +6,15 @@
 """Configuration settings for the GraphRAG API service."""
 
 import os
+import re
 import secrets
 from enum import Enum
+from typing import Optional
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, HttpUrl, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from .exceptions import ConfigurationError
 
 
 class LLMProvider(str, Enum):
@@ -47,7 +51,7 @@ class Settings(BaseSettings):
     )
 
     # Ollama Configuration (Local)
-    ollama_base_url: str = Field(
+    ollama_base_url: HttpUrl = Field(
         default="http://localhost:11434",
         description="Ollama server base URL",
     )
@@ -98,6 +102,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(
         default_factory=lambda: os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(32),
         description="Secret key for JWT token signing - must be set via JWT_SECRET_KEY environment variable in production",
+        min_length=32,  # Minimum 32 characters for security
     )
     jwt_algorithm: str = Field(
         default="HS256",
@@ -284,6 +289,44 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
+
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def validate_jwt_secret_key(cls, v: str) -> str:
+        """Validate JWT secret key has sufficient entropy."""
+        if len(v) < 32:
+            raise ConfigurationError(
+                "JWT secret key must be at least 32 characters long",
+                config_key="jwt_secret_key"
+            )
+
+        # Check for sufficient entropy (not all same character, not sequential)
+        if len(set(v)) < 8:
+            raise ConfigurationError(
+                "JWT secret key must have sufficient entropy (at least 8 unique characters)",
+                config_key="jwt_secret_key"
+            )
+
+        return v
+
+    @field_validator("base_workspaces_path")
+    @classmethod
+    def validate_workspace_path(cls, v: str) -> str:
+        """Validate workspace path format."""
+        if not v or v.strip() == "":
+            raise ConfigurationError(
+                "Base workspaces path cannot be empty",
+                config_key="base_workspaces_path"
+            )
+
+        # Prevent path traversal in configuration
+        if ".." in v or v.startswith("/"):
+            raise ConfigurationError(
+                "Base workspaces path cannot contain '..' or start with '/'",
+                config_key="base_workspaces_path"
+            )
+
+        return v.strip()
 
     @model_validator(mode="after")
     def validate_google_configuration(self) -> "Settings":

@@ -5,6 +5,7 @@
 
 """Graph data API route handlers with proper dependency injection."""
 
+import asyncio
 import csv
 import json
 import tempfile
@@ -13,19 +14,22 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from ..config import get_settings
 from ..deps import GraphOperationsDep
+from ..exceptions import SecurityError, ValidationError, path_traversal_attempt
 from ..logging_config import get_logger
+from ..security import get_security_logger
 
 logger = get_logger(__name__)
+security_logger = get_security_logger()
 
 # Create router for graph endpoints
 router = APIRouter(prefix="/api/graph", tags=["Graph"])
 
 
-def validate_workspace_path(workspace_id: str | None, settings) -> str:
+def validate_workspace_path(workspace_id: str | None, settings, request: Request = None) -> str:
     """Validate and resolve workspace path to prevent traversal attacks.
 
     Parameters
@@ -54,7 +58,16 @@ def validate_workspace_path(workspace_id: str | None, settings) -> str:
 
     # Validate workspace_id format (prevent obvious attacks)
     if not workspace_id.replace("-", "").replace("_", "").isalnum():
-        raise HTTPException(status_code=400, detail="Invalid workspace ID format")
+        # Log security violation
+        security_logger.path_traversal_attempt(
+            attempted_path=workspace_id,
+            request=request
+        )
+        raise ValidationError(
+            message="Invalid workspace ID format",
+            field="workspace_id",
+            value=workspace_id
+        )
 
     # Construct safe workspace path
     base_workspaces_path = getattr(settings, "base_workspaces_path", "workspaces")
@@ -66,7 +79,16 @@ def validate_workspace_path(workspace_id: str | None, settings) -> str:
 
         # Ensure the resolved path is within the base directory
         if not str(workspace_path).startswith(str(base_path)):
-            raise HTTPException(status_code=403, detail="Access to workspace denied")
+            # Log security violation
+            security_logger.path_traversal_attempt(
+                attempted_path=workspace_id,
+                request=request
+            )
+            raise SecurityError(
+                message="Access to workspace denied - path traversal attempt",
+                violation_type="path_traversal",
+                details={"attempted_path": workspace_id}
+            )
 
         # Check if workspace directory exists
         if not workspace_path.exists():
@@ -81,6 +103,7 @@ def validate_workspace_path(workspace_id: str | None, settings) -> str:
 
 @router.get("/entities")
 async def get_entities(
+    request: Request,
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     entity_name: str | None = Query(None),
@@ -129,15 +152,26 @@ async def get_entities(
         if entity_type:
             filters["type"] = entity_type
 
-        # Get entities from graph operations
+        # Get entities from graph operations with security validation
         settings = get_settings()
-        data_path = validate_workspace_path(workspace_id, settings)
+        data_path = validate_workspace_path(workspace_id, settings, request)
 
-        result = await graph_operations.query_entities(
+        # Use thread pool for potentially CPU-intensive graph operations
+        result = await asyncio.to_thread(
+            graph_operations.query_entities,
             data_path=data_path,
             limit=limit,
             offset=offset,
             **filters,
+        )
+
+        # Log successful access
+        security_logger.workspace_access(
+            workspace_id=workspace_id,
+            user_id=getattr(request.state, 'user_id', 'anonymous'),
+            action="read_entities",
+            success=True,
+            request=request
         )
 
         return {
@@ -149,8 +183,22 @@ async def get_entities(
         }
 
     except Exception as e:
+        # Log failed access
+        security_logger.workspace_access(
+            workspace_id=workspace_id,
+            user_id=getattr(request.state, 'user_id', 'anonymous'),
+            action="read_entities",
+            success=False,
+            request=request
+        )
+
         logger.error(f"Failed to get entities: {e}")
-        return {"entities": [], "total_count": 0, "limit": limit, "offset": offset, "error": str(e)}
+
+        # Re-raise service exceptions as-is, convert others to HTTP exceptions
+        if hasattr(e, 'status_code'):
+            raise HTTPException(status_code=e.status_code, detail=e.message)
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/relationships")
