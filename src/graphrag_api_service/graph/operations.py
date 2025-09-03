@@ -93,10 +93,9 @@ class GraphOperations:
                 mask = filtered_df["title"].str.contains(entity_name, case=False, na=False)
                 filtered_df = filtered_df[mask]
 
-            if entity_type:
+            if entity_type and "type" in filtered_df.columns:
                 # Filter by entity type if the column exists
-                if "type" in filtered_df.columns:
-                    filtered_df = filtered_df[filtered_df["type"] == entity_type]
+                filtered_df = filtered_df[filtered_df["type"] == entity_type]
 
             total_count = len(filtered_df)
 
@@ -181,10 +180,9 @@ class GraphOperations:
                 mask = filtered_df["target"].str.contains(target_entity, case=False, na=False)
                 filtered_df = filtered_df[mask]
 
-            if relationship_type:
+            if relationship_type and "type" in filtered_df.columns:
                 # Filter by relationship type if the column exists
-                if "type" in filtered_df.columns:
-                    filtered_df = filtered_df[filtered_df["type"] == relationship_type]
+                filtered_df = filtered_df[filtered_df["type"] == relationship_type]
 
             total_count = len(filtered_df)
 
@@ -559,6 +557,76 @@ class GraphOperations:
             logger.error(f"Graph visualization generation failed: {e}")
             raise GraphOperationsError(f"Graph visualization generation failed: {e}") from e
 
+    def _load_export_data(
+        self,
+        data_path: str,
+        include_entities: bool,
+        include_relationships: bool,
+        include_communities: bool,
+        entity_limit: int | None,
+        relationship_limit: int | None,
+    ) -> dict[str, Any]:
+        """Load data for export."""
+        export_data = {}
+
+        if include_entities:
+            entities_df = self._load_parquet_file(data_path, "create_final_entities.parquet")
+            if entities_df is not None:
+                if entity_limit:
+                    entities_df = entities_df.head(entity_limit)
+                export_data["entities"] = entities_df.to_dict(orient="records")
+
+        if include_relationships:
+            relationships_df = self._load_parquet_file(
+                data_path, "create_final_relationships.parquet"
+            )
+            if relationships_df is not None:
+                if relationship_limit:
+                    relationships_df = relationships_df.head(relationship_limit)
+                export_data["relationships"] = relationships_df.to_dict(orient="records")
+
+        if include_communities:
+            communities_df = self._load_parquet_file(data_path, "create_final_communities.parquet")
+            if communities_df is not None:
+                export_data["communities"] = communities_df.to_dict(orient="records")
+
+        return export_data
+
+    def _export_to_json(self, export_data: dict[str, Any], temp_file: Any) -> None:
+        """Export data to JSON format."""
+        json.dump(export_data, temp_file, indent=2, default=str)
+
+    def _export_to_csv(self, export_data: dict[str, Any], temp_file_name: str) -> None:
+        """Export data to CSV format."""
+        if "entities" in export_data:
+            entities_df = pd.DataFrame(export_data["entities"])
+            entities_csv = temp_file_name.replace(".csv", "_entities.csv")
+            entities_df.to_csv(entities_csv, index=False)
+        if "relationships" in export_data:
+            relationships_df = pd.DataFrame(export_data["relationships"])
+            relationships_csv = temp_file_name.replace(".csv", "_relationships.csv")
+            relationships_df.to_csv(relationships_csv, index=False)
+
+    def _create_export_response(
+        self, temp_file_path: str, format: str, export_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Create export response dictionary."""
+        file_size = Path(temp_file_path).stat().st_size
+        entity_count = len(export_data.get("entities", []))
+        relationship_count = len(export_data.get("relationships", []))
+        expires_at = (datetime.now(UTC) + timedelta(hours=24)).isoformat()
+        download_url = f"/api/graph/download/{Path(temp_file_path).name}"
+
+        self.metrics["exports"] += 1
+        return {
+            "download_url": download_url,
+            "format": format,
+            "file_size": file_size,
+            "entity_count": entity_count,
+            "relationship_count": relationship_count,
+            "expires_at": expires_at,
+        }
+
     async def export_graph(
         self,
         data_path: str,
@@ -587,75 +655,27 @@ class GraphOperations:
             GraphOperationsError: If graph export fails
         """
         try:
-            export_data = {}
-
-            # Load and include entities
-            if include_entities:
-                entities_df = self._load_parquet_file(data_path, "create_final_entities.parquet")
-                if entities_df is not None:
-                    if entity_limit:
-                        entities_df = entities_df.head(entity_limit)
-                    export_data["entities"] = entities_df.to_dict(orient="records")
-
-            # Load and include relationships
-            if include_relationships:
-                relationships_df = self._load_parquet_file(
-                    data_path, "create_final_relationships.parquet"
-                )
-                if relationships_df is not None:
-                    if relationship_limit:
-                        relationships_df = relationships_df.head(relationship_limit)
-                    export_data["relationships"] = relationships_df.to_dict(orient="records")
-
-            # Load and include communities
-            if include_communities:
-                communities_df = self._load_parquet_file(
-                    data_path, "create_final_communities.parquet"
-                )
-                if communities_df is not None:
-                    export_data["communities"] = communities_df.to_dict(orient="records")
+            export_data = self._load_export_data(
+                data_path,
+                include_entities,
+                include_relationships,
+                include_communities,
+                entity_limit,
+                relationship_limit,
+            )
 
             # Create temporary file for export
             with tempfile.NamedTemporaryFile(
                 mode="w", suffix=f".{format}", delete=False
             ) as temp_file:
                 if format.lower() == "json":
-                    json.dump(export_data, temp_file, indent=2, default=str)
+                    self._export_to_json(export_data, temp_file)
                 elif format.lower() == "csv":
-                    # For CSV, export entities and relationships separately
-                    if "entities" in export_data:
-                        entities_df = pd.DataFrame(export_data["entities"])
-                        entities_csv = temp_file.name.replace(".csv", "_entities.csv")
-                        entities_df.to_csv(entities_csv, index=False)
-                    if "relationships" in export_data:
-                        relationships_df = pd.DataFrame(export_data["relationships"])
-                        relationships_csv = temp_file.name.replace(".csv", "_relationships.csv")
-                        relationships_df.to_csv(relationships_csv, index=False)
+                    self._export_to_csv(export_data, temp_file.name)
 
                 temp_file_path = temp_file.name
 
-            # Get file size
-            file_size = Path(temp_file_path).stat().st_size
-
-            # Calculate counts
-            entity_count = len(export_data.get("entities", []))
-            relationship_count = len(export_data.get("relationships", []))
-
-            # Generate expiration time (24 hours from now)
-            expires_at = (datetime.now(UTC) + timedelta(hours=24)).isoformat()
-
-            # For now, return file path as download URL (in production, this would be a proper URL)
-            download_url = f"/api/graph/download/{Path(temp_file_path).name}"
-
-            self.metrics["exports"] += 1
-            return {
-                "download_url": download_url,
-                "format": format,
-                "file_size": file_size,
-                "entity_count": entity_count,
-                "relationship_count": relationship_count,
-                "expires_at": expires_at,
-            }
+            return self._create_export_response(temp_file_path, format, export_data)
 
         except Exception as e:
             logger.error(f"Graph export failed: {e}")

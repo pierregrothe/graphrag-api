@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 
 def setup_error_handlers(app: FastAPI) -> None:
-    """Setup error handlers for the FastAPI application.
+    """Set up error handlers for the FastAPI application.
 
     Args:
         app: FastAPI application instance

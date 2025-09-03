@@ -12,10 +12,13 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel
 from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import DeclarativeBase, relationship
 
-# SQLAlchemy Base
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """SQLAlchemy declarative base class."""
+
+    pass
 
 
 # Association table for many-to-many relationship between users and roles

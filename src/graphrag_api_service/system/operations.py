@@ -127,6 +127,105 @@ class SystemOperations:
             logger.error(f"Provider switch failed: {e}")
             raise SystemOperationsError(f"Provider switch failed: {e}") from e
 
+    def _initialize_health_status(self) -> dict[str, Any]:
+        """Initialize health status structure."""
+        return {
+            "status": "healthy",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "components": {},
+            "provider": {},
+            "graphrag": {},
+            "workspaces": {},
+            "graph_data": {},
+            "system_resources": {},
+        }
+
+    async def _check_provider_health(self, health_status: dict[str, Any]) -> None:
+        """Check provider health and update status."""
+        try:
+            provider = self.provider_factory.create_provider(self.settings)
+            provider_health = await provider.health_check()
+            health_status["provider"] = {
+                "name": self.settings.llm_provider.value,
+                "healthy": provider_health.healthy,
+                "models": getattr(provider_health, "available_models", []),
+                "error": getattr(provider_health, "error", None),
+                "metadata": getattr(provider_health, "metadata", {}),
+            }
+            if not provider_health.healthy:
+                health_status["status"] = "degraded"
+        except Exception as e:
+            health_status["provider"] = {"healthy": False, "error": str(e)}
+            health_status["status"] = "degraded"
+
+    def _check_graphrag_health(self, health_status: dict[str, Any]) -> None:
+        """Check GraphRAG integration health."""
+        if self.graphrag_integration:
+            health_status["graphrag"] = {
+                "available": True,
+                "provider_connected": self.graphrag_integration.provider is not None,
+            }
+        else:
+            health_status["graphrag"] = {"available": False}
+            health_status["status"] = "degraded"
+
+    async def _check_workspace_health(self, health_status: dict[str, Any]) -> list:
+        """Check workspace health and return workspace list."""
+        workspaces = await self.workspace_manager.list_workspaces()
+        health_status["workspaces"] = {
+            "total": len(workspaces),
+            "active": sum(1 for w in workspaces if getattr(w, "status", None) == "active"),
+        }
+        return workspaces
+
+    def _check_graph_data_health(self, health_status: dict[str, Any]) -> None:
+        """Check graph data availability."""
+        if self.settings.graphrag_data_path:
+            data_path = Path(self.settings.graphrag_data_path)
+            entities_exist = (
+                data_path / "output" / "artifacts" / "create_final_entities.parquet"
+            ).exists()
+            relationships_exist = (
+                data_path / "output" / "artifacts" / "create_final_relationships.parquet"
+            ).exists()
+
+            health_status["graph_data"] = {
+                "path_configured": True,
+                "entities_available": entities_exist,
+                "relationships_available": relationships_exist,
+            }
+        else:
+            health_status["graph_data"] = {"path_configured": False}
+
+    def _check_system_resources(self, health_status: dict[str, Any]) -> None:
+        """Check system resource usage."""
+        health_status["system_resources"] = {
+            "cpu_percent": psutil.cpu_percent(interval=0.1),
+            "memory_percent": psutil.virtual_memory().percent,
+            "disk_usage_percent": psutil.disk_usage("/").percent,
+        }
+
+    def _update_component_statuses(self, health_status: dict[str, Any], workspaces: list) -> None:
+        """Update component statuses based on health checks."""
+        health_status["components"] = {
+            "api": "healthy",
+            "workspace_manager": "healthy" if workspaces else "idle",
+            "indexing_manager": "healthy",
+            "graph_operations": (
+                "healthy" if health_status["graph_data"]["path_configured"] else "unconfigured"
+            ),
+        }
+
+    def _determine_overall_status(self, health_status: dict[str, Any]) -> None:
+        """Determine overall system status based on resource usage."""
+        if health_status["status"] == "degraded":
+            return  # Already set to degraded
+
+        if health_status["system_resources"]["memory_percent"] > 90:
+            health_status["status"] = "degraded"
+        elif health_status["system_resources"]["cpu_percent"] > 90:
+            health_status["status"] = "degraded"
+
     async def get_advanced_health(self) -> dict[str, Any]:
         """Get comprehensive system health status.
 
@@ -134,93 +233,18 @@ class SystemOperations:
             Dictionary containing detailed health information
         """
         try:
-            health_status: dict[str, Any] = {
-                "status": "healthy",
-                "timestamp": datetime.now(UTC).isoformat(),
-                "components": {},
-                "provider": {},
-                "graphrag": {},
-                "workspaces": {},
-                "graph_data": {},
-                "system_resources": {},
-            }
+            health_status = self._initialize_health_status()
 
-            # Check provider health
-            try:
-                provider = self.provider_factory.create_provider(self.settings)
-                provider_health = await provider.health_check()
-                health_status["provider"] = {
-                    "name": self.settings.llm_provider.value,
-                    "healthy": provider_health.healthy,
-                    "models": getattr(provider_health, "available_models", []),
-                    "error": getattr(provider_health, "error", None),
-                    "metadata": getattr(provider_health, "metadata", {}),
-                }
-                if not provider_health.healthy:
-                    health_status["status"] = "degraded"
-            except Exception as e:
-                health_status["provider"] = {"healthy": False, "error": str(e)}
-                health_status["status"] = "degraded"
+            # Perform health checks
+            await self._check_provider_health(health_status)
+            self._check_graphrag_health(health_status)
+            workspaces = await self._check_workspace_health(health_status)
+            self._check_graph_data_health(health_status)
+            self._check_system_resources(health_status)
 
-            # Check GraphRAG integration
-            if self.graphrag_integration:
-                health_status["graphrag"] = {
-                    "available": True,
-                    "provider_connected": self.graphrag_integration.provider is not None,
-                }
-            else:
-                health_status["graphrag"] = {"available": False}
-                health_status["status"] = "degraded"
-
-            # Check workspace health
-            workspaces = await self.workspace_manager.list_workspaces()
-            health_status["workspaces"] = {
-                "total": len(workspaces),
-                "active": sum(1 for w in workspaces if getattr(w, "status", None) == "active"),
-            }
-
-            # Check graph data availability
-            if self.settings.graphrag_data_path:
-                data_path = Path(self.settings.graphrag_data_path)
-                entities_exist = (
-                    data_path / "output" / "artifacts" / "create_final_entities.parquet"
-                ).exists()
-                relationships_exist = (
-                    data_path / "output" / "artifacts" / "create_final_relationships.parquet"
-                ).exists()
-
-                health_status["graph_data"] = {
-                    "path_configured": True,
-                    "entities_available": entities_exist,
-                    "relationships_available": relationships_exist,
-                }
-            else:
-                health_status["graph_data"] = {"path_configured": False}
-
-            # System resources
-            health_status["system_resources"] = {
-                "cpu_percent": psutil.cpu_percent(interval=0.1),
-                "memory_percent": psutil.virtual_memory().percent,
-                "disk_usage_percent": psutil.disk_usage("/").percent,
-            }
-
-            # Component statuses
-            health_status["components"] = {
-                "api": "healthy",
-                "workspace_manager": "healthy" if workspaces else "idle",
-                "indexing_manager": "healthy",
-                "graph_operations": (
-                    "healthy" if health_status["graph_data"]["path_configured"] else "unconfigured"
-                ),
-            }
-
-            # Determine overall status
-            if health_status["status"] == "degraded":
-                pass  # Already set
-            elif health_status["system_resources"]["memory_percent"] > 90:
-                health_status["status"] = "degraded"
-            elif health_status["system_resources"]["cpu_percent"] > 90:
-                health_status["status"] = "degraded"
+            # Update component statuses and determine overall status
+            self._update_component_statuses(health_status, workspaces)
+            self._determine_overall_status(health_status)
 
             return health_status
 
@@ -263,7 +287,11 @@ class SystemOperations:
                         "queries_processed": self.metrics["graph_queries"],
                         "exports_generated": self.metrics["graph_exports"],
                     }
-                except Exception:
+                except (FileNotFoundError, KeyError) as e:
+                    logger.warning(f"Graph statistics unavailable: {e}")
+                    graph_metrics = {"available": False}
+                except Exception as e:
+                    logger.error(f"Failed to get graph statistics: {e}")
                     graph_metrics = {"available": False}
 
             # Get indexing metrics
@@ -304,6 +332,59 @@ class SystemOperations:
             logger.error(f"Enhanced status generation failed: {e}")
             raise SystemOperationsError(f"Enhanced status generation failed: {e}") from e
 
+    def _validate_provider_config(self, errors: list[str], warnings: list[str]) -> None:
+        """Validate provider configuration."""
+        if not self.settings.llm_provider:
+            errors.append("No LLM provider configured")
+        elif self.settings.llm_provider.value not in ["ollama", "google_gemini"]:
+            errors.append(f"Invalid provider: {self.settings.llm_provider.value}")
+
+        if self.settings.llm_provider and self.settings.llm_provider.value == "ollama":
+            if not self.settings.ollama_base_url:
+                errors.append("Ollama base URL not configured")
+            if not self.settings.ollama_llm_model:
+                warnings.append("Ollama LLM model not specified, using default")
+        elif self.settings.llm_provider and self.settings.llm_provider.value == "google_gemini":
+            if not self.settings.google_api_key:
+                errors.append("Google API key not configured")
+            if not self.settings.gemini_model:
+                warnings.append("Gemini model not specified, using default")
+
+    def _validate_graphrag_config(self, warnings: list[str], suggestions: list[str]) -> None:
+        """Validate GraphRAG configuration."""
+        if not self.settings.graphrag_data_path:
+            warnings.append("GraphRAG data path not configured")
+            suggestions.append("Set GRAPHRAG_DATA_PATH to enable graph operations")
+        elif not Path(self.settings.graphrag_data_path).exists():
+            warnings.append(
+                f"GraphRAG data path does not exist: {self.settings.graphrag_data_path}"
+            )
+
+        if not self.settings.graphrag_config_path:
+            warnings.append("GraphRAG config path not configured")
+        elif (
+            self.settings.graphrag_config_path
+            and not Path(self.settings.graphrag_config_path).exists()
+        ):
+            warnings.append(
+                f"GraphRAG config path does not exist: {self.settings.graphrag_config_path}"
+            )
+
+    async def _validate_workspace_config(self, suggestions: list[str]) -> None:
+        """Validate workspace configuration."""
+        workspaces = await self.workspace_manager.list_workspaces()
+        if not workspaces:
+            suggestions.append("No workspaces configured - create one to start indexing")
+
+    def _validate_config_data(
+        self, config_data: dict[str, Any], errors: list[str]
+    ) -> dict[str, Any]:
+        """Validate additional config data."""
+        validated_config = config_data.copy()
+        if "provider" in config_data and config_data["provider"] not in ["ollama", "google_gemini"]:
+            errors.append(f"Invalid provider in config data: {config_data['provider']}")
+        return validated_config
+
     async def validate_configuration(
         self, config_type: str, config_data: dict[str, Any] | None = None, strict_mode: bool = False
     ) -> dict[str, Any]:
@@ -317,69 +398,23 @@ class SystemOperations:
         Returns:
             Dictionary containing validation results
         """
-        errors = []
-        warnings = []
-        suggestions = []
+        errors: list[str] = []
+        warnings: list[str] = []
+        suggestions: list[str] = []
         validated_config = None
 
         try:
             if config_type in ["provider", "all"]:
-                # Validate provider configuration
-                if not self.settings.llm_provider:
-                    errors.append("No LLM provider configured")
-                elif self.settings.llm_provider and self.settings.llm_provider.value not in [
-                    "ollama",
-                    "google_gemini",
-                ]:
-                    errors.append(f"Invalid provider: {self.settings.llm_provider.value}")
-
-                if self.settings.llm_provider and self.settings.llm_provider.value == "ollama":
-                    if not self.settings.ollama_base_url:
-                        errors.append("Ollama base URL not configured")
-                    if not self.settings.ollama_llm_model:
-                        warnings.append("Ollama LLM model not specified, using default")
-                elif (
-                    self.settings.llm_provider
-                    and self.settings.llm_provider.value == "google_gemini"
-                ):
-                    if not self.settings.google_api_key:
-                        errors.append("Google API key not configured")
-                    if not self.settings.gemini_model:
-                        warnings.append("Gemini model not specified, using default")
+                self._validate_provider_config(errors, warnings)
 
             if config_type in ["graphrag", "all"]:
-                # Validate GraphRAG configuration
-                if not self.settings.graphrag_data_path:
-                    warnings.append("GraphRAG data path not configured")
-                    suggestions.append("Set GRAPHRAG_DATA_PATH to enable graph operations")
-                elif not Path(self.settings.graphrag_data_path).exists():
-                    warnings.append(
-                        f"GraphRAG data path does not exist: {self.settings.graphrag_data_path}"
-                    )
-
-                if not self.settings.graphrag_config_path:
-                    warnings.append("GraphRAG config path not configured")
-                elif (
-                    self.settings.graphrag_config_path
-                    and not Path(self.settings.graphrag_config_path).exists()
-                ):
-                    warnings.append(
-                        f"GraphRAG config path does not exist: {self.settings.graphrag_config_path}"
-                    )
+                self._validate_graphrag_config(warnings, suggestions)
 
             if config_type in ["workspace", "all"]:
-                # Validate workspace configuration
-                workspaces = await self.workspace_manager.list_workspaces()
-                if not workspaces:
-                    suggestions.append("No workspaces configured - create one to start indexing")
+                await self._validate_workspace_config(suggestions)
 
-            # Check for additional config data to validate
             if config_data:
-                validated_config = config_data.copy()
-                # Add specific validation for provided config data
-                if "provider" in config_data:
-                    if config_data["provider"] not in ["ollama", "google_gemini"]:
-                        errors.append(f"Invalid provider in config data: {config_data['provider']}")
+                validated_config = self._validate_config_data(config_data, errors)
 
             # Determine if configuration is valid
             valid = len(errors) == 0

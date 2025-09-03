@@ -511,7 +511,7 @@ class ConnectionPool:
     def _build_sql_filters(
         self, filters: dict[str, Any] | None
     ) -> tuple[list[str], dict[str, Any]]:
-        """Builds SQL filter conditions and parameters from a dictionary of filters.
+        """Build SQL filter conditions and parameters from a dictionary of filters.
 
         Args:
             filters: A dictionary of filters where keys are column names and values are filter values.

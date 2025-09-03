@@ -242,6 +242,59 @@ class WorkspaceManager:
         summaries.sort(key=lambda x: x.created_at, reverse=True)
         return summaries
 
+    def _validate_and_update_basic_fields(
+        self, workspace: Workspace, request: WorkspaceUpdateRequest
+    ) -> None:
+        """Validate and update basic workspace fields."""
+        if request.description is not None:
+            workspace.config.description = request.description
+
+        if request.data_path is not None:
+            data_path = Path(request.data_path)
+            if not data_path.exists() or not data_path.is_dir():
+                raise ValueError(f"Invalid data path: {request.data_path}")
+            workspace.config.data_path = str(data_path.resolve())
+
+    def _update_processing_config(
+        self, workspace: Workspace, request: WorkspaceUpdateRequest
+    ) -> None:
+        """Update processing configuration fields."""
+        if request.chunk_size is not None:
+            workspace.config.chunk_size = request.chunk_size
+
+        if request.chunk_overlap is not None:
+            workspace.config.chunk_overlap = request.chunk_overlap
+
+    def _update_model_config(self, workspace: Workspace, request: WorkspaceUpdateRequest) -> None:
+        """Update model configuration fields."""
+        if request.llm_model_override is not None:
+            workspace.config.llm_model_override = request.llm_model_override
+
+        if request.embedding_model_override is not None:
+            workspace.config.embedding_model_override = request.embedding_model_override
+
+    def _update_graph_config(self, workspace: Workspace, request: WorkspaceUpdateRequest) -> None:
+        """Update graph configuration fields."""
+        if request.max_entities is not None:
+            workspace.config.max_entities = request.max_entities
+
+        if request.max_relationships is not None:
+            workspace.config.max_relationships = request.max_relationships
+
+        if request.community_levels is not None:
+            workspace.config.community_levels = request.community_levels
+
+    def _finalize_workspace_update(self, workspace: Workspace) -> None:
+        """Finalize workspace update with timestamp and config regeneration."""
+        workspace.updated_at = datetime.now(UTC)
+
+        # Regenerate configuration file if workspace exists
+        if workspace.workspace_path and Path(workspace.workspace_path).exists():
+            self._generate_graphrag_config(workspace)
+
+        # Save changes
+        self._save_workspaces_index()
+
     async def update_workspace(
         self, workspace_id: str, request: WorkspaceUpdateRequest
     ) -> Workspace:
@@ -261,46 +314,14 @@ class WorkspaceManager:
         if not workspace:
             raise ValueError(f"Workspace not found: {workspace_id}")
 
-        # Update configuration fields
-        if request.description is not None:
-            workspace.config.description = request.description
+        # Update configuration fields using helper methods
+        self._validate_and_update_basic_fields(workspace, request)
+        self._update_processing_config(workspace, request)
+        self._update_model_config(workspace, request)
+        self._update_graph_config(workspace, request)
 
-        if request.data_path is not None:
-            data_path = Path(request.data_path)
-            if not data_path.exists() or not data_path.is_dir():
-                raise ValueError(f"Invalid data path: {request.data_path}")
-            workspace.config.data_path = str(data_path.resolve())
-
-        if request.chunk_size is not None:
-            workspace.config.chunk_size = request.chunk_size
-
-        if request.chunk_overlap is not None:
-            workspace.config.chunk_overlap = request.chunk_overlap
-
-        if request.llm_model_override is not None:
-            workspace.config.llm_model_override = request.llm_model_override
-
-        if request.embedding_model_override is not None:
-            workspace.config.embedding_model_override = request.embedding_model_override
-
-        if request.max_entities is not None:
-            workspace.config.max_entities = request.max_entities
-
-        if request.max_relationships is not None:
-            workspace.config.max_relationships = request.max_relationships
-
-        if request.community_levels is not None:
-            workspace.config.community_levels = request.community_levels
-
-        # Update timestamp
-        workspace.updated_at = datetime.now(UTC)
-
-        # Regenerate configuration file if workspace exists
-        if workspace.workspace_path and Path(workspace.workspace_path).exists():
-            self._generate_graphrag_config(workspace)
-
-        # Save changes
-        self._save_workspaces_index()
+        # Finalize update
+        self._finalize_workspace_update(workspace)
 
         return workspace
 

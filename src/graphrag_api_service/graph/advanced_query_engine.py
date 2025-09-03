@@ -281,6 +281,52 @@ class AdvancedQueryEngine:
         # Sort by score descending
         return sorted(paths, key=lambda p: p.score, reverse=True)
 
+    def _parse_time_series(self, data: pd.DataFrame, time_field: str) -> pd.Series:
+        """Parse time field to datetime series."""
+        return pd.to_datetime(data[time_field])
+
+    def _normalize_timezone_for_comparison(
+        self, time_series: pd.Series, comparison_time: Any
+    ) -> Any:
+        """Normalize timezone for comparison between time series and comparison time."""
+        if comparison_time is None:
+            return None
+
+        if time_series.dt.tz is not None:
+            # Data is timezone-aware, make comparison time timezone-aware too
+            if comparison_time.tzinfo is None:
+                return comparison_time.replace(tzinfo=time_series.dt.tz)
+        elif time_series.dt.tz is None and comparison_time.tzinfo is not None:
+            # Data is timezone-naive, make comparison time timezone-naive too
+            return comparison_time.replace(tzinfo=None)
+
+        return comparison_time
+
+    def _apply_start_time_filter(
+        self, data: pd.DataFrame, time_series: pd.Series, start_time: Any
+    ) -> pd.DataFrame:
+        """Apply start time filter to data."""
+        if start_time:
+            mask = time_series >= start_time
+            filtered_data: pd.DataFrame = data[mask]
+            return filtered_data
+        return data
+
+    def _apply_end_time_filter(
+        self, data: pd.DataFrame, time_field: str, end_time: Any
+    ) -> pd.DataFrame:
+        """Apply end time filter to data."""
+        if end_time:
+            # Recalculate time_series for the filtered data to avoid reindexing warning
+            time_series_filtered = pd.to_datetime(data[time_field])
+            normalized_end_time = self._normalize_timezone_for_comparison(
+                time_series_filtered, end_time
+            )
+            mask = time_series_filtered <= normalized_end_time
+            filtered_data: pd.DataFrame = data[mask]
+            return filtered_data
+        return data
+
     async def _apply_temporal_filter(
         self, data: pd.DataFrame, constraints: TemporalQuery
     ) -> pd.DataFrame:
@@ -298,40 +344,14 @@ class AdvancedQueryEngine:
 
         filtered_data = data.copy()
 
-        # Convert time field to datetime with timezone handling
-        time_series = pd.to_datetime(filtered_data[constraints.time_field])
+        # Parse time series and normalize timezones
+        time_series = self._parse_time_series(filtered_data, constraints.time_field)
+        start_time = self._normalize_timezone_for_comparison(time_series, constraints.start_time)
+        end_time = self._normalize_timezone_for_comparison(time_series, constraints.end_time)
 
-        # Make comparison times timezone-aware if the data is timezone-aware
-        start_time = constraints.start_time
-        end_time = constraints.end_time
-
-        if time_series.dt.tz is not None:
-            # Data is timezone-aware, make comparison times timezone-aware too
-            if start_time and start_time.tzinfo is None:
-                start_time = start_time.replace(tzinfo=time_series.dt.tz)
-            if end_time and end_time.tzinfo is None:
-                end_time = end_time.replace(tzinfo=time_series.dt.tz)
-        elif time_series.dt.tz is None:
-            # Data is timezone-naive, make comparison times timezone-naive too
-            if start_time and start_time.tzinfo is not None:
-                start_time = start_time.replace(tzinfo=None)
-            if end_time and end_time.tzinfo is not None:
-                end_time = end_time.replace(tzinfo=None)
-
-        if start_time:
-            mask = time_series >= start_time
-            filtered_data = filtered_data[mask]
-
-        if end_time:
-            # Recalculate time_series for the filtered data to avoid reindexing warning
-            time_series_filtered = pd.to_datetime(filtered_data[constraints.time_field])
-            if time_series_filtered.dt.tz is not None and end_time.tzinfo is None:
-                end_time = end_time.replace(tzinfo=time_series_filtered.dt.tz)
-            elif time_series_filtered.dt.tz is None and end_time.tzinfo is not None:
-                end_time = end_time.replace(tzinfo=None)
-
-            mask = time_series_filtered <= end_time
-            filtered_data = filtered_data[mask]
+        # Apply filters
+        filtered_data = self._apply_start_time_filter(filtered_data, time_series, start_time)
+        filtered_data = self._apply_end_time_filter(filtered_data, constraints.time_field, end_time)
 
         return filtered_data
 

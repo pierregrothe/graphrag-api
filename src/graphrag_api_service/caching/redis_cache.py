@@ -220,7 +220,7 @@ class RedisDistributedCache:
             cache_key = self._make_key(namespace, key)
             assert self.redis_client is not None  # Already checked _connected
             result = await self.redis_client.delete(cache_key)
-            return result > 0
+            return bool(result > 0)
 
         except Exception as e:
             logger.error(f"Error deleting cache value {namespace}:{key}: {e}")
@@ -243,7 +243,7 @@ class RedisDistributedCache:
             cache_key = self._make_key(namespace, key)
             assert self.redis_client is not None  # Already checked _connected
             result = await self.redis_client.exists(cache_key)
-            return result > 0
+            return bool(result > 0)
 
         except Exception as e:
             logger.error(f"Error checking cache existence {namespace}:{key}: {e}")
@@ -270,7 +270,7 @@ class RedisDistributedCache:
             if keys:
                 deleted = await self.redis_client.delete(*keys)
                 logger.info(f"Invalidated {deleted} cache keys matching {search_pattern}")
-                return deleted
+                return int(deleted)
 
             return 0
 

@@ -5,9 +5,15 @@
 
 """Graph data API route handlers with proper dependency injection."""
 
+import csv
+import json
+import tempfile
+import uuid
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from ..config import get_settings
 from ..deps import GraphOperationsDep
@@ -17,6 +23,60 @@ logger = get_logger(__name__)
 
 # Create router for graph endpoints
 router = APIRouter(prefix="/api/graph", tags=["Graph"])
+
+
+def validate_workspace_path(workspace_id: str | None, settings) -> str:
+    """Validate and resolve workspace path to prevent traversal attacks.
+
+    Parameters
+    ----------
+    workspace_id : str | None
+        User-provided workspace identifier
+    settings : object
+        Application settings containing base paths
+
+    Returns
+    -------
+    str
+        Validated and resolved data path
+
+    Raises
+    ------
+    HTTPException
+        If path validation fails
+    """
+    # Use default path if no workspace_id provided
+    if not workspace_id or workspace_id == "default":
+        data_path = settings.graphrag_data_path
+        if not data_path:
+            raise HTTPException(status_code=400, detail="No default data path configured")
+        return data_path
+
+    # Validate workspace_id format (prevent obvious attacks)
+    if not workspace_id.replace("-", "").replace("_", "").isalnum():
+        raise HTTPException(status_code=400, detail="Invalid workspace ID format")
+
+    # Construct safe workspace path
+    base_workspaces_path = getattr(settings, "base_workspaces_path", "workspaces")
+
+    try:
+        # Resolve paths to absolute paths
+        base_path = Path(base_workspaces_path).resolve()
+        workspace_path = (base_path / workspace_id).resolve()
+
+        # Ensure the resolved path is within the base directory
+        if not str(workspace_path).startswith(str(base_path)):
+            raise HTTPException(status_code=403, detail="Access to workspace denied")
+
+        # Check if workspace directory exists
+        if not workspace_path.exists():
+            raise HTTPException(status_code=404, detail=f"Workspace '{workspace_id}' not found")
+
+        return str(workspace_path)
+
+    except (OSError, ValueError) as e:
+        logger.error(f"Path validation error for workspace '{workspace_id}': {e}")
+        raise HTTPException(status_code=400, detail="Invalid workspace path") from e
 
 
 @router.get("/entities")
@@ -30,15 +90,24 @@ async def get_entities(
 ) -> dict[str, Any]:
     """Get entities from the knowledge graph.
 
-    Args:
-        limit: Maximum number of entities to return
-        offset: Number of entities to skip
-        entity_name: Optional entity name filter
-        entity_type: Optional entity type filter
-        workspace_id: Workspace ID
-        graph_operations: Graph operations (injected)
+    Parameters
+    ----------
+    limit : int, default=50
+        Maximum number of entities to return (1-1000)
+    offset : int, default=0
+        Number of entities to skip
+    entity_name : str | None, default=None
+        Optional entity name filter
+    entity_type : str | None, default=None
+        Optional entity type filter
+    workspace_id : str, default="default"
+        Workspace identifier
+    graph_operations : GraphOperationsDep, default=None
+        Graph operations service (injected)
 
-    Returns:
+    Returns
+    -------
+    dict[str, Any]
         Dict with entities and metadata
     """
     logger.debug(f"Getting entities: limit={limit}, offset={offset}")
@@ -62,15 +131,7 @@ async def get_entities(
 
         # Get entities from graph operations
         settings = get_settings()
-        data_path = workspace_id or settings.graphrag_data_path
-        if not data_path:
-            return {
-                "entities": [],
-                "total_count": 0,
-                "limit": limit,
-                "offset": offset,
-                "error": "No data path configured",
-            }
+        data_path = validate_workspace_path(workspace_id, settings)
 
         result = await graph_operations.query_entities(
             data_path=data_path,
@@ -135,15 +196,7 @@ async def get_relationships(
 
         # Get relationships from graph operations
         settings = get_settings()
-        data_path = workspace_id or settings.graphrag_data_path
-        if not data_path:
-            return {
-                "relationships": [],
-                "total_count": 0,
-                "limit": limit,
-                "offset": offset,
-                "error": "No data path configured",
-            }
+        data_path = validate_workspace_path(workspace_id, settings)
 
         result = await graph_operations.query_relationships(
             data_path=data_path,
@@ -192,14 +245,7 @@ async def get_communities(
     try:
         # Get communities from graph operations
         settings = get_settings()
-        data_path = workspace_id or settings.graphrag_data_path
-        if not data_path:
-            return {
-                "communities": [],
-                "total_count": 0,
-                "workspace_id": workspace_id,
-                "error": "No data path configured",
-            }
+        data_path = validate_workspace_path(workspace_id, settings)
 
         result = await graph_operations.query_communities(data_path=data_path)
 
@@ -245,19 +291,7 @@ async def get_statistics(
     try:
         # Get statistics from graph operations
         settings = get_settings()
-        data_path = workspace_id or settings.graphrag_data_path
-        if not data_path:
-            return {
-                "total_entities": 0,
-                "total_relationships": 0,
-                "total_communities": 0,
-                "entity_types": {},
-                "relationship_types": {},
-                "community_levels": {},
-                "graph_density": 0.0,
-                "workspace_id": workspace_id,
-                "error": "No data path configured",
-            }
+        data_path = validate_workspace_path(workspace_id, settings)
 
         result = await graph_operations.get_graph_statistics(data_path=data_path)
 
@@ -323,16 +357,7 @@ async def create_visualization(
 
     try:
         settings = get_settings()
-        data_path = workspace_id or settings.graphrag_data_path
-
-        if not data_path:
-            return {
-                "nodes": [],
-                "edges": [],
-                "layout": layout_algorithm,
-                "metadata": {"total_nodes": 0, "total_edges": 0},
-                "error": "No data path configured",
-            }
+        data_path = validate_workspace_path(workspace_id, settings)
 
         # Get entities and relationships
         entities_result = await graph_operations.query_entities(
@@ -412,6 +437,131 @@ async def create_visualization(
         }
 
 
+async def _collect_export_data(
+    graph_operations: Any,
+    data_path: str,
+    workspace_id: str,
+    format: str,
+    include_entities: bool,
+    include_relationships: bool,
+) -> tuple[dict[str, Any], int, int]:
+    """Collect data for export."""
+    from datetime import UTC
+
+    export_data: dict[str, Any] = {
+        "metadata": {
+            "workspace_id": workspace_id,
+            "export_date": datetime.now(UTC).isoformat(),
+            "format": format,
+        },
+        "entities": [],
+        "relationships": [],
+    }
+
+    entity_count = 0
+    relationship_count = 0
+
+    if include_entities:
+        entities_result = await graph_operations.query_entities(
+            data_path=data_path,
+            limit=10000,  # Export all entities
+            offset=0,
+        )
+        export_data["entities"] = entities_result.get("entities", [])
+        entity_count = len(export_data["entities"])
+
+    if include_relationships:
+        relationships_result = await graph_operations.query_relationships(
+            data_path=data_path,
+            limit=10000,  # Export all relationships
+            offset=0,
+        )
+        export_data["relationships"] = relationships_result.get("relationships", [])
+        relationship_count = len(export_data["relationships"])
+
+    return export_data, entity_count, relationship_count
+
+
+def _export_to_json(export_data: dict[str, Any], file_path: Path) -> None:
+    """Export data to JSON format."""
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(export_data, f, indent=2, default=str)
+
+
+def _export_to_csv(export_data: dict[str, Any], export_id: str, temp_dir: Path) -> None:
+    """Export data to CSV format."""
+    # Export entities to CSV
+    if export_data["entities"]:
+        entities_file = temp_dir / f"entities_{export_id}.csv"
+        with open(entities_file, "w", newline="", encoding="utf-8") as f:
+            entities_list = export_data["entities"]
+            if entities_list and isinstance(entities_list[0], dict):
+                writer = csv.DictWriter(f, fieldnames=entities_list[0].keys())
+                writer.writeheader()
+                writer.writerows(entities_list)
+
+    # Export relationships to CSV
+    if export_data["relationships"]:
+        relationships_file = temp_dir / f"relationships_{export_id}.csv"
+        with open(relationships_file, "w", newline="", encoding="utf-8") as f:
+            relationships_list = export_data["relationships"]
+            if relationships_list and isinstance(relationships_list[0], dict):
+                writer = csv.DictWriter(f, fieldnames=relationships_list[0].keys())
+                writer.writeheader()
+                writer.writerows(relationships_list)
+
+
+def _export_to_graphml(export_data: dict[str, Any], file_path: Path) -> None:
+    """Export data to GraphML format."""
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        f.write('<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n')
+        f.write('  <graph id="G" edgedefault="directed">\n')
+
+        # Write nodes
+        for entity in export_data.get("entities", []):
+            if isinstance(entity, dict):
+                entity_id = entity.get("id", entity.get("title", ""))
+                f.write(f'    <node id="{entity_id}"/>\n')
+
+        # Write edges
+        for rel in export_data.get("relationships", []):
+            if isinstance(rel, dict):
+                f.write(
+                    f'    <edge source="{rel.get("source", "")}" target="{rel.get("target", "")}"/>\n'
+                )
+
+        f.write("  </graph>\n")
+        f.write("</graphml>\n")
+
+
+def _create_export_response(
+    export_id: str,
+    format: str,
+    file_path: Path,
+    entity_count: int,
+    relationship_count: int,
+    workspace_id: str,
+) -> dict[str, Any]:
+    """Create export response dictionary."""
+    from datetime import UTC
+
+    file_size = file_path.stat().st_size if file_path.exists() else 0
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
+
+    return {
+        "success": True,
+        "export_id": export_id,
+        "download_url": f"/api/graph/download/{export_id}",
+        "format": format,
+        "file_size": file_size,
+        "entity_count": entity_count,
+        "relationship_count": relationship_count,
+        "workspace_id": workspace_id,
+        "expires_at": expires_at.isoformat(),
+    }
+
+
 @router.post("/export")
 async def export_graph(
     format: str = Query("json", pattern="^(json|csv|graphml)$"),
@@ -441,135 +591,40 @@ async def export_graph(
         }
 
     try:
-        import csv
-        import json
-        import tempfile
-        import uuid
-        from datetime import datetime, timedelta
-        from pathlib import Path
-
         settings = get_settings()
-        data_path = workspace_id or settings.graphrag_data_path
-
-        if not data_path:
-            return {
-                "success": False,
-                "error": "No data path configured",
-                "workspace_id": workspace_id,
-            }
+        data_path = validate_workspace_path(workspace_id, settings)
 
         # Collect data to export
-        export_data: dict[str, Any] = {
-            "metadata": {
-                "workspace_id": workspace_id,
-                "export_date": datetime.utcnow().isoformat(),
-                "format": format,
-            },
-            "entities": [],
-            "relationships": [],
-        }
-
-        entity_count = 0
-        relationship_count = 0
-
-        if include_entities:
-            entities_result = await graph_operations.query_entities(
-                data_path=data_path,
-                limit=10000,  # Export all entities
-                offset=0,
-            )
-            export_data["entities"] = entities_result.get("entities", [])
-            entity_count = len(export_data["entities"])
-
-        if include_relationships:
-            relationships_result = await graph_operations.query_relationships(
-                data_path=data_path,
-                limit=10000,  # Export all relationships
-                offset=0,
-            )
-            export_data["relationships"] = relationships_result.get("relationships", [])
-            relationship_count = len(export_data["relationships"])
+        export_data, entity_count, relationship_count = await _collect_export_data(
+            graph_operations,
+            data_path,
+            workspace_id,
+            format,
+            include_entities,
+            include_relationships,
+        )
 
         # Create temporary file
         export_id = str(uuid.uuid4())
         temp_dir = Path(tempfile.gettempdir()) / "graphrag_exports"
         temp_dir.mkdir(exist_ok=True)
 
-        # Initialize file_path
-        file_path: Path
-
+        # Export based on format
         if format == "json":
             file_path = temp_dir / f"graph_export_{export_id}.json"
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(export_data, f, indent=2, default=str)
-
+            _export_to_json(export_data, file_path)
         elif format == "csv":
-            # Export entities to CSV
-            if include_entities and export_data["entities"]:
-                entities_file = temp_dir / f"entities_{export_id}.csv"
-                with open(entities_file, "w", newline="", encoding="utf-8") as f:
-                    entities_list = export_data["entities"]
-                    if entities_list and isinstance(entities_list[0], dict):
-                        writer = csv.DictWriter(f, fieldnames=entities_list[0].keys())
-                        writer.writeheader()
-                        writer.writerows(entities_list)
-
-            # Export relationships to CSV
-            if include_relationships and export_data["relationships"]:
-                relationships_file = temp_dir / f"relationships_{export_id}.csv"
-                with open(relationships_file, "w", newline="", encoding="utf-8") as f:
-                    relationships_list = export_data["relationships"]
-                    if relationships_list and isinstance(relationships_list[0], dict):
-                        writer = csv.DictWriter(f, fieldnames=relationships_list[0].keys())
-                        writer.writeheader()
-                        writer.writerows(relationships_list)
-
+            _export_to_csv(export_data, export_id, temp_dir)
             file_path = temp_dir / f"graph_export_{export_id}.csv"
-
         elif format == "graphml":
-            # Simple GraphML format
             file_path = temp_dir / f"graph_export_{export_id}.graphml"
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-                f.write('<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n')
-                f.write('  <graph id="G" edgedefault="directed">\n')
-
-                # Write nodes
-                for entity in export_data.get("entities", []):
-                    if isinstance(entity, dict):
-                        entity_id = entity.get("id", entity.get("title", ""))
-                        f.write(f'    <node id="{entity_id}"/>\n')
-
-                # Write edges
-                for rel in export_data.get("relationships", []):
-                    if isinstance(rel, dict):
-                        f.write(
-                            f'    <edge source="{rel.get("source", "")}" target="{rel.get("target", "")}"/>\n'
-                        )
-
-                f.write("  </graph>\n")
-                f.write("</graphml>\n")
+            _export_to_graphml(export_data, file_path)
         else:
-            # This shouldn't happen due to Literal type, but handle it for safety
             raise ValueError(f"Unsupported format: {format}")
 
-        # Get file size
-        file_size = file_path.stat().st_size if file_path.exists() else 0
-
-        # Generate expiry time (24 hours from now)
-        expires_at = datetime.utcnow() + timedelta(hours=24)
-
-        return {
-            "success": True,
-            "export_id": export_id,
-            "download_url": f"/api/graph/download/{export_id}",
-            "format": format,
-            "file_size": file_size,
-            "entity_count": entity_count,
-            "relationship_count": relationship_count,
-            "workspace_id": workspace_id,
-            "expires_at": expires_at.isoformat(),
-        }
+        return _create_export_response(
+            export_id, format, file_path, entity_count, relationship_count, workspace_id
+        )
 
     except Exception as e:
         logger.error(f"Failed to export graph: {e}")

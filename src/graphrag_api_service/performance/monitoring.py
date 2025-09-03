@@ -230,7 +230,7 @@ class PerformanceMonitor:
             self._metrics_store.update_request_status_code(request_id, status_code)
 
     async def _monitoring_loop(self, interval: float) -> None:
-        """Main monitoring loop.
+        """Run main monitoring loop.
 
         Args:
             interval: Monitoring interval in seconds

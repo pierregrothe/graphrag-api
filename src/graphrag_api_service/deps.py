@@ -10,6 +10,12 @@ from typing import Annotated
 from fastapi import Depends
 
 from .dependencies import get_service_container
+from .graph.operations import GraphOperations
+from .graphrag_integration import GraphRAGIntegration
+from .indexing.manager import IndexingManager
+from .performance.cache_manager import get_cache_manager
+from .system.operations import SystemOperations
+from .workspace.manager import WorkspaceManager
 
 
 def get_workspace_manager():
@@ -42,31 +48,20 @@ def get_system_operations():
     return container.system_operations
 
 
-def get_cache_manager_dep():
+async def get_cache_manager_dep():
     """Get cache manager for dependency injection."""
-    import asyncio
-
-    from .performance.cache_manager import get_cache_manager
-
-    # Get the cache manager instance
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # If we're in an async context, we can't await here
-            # Return a placeholder that the route can handle
-            return "cache_manager_available"
-        else:
-            return asyncio.run(get_cache_manager())
-    except Exception:
+        # Get cache manager asynchronously
+        cache_manager = await get_cache_manager()
+        return cache_manager
+    except Exception as e:
+        # Log the error but don't fail the request
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Cache manager not available: {e}")
         return None
 
-
-# Import the actual types for better type hinting
-from .graph.operations import GraphOperations
-from .graphrag_integration import GraphRAGIntegration
-from .indexing.manager import IndexingManager
-from .system.operations import SystemOperations
-from .workspace.manager import WorkspaceManager
 
 # Type aliases for dependency injection
 WorkspaceManagerDep = Annotated[WorkspaceManager | None, Depends(get_workspace_manager)]

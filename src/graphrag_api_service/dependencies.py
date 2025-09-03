@@ -11,7 +11,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .auth.api_keys import get_api_key_manager
-from .auth.database_auth import DatabaseAuthenticationService
 from .auth.jwt_auth import JWTConfig
 from .caching.redis_cache import RedisCacheConfig, get_redis_cache, initialize_redis_cache
 from .config import settings
@@ -37,9 +36,28 @@ logger = get_logger(__name__)
 
 
 class ServiceContainer:
-    """Container for all application services and dependencies."""
+    """Container for all application services and dependencies.
 
-    def __init__(self):
+    This class manages the lifecycle of all application services and provides
+    dependency injection for FastAPI endpoints.
+
+    Attributes
+    ----------
+    database_manager : SQLiteManager | None
+        Database manager instance
+    auth_service : AuthService | None
+        Authentication service instance
+    workspace_manager : WorkspaceManager | None
+        Workspace management service instance
+    graph_operations : GraphOperations | None
+        Graph operations service instance
+    cache_manager : CacheManager | None
+        Cache manager instance
+    performance_monitor : PerformanceMonitor | None
+        Performance monitoring service instance
+    """
+
+    def __init__(self) -> None:
         self.database_manager = None
         self.auth_service = None
         self.workspace_manager = None
@@ -50,7 +68,7 @@ class ServiceContainer:
         self.security_middleware = None
         self.performance_middleware = None
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize all services."""
         logger.info(f"Initializing services for {settings.app_name} v{settings.app_version}")
 
@@ -180,11 +198,8 @@ class ServiceContainer:
         except Exception as e:
             logger.error(f"Failed to initialize performance components: {e}")
 
-    async def shutdown(self):
-        """Shutdown all services."""
-        logger.info("Shutting down services")
-
-        # Shutdown database connections
+    async def _shutdown_database(self) -> None:
+        """Shutdown database connections."""
         try:
             if self.database_manager:
                 self.database_manager.close()
@@ -192,7 +207,8 @@ class ServiceContainer:
         except Exception as e:
             logger.error(f"Error closing database connections: {e}")
 
-        # Shutdown performance components
+    async def _shutdown_performance_components(self) -> None:
+        """Shutdown performance monitoring components."""
         try:
             await cleanup_performance_monitor()
             await cleanup_cache_manager()
@@ -201,7 +217,8 @@ class ServiceContainer:
         except Exception as e:
             logger.error(f"Error shutting down performance components: {e}")
 
-        # Shutdown advanced features
+    async def _shutdown_advanced_features(self) -> None:
+        """Shutdown advanced features like tracing and caching."""
         try:
             # Shutdown distributed tracing
             shutdown_tracing()
@@ -220,10 +237,20 @@ class ServiceContainer:
         except Exception as e:
             logger.error(f"Error shutting down advanced features: {e}")
 
-        # Shutdown indexing manager
+    async def _shutdown_indexing_manager(self) -> None:
+        """Shutdown indexing manager."""
         if self.indexing_manager:
             await self.indexing_manager.stop()
             logger.info("Indexing manager stopped")
+
+    async def shutdown(self) -> None:
+        """Shutdown all services."""
+        logger.info("Shutting down services")
+
+        await self._shutdown_database()
+        await self._shutdown_performance_components()
+        await self._shutdown_advanced_features()
+        await self._shutdown_indexing_manager()
 
         logger.info("All services shut down successfully")
 

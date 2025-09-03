@@ -148,7 +148,7 @@ class AdvancedRateLimiter:
         return self.strategies[strategy](client_id, limit, window)
 
     def _fixed_window_check(self, client_id: str, limit: int, window: int) -> tuple[bool, dict]:
-        """Fixed window rate limiting."""
+        """Apply fixed window rate limiting."""
         # Implementation would use Redis or similar for production
         # Parameters client_id and window would be used in production implementation
         _ = (client_id, window)  # Mark as intentionally unused

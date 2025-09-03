@@ -35,7 +35,6 @@ class PrometheusMetrics:
 
     def _setup_metrics(self) -> None:
         """Set up all Prometheus metrics."""
-
         # Request metrics
         self.request_count = Counter(
             "graphrag_requests_total",

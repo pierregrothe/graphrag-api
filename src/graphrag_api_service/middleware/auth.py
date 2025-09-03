@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 
 def setup_auth_middleware(app: FastAPI, security_middleware, performance_middleware) -> None:
-    """Setup authentication and performance middleware for the FastAPI application.
+    """Set up authentication and performance middleware for the FastAPI application.
 
     Args:
         app: FastAPI application instance
@@ -27,7 +27,7 @@ def setup_auth_middleware(app: FastAPI, security_middleware, performance_middlew
 
     @app.middleware("http")
     async def performance_security_middleware(request: Request, call_next: Callable) -> Response:
-        """Combined performance monitoring and security middleware.
+        """Combine performance monitoring and security middleware.
 
         Args:
             request: FastAPI request object

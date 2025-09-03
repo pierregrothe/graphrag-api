@@ -5,9 +5,11 @@
 
 """Configuration settings for the GraphRAG API service."""
 
+import os
+import secrets
 from enum import Enum
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +35,10 @@ class Settings(BaseSettings):
     # GraphRAG Settings
     graphrag_config_path: str | None = None
     graphrag_data_path: str | None = None
+    base_workspaces_path: str = Field(
+        default="workspaces",
+        description="Base directory for workspace data (security boundary)",
+    )
 
     # LLM Provider Configuration
     llm_provider: LLMProvider = Field(
@@ -90,8 +96,8 @@ class Settings(BaseSettings):
 
     # Authentication & Security Settings
     jwt_secret_key: str = Field(
-        default="your-secret-key-change-in-production",
-        description="Secret key for JWT token signing",
+        default_factory=lambda: os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(32),
+        description="Secret key for JWT token signing - must be set via JWT_SECRET_KEY environment variable in production",
     )
     jwt_algorithm: str = Field(
         default="HS256",
@@ -117,6 +123,64 @@ class Settings(BaseSettings):
         default=3600,
         description="Rate limit window in seconds",
     )
+
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def validate_jwt_secret_key(cls, v: str) -> str:
+        """Validate JWT secret key security requirements."""
+        # Check for insecure default values
+        insecure_defaults = [
+            "your-secret-key-change-in-production",
+            "your-secret-key-here",
+            "secret",
+            "jwt-secret",
+            "change-me",
+        ]
+
+        if v.lower() in [default.lower() for default in insecure_defaults]:
+            raise ValueError(
+                "JWT secret key cannot use default insecure values. "
+                "Set JWT_SECRET_KEY environment variable with a secure random key."
+            )
+
+        # Ensure minimum security requirements
+        if len(v) < 32:
+            raise ValueError(
+                "JWT secret key must be at least 32 characters long for security. "
+                "Use a cryptographically secure random string."
+            )
+
+        return v
+
+    @field_validator("api_key_prefix")
+    @classmethod
+    def validate_api_key_prefix(cls, v: str) -> str:
+        """Validate API key prefix security requirements."""
+        if len(v) < 4:
+            raise ValueError("API key prefix must be at least 4 characters long for security")
+
+        # Prevent common insecure prefixes
+        insecure_prefixes = ["api_", "key_", "test_", "dev_", "admin_"]
+        if v.lower() in insecure_prefixes:
+            raise ValueError(
+                f"API key prefix '{v}' is too generic. Use a unique prefix for your service."
+            )
+
+        return v
+
+    @field_validator("default_rate_limit")
+    @classmethod
+    def validate_rate_limit(cls, v: int) -> int:
+        """Validate rate limit is reasonable for security."""
+        if v <= 0:
+            raise ValueError("Rate limit must be positive")
+
+        if v > 10000:
+            raise ValueError(
+                "Rate limit is very high (>10000). Consider if this is appropriate for security."
+            )
+
+        return v
 
     # Monitoring & Observability Settings
     prometheus_enabled: bool = Field(
@@ -270,6 +334,19 @@ class Settings(BaseSettings):
                 "embedding_model": self.gemini_embedding_model,
             }
         return {"provider": "unknown"}
+
+    @model_validator(mode="after")
+    def validate_security_configuration(self) -> "Settings":
+        """Validate overall security configuration."""
+        # Check if we're in production mode (not debug)
+        if not self.debug and not os.getenv("JWT_SECRET_KEY"):
+            raise ValueError(
+                "In production mode (debug=False), JWT_SECRET_KEY environment variable must be set"
+            )
+
+        # Additional production security validations can be added here
+
+        return self
 
 
 # API Configuration Constants

@@ -13,7 +13,6 @@ from .config import settings
 
 def setup_logging() -> None:
     """Configure logging for the application."""
-
     # Create formatter
     formatter = logging.Formatter(settings.log_format)
 

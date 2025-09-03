@@ -234,7 +234,7 @@ async def get_workspace_config(
         with open(config_path) as f:
             config = yaml.safe_load(f)
 
-        return config
+        return dict(config) if config else {}
     except HTTPException:
         raise
     except Exception as e:

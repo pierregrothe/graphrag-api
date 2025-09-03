@@ -374,7 +374,11 @@ class Query:
                 graph_density=stats["graph_density"],
                 connected_components=stats["connected_components"],
             )
-        except Exception:
+        except (FileNotFoundError, KeyError) as e:
+            logger.warning(f"Graph statistics unavailable: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get graph statistics: {e}")
             return None
 
     # Workspace Queries
@@ -555,7 +559,14 @@ class Query:
                 relationship_count=result.get("relationship_count"),
                 token_count=result.get("token_count"),
             )
-        except Exception:
+        except (ConnectionError, TimeoutError) as e:
+            logger.error(f"Network error during query: {e}")
+            return None
+        except (KeyError, ValueError) as e:
+            logger.error(f"Invalid query or response format: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Query execution failed: {e}")
             return None
 
     # Visualization
@@ -620,7 +631,14 @@ class Query:
                 layout=viz["layout"],
                 metadata=viz.get("metadata", {}),
             )
-        except Exception:
+        except (FileNotFoundError, KeyError) as e:
+            logger.warning(f"Graph visualization data unavailable: {e}")
+            return None
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid visualization data format: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Failed to generate graph visualization: {e}")
             return None
 
     # Indexing Queries

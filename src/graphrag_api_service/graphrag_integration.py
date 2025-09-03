@@ -189,6 +189,77 @@ class GraphRAGIntegration:
             logger.error(f"Local search failed: {e}")
             raise GraphRAGError(f"Local search failed: {e}") from e
 
+    def _validate_data_directory(self, data_path: str) -> tuple[Path, int]:
+        """Validate data directory and count input files."""
+        data_dir = Path(data_path)
+        if not data_dir.exists():
+            raise GraphRAGError(f"Data directory does not exist: {data_path}")
+
+        input_files = list(data_dir.glob("**/*.txt")) + list(data_dir.glob("**/*.md"))
+        files_count = len(input_files)
+        logger.info(f"Found {files_count} files to process")
+
+        return data_dir, files_count
+
+    def _build_indexing_command(
+        self, data_dir: Path, config_path: str | None, force_reindex: bool
+    ) -> list[str]:
+        """Build the GraphRAG indexing command."""
+        cmd = [sys.executable, "-m", "graphrag.cli.index", "--root", str(data_dir)]
+
+        if config_path:
+            cmd.extend(["--config", config_path])
+
+        if not force_reindex:
+            cmd.append("--resume")
+
+        return cmd
+
+    async def _run_indexing_process(self, cmd: list[str], data_dir: Path) -> None:
+        """Run the GraphRAG indexing process."""
+        result = await asyncio.to_thread(
+            subprocess.run,
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=str(data_dir),
+            timeout=1800,  # 30 minute timeout for indexing
+        )
+
+        if result.returncode != 0:
+            error_msg = result.stderr or "GraphRAG indexing failed"
+            logger.error(f"Indexing failed: {error_msg}")
+            raise GraphRAGError(f"Indexing failed: {error_msg}")
+
+    def _analyze_indexing_results(self, output_dir: Path) -> tuple[int, int]:
+        """Analyze indexing results and count entities/relationships."""
+        artifacts_dir = output_dir / "artifacts"
+        entities_count = 0
+        relationships_count = 0
+
+        try:
+            entities_file = artifacts_dir / "create_final_entities.parquet"
+            relationships_file = artifacts_dir / "create_final_relationships.parquet"
+
+            if entities_file.exists():
+                import pandas as pd
+
+                entities_df = pd.read_parquet(entities_file)
+                entities_count = len(entities_df)
+
+            if relationships_file.exists():
+                import pandas as pd
+
+                relationships_df = pd.read_parquet(relationships_file)
+                relationships_count = len(relationships_df)
+
+        except ImportError:
+            logger.warning("Pandas not available for result analysis")
+        except Exception as e:
+            logger.warning(f"Failed to analyze results: {e}")
+
+        return entities_count, relationships_count
+
     async def index_data(
         self,
         data_path: str,
@@ -213,71 +284,17 @@ class GraphRAGIntegration:
         logger.info(f"Starting GraphRAG indexing for: {data_path}")
 
         try:
-            # Validate data directory
-            data_dir = Path(data_path)
-            if not data_dir.exists():
-                raise GraphRAGError(f"Data directory does not exist: {data_path}")
-
-            # Count input files
-            input_files = list(data_dir.glob("**/*.txt")) + list(data_dir.glob("**/*.md"))
-            files_count = len(input_files)
-
-            logger.info(f"Found {files_count} files to process")
-
-            # Create output directory if it doesn't exist
+            # Validate and prepare
+            data_dir, files_count = self._validate_data_directory(data_path)
             output_dir = data_dir / "output"
             output_dir.mkdir(exist_ok=True)
 
-            # Build indexing command
-            cmd = [sys.executable, "-m", "graphrag.cli.index", "--root", str(data_dir)]
-
-            if config_path:
-                cmd.extend(["--config", config_path])
-
-            if not force_reindex:
-                cmd.append("--resume")
-
-            # Run GraphRAG indexing
-            result = await asyncio.to_thread(
-                subprocess.run,
-                cmd,
-                capture_output=True,
-                text=True,
-                cwd=str(data_dir),
-                timeout=1800,  # 30 minute timeout for indexing
-            )
-
-            if result.returncode != 0:
-                error_msg = result.stderr or "GraphRAG indexing failed"
-                logger.error(f"Indexing failed: {error_msg}")
-                raise GraphRAGError(f"Indexing failed: {error_msg}")
+            # Build and run indexing command
+            cmd = self._build_indexing_command(data_dir, config_path, force_reindex)
+            await self._run_indexing_process(cmd, data_dir)
 
             # Analyze results
-            artifacts_dir = output_dir / "artifacts"
-            entities_count = 0
-            relationships_count = 0
-
-            # Count entities and relationships if files exist
-            try:
-                entities_file = artifacts_dir / "create_final_entities.parquet"
-                relationships_file = artifacts_dir / "create_final_relationships.parquet"
-
-                if entities_file.exists():
-                    import pandas as pd
-
-                    entities_df = pd.read_parquet(entities_file)
-                    entities_count = len(entities_df)
-
-                if relationships_file.exists():
-                    import pandas as pd
-
-                    relationships_df = pd.read_parquet(relationships_file)
-                    relationships_count = len(relationships_df)
-
-            except ImportError:
-                logger.warning("Pandas not available for result analysis")
-            except Exception as e:
-                logger.warning(f"Failed to analyze results: {e}")
+            entities_count, relationships_count = self._analyze_indexing_results(output_dir)
 
             logger.info(
                 f"Indexing completed: {files_count} files, {entities_count} entities, {relationships_count} relationships"

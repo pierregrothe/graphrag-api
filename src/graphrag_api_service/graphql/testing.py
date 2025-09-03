@@ -155,6 +155,71 @@ class GraphQLTestRunner:
         self.schema = schema
         self.validator = GraphQLValidator(schema)
 
+    def _initialize_test_result(self, test_case: GraphQLTestCase) -> dict[str, Any]:
+        """Initialize test result structure."""
+        return {
+            "name": test_case.name,
+            "status": "passed",
+            "errors": [],
+            "warnings": [],
+            "execution_time": 0.0,
+        }
+
+    def _validate_test_query(self, test_case: GraphQLTestCase, result: dict[str, Any]) -> bool:
+        """Validate query syntax and complexity."""
+        # Validate query syntax
+        validation_errors = self.validator.validate_query(test_case.query, test_case.variables)
+        if validation_errors:
+            result["status"] = "failed"
+            result["errors"].extend([str(error) for error in validation_errors])
+            return False
+
+        # Check query complexity
+        complexity_issues = self.validator.validate_query_complexity(test_case.query)
+        if complexity_issues:
+            result["warnings"].extend(complexity_issues)
+
+        return True
+
+    async def _execute_test_query(self, test_case: GraphQLTestCase) -> Any:
+        """Execute the GraphQL query."""
+        return await self.schema.execute(
+            test_case.query,
+            variable_values=test_case.variables,
+            context_value=test_case.context,
+        )
+
+    def _validate_test_response(
+        self, response: Any, test_case: GraphQLTestCase, result: dict[str, Any]
+    ) -> None:
+        """Validate the response against expected results."""
+        # Validate response errors
+        if response.errors:
+            if test_case.expected_errors:
+                self._validate_expected_errors(response.errors, test_case.expected_errors, result)
+            else:
+                result["status"] = "failed"
+                result["errors"].extend([str(error) for error in response.errors])
+
+        # Validate response data
+        if (
+            test_case.expected_data
+            and response.data
+            and not self._compare_data(response.data, test_case.expected_data)
+        ):
+            result["status"] = "failed"
+            result["errors"].append("Response data does not match expected data")
+
+    def _validate_expected_errors(
+        self, actual_errors: list, expected_errors: list[str], result: dict[str, Any]
+    ) -> None:
+        """Validate that expected errors are present in actual errors."""
+        error_messages = [str(error) for error in actual_errors]
+        for expected_error in expected_errors:
+            if not any(expected_error in msg for msg in error_messages):
+                result["status"] = "failed"
+                result["errors"].append(f"Expected error not found: {expected_error}")
+
     async def run_test_case(self, test_case: GraphQLTestCase) -> dict[str, Any]:
         """Run a single test case.
 
@@ -164,59 +229,23 @@ class GraphQLTestRunner:
         Returns:
             Test result with status and details
         """
-        result: dict[str, Any] = {
-            "name": test_case.name,
-            "status": "passed",
-            "errors": [],
-            "warnings": [],
-            "execution_time": 0.0,
-        }
+        result = self._initialize_test_result(test_case)
 
         try:
             import time
 
             start_time = time.time()
 
-            # Validate query syntax
-            validation_errors = self.validator.validate_query(test_case.query, test_case.variables)
-
-            if validation_errors:
-                result["status"] = "failed"
-                result["errors"].extend([str(error) for error in validation_errors])
+            # Validate query
+            if not self._validate_test_query(test_case, result):
                 return result
 
-            # Check query complexity
-            complexity_issues = self.validator.validate_query_complexity(test_case.query)
-            if complexity_issues:
-                result["warnings"].extend(complexity_issues)
-
             # Execute query
-            response = await self.schema.execute(
-                test_case.query,
-                variable_values=test_case.variables,
-                context_value=test_case.context,
-            )
-
+            response = await self._execute_test_query(test_case)
             result["execution_time"] = time.time() - start_time
 
             # Validate response
-            if response.errors:
-                if test_case.expected_errors:
-                    # Check if errors match expected
-                    error_messages = [str(error) for error in response.errors]
-                    for expected_error in test_case.expected_errors:
-                        if not any(expected_error in msg for msg in error_messages):
-                            result["status"] = "failed"
-                            result["errors"].append(f"Expected error not found: {expected_error}")
-                else:
-                    result["status"] = "failed"
-                    result["errors"].extend([str(error) for error in response.errors])
-
-            # Validate data
-            if test_case.expected_data and response.data:
-                if not self._compare_data(response.data, test_case.expected_data):
-                    result["status"] = "failed"
-                    result["errors"].append("Response data does not match expected data")
+            self._validate_test_response(response, test_case, result)
 
         except Exception as e:
             result["status"] = "failed"

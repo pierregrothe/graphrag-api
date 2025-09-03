@@ -9,6 +9,7 @@ import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 
@@ -21,7 +22,7 @@ class SQLiteManager:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_database()
 
-    def _init_database(self):
+    def _init_database(self) -> None:
         """Initialize database tables."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("PRAGMA journal_mode=WAL")  # Better concurrency
@@ -84,8 +85,8 @@ class SQLiteManager:
             conn.commit()
 
     def create_workspace(
-        self, name: str, description: str | None = None, config: dict | None = None
-    ) -> dict:
+        self, name: str, description: str | None = None, config: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Create a new workspace."""
         workspace_id = str(uuid4())
         config_json = json.dumps(config or {})
@@ -107,7 +108,7 @@ class SQLiteManager:
             "created_at": datetime.now().isoformat(),
         }
 
-    def get_workspace(self, workspace_id: str) -> dict | None:
+    def get_workspace(self, workspace_id: str) -> dict[str, Any] | None:
         """Get workspace by ID."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -127,7 +128,7 @@ class SQLiteManager:
                 }
             return None
 
-    def list_workspaces(self, limit: int = 10, offset: int = 0) -> list[dict]:
+    def list_workspaces(self, limit: int = 10, offset: int = 0) -> list[dict[str, Any]]:
         """List all workspaces."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -152,9 +153,16 @@ class SQLiteManager:
 
             return workspaces
 
-    def update_workspace(self, workspace_id: str, updates: dict) -> bool:
+    def update_workspace(self, workspace_id: str, updates: dict[str, Any]) -> bool:
         """Update workspace."""
-        allowed_fields = ["name", "description", "status", "config", "data_path"]
+        # Define allowed fields with explicit mapping for security
+        allowed_fields = {
+            "name": "name",
+            "description": "description",
+            "status": "status",
+            "config": "config",
+            "data_path": "data_path",
+        }
         set_clauses = []
         values = []
 
@@ -162,7 +170,8 @@ class SQLiteManager:
             if field in allowed_fields:
                 if field == "config":
                     value = json.dumps(value)
-                set_clauses.append(f"{field} = ?")
+                # Use explicit field mapping to prevent injection
+                set_clauses.append(f"{allowed_fields[field]} = ?")
                 values.append(value)
 
         if not set_clauses:
@@ -171,13 +180,11 @@ class SQLiteManager:
         values.append(datetime.now().isoformat())
         values.append(workspace_id)
 
+        # Use parameterized query with explicit field validation
+        query = f"UPDATE workspaces SET {', '.join(set_clauses)}, updated_at = ? WHERE id = ?"
+
         with sqlite3.connect(self.db_path) as conn:
-            result = conn.execute(
-                f"""UPDATE workspaces
-                    SET {', '.join(set_clauses)}, updated_at = ?
-                    WHERE id = ?""",
-                values,
-            )
+            result = conn.execute(query, values)
             conn.commit()
             return result.rowcount > 0
 

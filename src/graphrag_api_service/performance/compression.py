@@ -225,7 +225,6 @@ class PaginationHandler:
         Returns:
             Base64 encoded cursor
         """
-
         if isinstance(item, dict):
             cursor_data = str(item.get("id", hash(str(item))))
         else:

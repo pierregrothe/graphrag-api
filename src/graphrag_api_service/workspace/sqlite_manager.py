@@ -284,7 +284,7 @@ class SQLiteWorkspaceManager:
             api_base = None
 
         # Generate YAML configuration for GraphRAG
-        graphrag_config = {
+        graphrag_config: dict[str, Any] = {
             "encoding_model": embedding_model,
             "llm": {
                 "type": llm_type,

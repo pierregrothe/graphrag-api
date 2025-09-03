@@ -306,9 +306,9 @@ class AuditLogger:
         recent_entries = self._audit_log[-1000:]  # Last 1000 entries
 
         # Count by status code
-        status_counts = {}
-        error_counts = {}
-        ip_counts = {}
+        status_counts: dict[int, int] = {}
+        error_counts: dict[str, int] = {}
+        ip_counts: dict[str, int] = {}
 
         for entry in recent_entries:
             status_counts[entry.status_code] = status_counts.get(entry.status_code, 0) + 1

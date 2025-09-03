@@ -382,7 +382,6 @@ class IndexingManager:
         Args:
             job: Job to start
         """
-
         # Get workspace (would be injected in real implementation)
         # For now, create a mock workspace with minimal config
         mock_config = WorkspaceConfig(

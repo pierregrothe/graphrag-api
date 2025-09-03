@@ -12,48 +12,56 @@ from typing import Any
 from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-
-# Import instrumentation packages conditionally
-try:
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-except ImportError:
-    FastAPIInstrumentor = None
-
-try:
-    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-except ImportError:
-    HTTPXClientInstrumentor = None
-
-try:
-    from opentelemetry.instrumentation.logging import LoggingInstrumentor
-except ImportError:
-    LoggingInstrumentor = None
-
-try:
-    from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
-except ImportError:
-    Psycopg2Instrumentor = None
-
-try:
-    from opentelemetry.instrumentation.redis import RedisInstrumentor
-except ImportError:
-    RedisInstrumentor = None
-
-try:
-    from opentelemetry.instrumentation.requests import RequestsInstrumentor
-except ImportError:
-    RequestsInstrumentor = None
-
-try:
-    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-except ImportError:
-    SQLAlchemyInstrumentor = None
 from opentelemetry.propagate import set_global_textmap
 from opentelemetry.propagators.b3 import B3MultiFormat
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv.resource import ResourceAttributes
+
+# Import instrumentation packages conditionally with proper typing
+FastAPIInstrumentor: type[Any] | None = None
+HTTPXClientInstrumentor: type[Any] | None = None
+LoggingInstrumentor: type[Any] | None = None
+Psycopg2Instrumentor: type[Any] | None = None
+RedisInstrumentor: type[Any] | None = None
+RequestsInstrumentor: type[Any] | None = None
+SQLAlchemyInstrumentor: type[Any] | None = None
+
+try:
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+except ImportError:
+    pass
+
+try:
+    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+except ImportError:
+    pass
+
+try:
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
+except ImportError:
+    pass
+
+try:
+    from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+except ImportError:
+    pass
+
+try:
+    from opentelemetry.instrumentation.redis import RedisInstrumentor
+except ImportError:
+    pass
+
+try:
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
+except ImportError:
+    pass
+
+try:
+    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -171,51 +179,61 @@ class TracingManager:
             self.tracer_provider.add_span_processor(BatchSpanProcessor(console_exporter))
             logger.info("Console exporter configured")
 
+    def _setup_web_instrumentation(self) -> None:
+        """Set up web framework instrumentation."""
+        if FastAPIInstrumentor:
+            FastAPIInstrumentor().instrument()
+            logger.debug("FastAPI instrumentation enabled")
+
+    def _setup_http_instrumentation(self) -> None:
+        """Set up HTTP client instrumentation."""
+        if HTTPXClientInstrumentor:
+            HTTPXClientInstrumentor().instrument()
+            logger.debug("HTTPX instrumentation enabled")
+
+        if RequestsInstrumentor:
+            RequestsInstrumentor().instrument()
+            logger.debug("Requests instrumentation enabled")
+
+    def _setup_database_instrumentation(self) -> None:
+        """Set up database instrumentation."""
+        if Psycopg2Instrumentor:
+            try:
+                Psycopg2Instrumentor().instrument()
+                logger.debug("Psycopg2 instrumentation enabled")
+            except Exception as e:
+                logger.warning(f"Psycopg2 instrumentation failed: {e}")
+
+        if SQLAlchemyInstrumentor:
+            try:
+                SQLAlchemyInstrumentor().instrument()
+                logger.debug("SQLAlchemy instrumentation enabled")
+            except Exception as e:
+                logger.warning(f"SQLAlchemy instrumentation failed: {e}")
+
+    def _setup_cache_instrumentation(self) -> None:
+        """Set up cache instrumentation."""
+        if RedisInstrumentor:
+            try:
+                RedisInstrumentor().instrument()
+                logger.debug("Redis instrumentation enabled")
+            except Exception as e:
+                logger.warning(f"Redis instrumentation failed: {e}")
+
+    def _setup_logging_instrumentation(self) -> None:
+        """Set up logging instrumentation."""
+        if LoggingInstrumentor:
+            LoggingInstrumentor().instrument()
+            logger.debug("Logging instrumentation enabled")
+
     def _setup_instrumentation(self) -> None:
         """Set up automatic instrumentation for common libraries."""
         try:
-            # FastAPI instrumentation
-            if FastAPIInstrumentor:
-                FastAPIInstrumentor().instrument()
-                logger.debug("FastAPI instrumentation enabled")
-
-            # HTTP client instrumentation
-            if HTTPXClientInstrumentor:
-                HTTPXClientInstrumentor().instrument()
-                logger.debug("HTTPX instrumentation enabled")
-
-            if RequestsInstrumentor:
-                RequestsInstrumentor().instrument()
-                logger.debug("Requests instrumentation enabled")
-
-            # Database instrumentation
-            if Psycopg2Instrumentor:
-                try:
-                    Psycopg2Instrumentor().instrument()
-                    logger.debug("Psycopg2 instrumentation enabled")
-                except Exception as e:
-                    logger.warning(f"Psycopg2 instrumentation failed: {e}")
-
-            if SQLAlchemyInstrumentor:
-                try:
-                    SQLAlchemyInstrumentor().instrument()
-                    logger.debug("SQLAlchemy instrumentation enabled")
-                except Exception as e:
-                    logger.warning(f"SQLAlchemy instrumentation failed: {e}")
-
-            # Redis instrumentation
-            if RedisInstrumentor:
-                try:
-                    RedisInstrumentor().instrument()
-                    logger.debug("Redis instrumentation enabled")
-                except Exception as e:
-                    logger.warning(f"Redis instrumentation failed: {e}")
-
-            # Logging instrumentation
-            if LoggingInstrumentor:
-                LoggingInstrumentor().instrument()
-                logger.debug("Logging instrumentation enabled")
-
+            self._setup_web_instrumentation()
+            self._setup_http_instrumentation()
+            self._setup_database_instrumentation()
+            self._setup_cache_instrumentation()
+            self._setup_logging_instrumentation()
         except Exception as e:
             logger.error(f"Failed to set up instrumentation: {e}")
 

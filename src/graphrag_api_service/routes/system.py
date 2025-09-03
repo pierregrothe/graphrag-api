@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api", tags=["System"])
 # Basic health endpoints (consolidated from system.py)
 @router.get("/health", tags=["Health"])
 async def health_check() -> dict[str, str]:
-    """Basic health check endpoint.
+    """Perform basic health check.
 
     Returns:
         Dict containing health status

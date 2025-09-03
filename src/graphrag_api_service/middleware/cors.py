@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 
 def setup_cors_middleware(app: FastAPI, security_middleware) -> None:
-    """Setup CORS middleware for the FastAPI application.
+    """Set up CORS middleware for the FastAPI application.
 
     Args:
         app: FastAPI application instance
