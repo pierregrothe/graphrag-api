@@ -15,6 +15,7 @@ from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
 
 from .api_keys import APIKeyManager, APIKeyScope
 from .jwt_auth import JWTManager, JWTConfig
+from .master_key import get_master_key_validator, MasterKeyValidator
 from ..config import get_settings
 from ..exceptions import (
     AuthenticationError,
@@ -34,7 +35,7 @@ class AuthMethod(str, Enum):
 
 class AuthenticatedUser:
     """Authenticated user information."""
-    
+
     def __init__(
         self,
         user_id: str,
@@ -45,7 +46,8 @@ class AuthenticatedUser:
         auth_method: AuthMethod,
         tenant_id: Optional[str] = None,
         workspace_id: Optional[str] = None,
-        api_key_id: Optional[str] = None
+        api_key_id: Optional[str] = None,
+        is_master_admin: bool = False
     ):
         self.user_id = user_id
         self.username = username
@@ -56,6 +58,7 @@ class AuthenticatedUser:
         self.tenant_id = tenant_id
         self.workspace_id = workspace_id
         self.api_key_id = api_key_id
+        self.is_master_admin = is_master_admin
     
     def has_permission(self, permission: str) -> bool:
         """Check if user has specific permission."""
@@ -69,6 +72,26 @@ class AuthenticatedUser:
         """Check if user has specific API key scope."""
         return scope.value in self.permissions
 
+    def is_master_administrator(self) -> bool:
+        """Check if user is a master administrator."""
+        return self.is_master_admin or APIKeyScope.MASTER_ADMIN.value in self.permissions
+
+    def can_manage_all_keys(self) -> bool:
+        """Check if user can manage all API keys."""
+        return (
+            self.is_master_admin or
+            APIKeyScope.MANAGE_ALL_KEYS.value in self.permissions or
+            APIKeyScope.MASTER_ADMIN.value in self.permissions
+        )
+
+    def can_perform_system_admin(self) -> bool:
+        """Check if user can perform system administration."""
+        return (
+            self.is_master_admin or
+            APIKeyScope.SYSTEM_ADMIN.value in self.permissions or
+            APIKeyScope.MASTER_ADMIN.value in self.permissions
+        )
+
 
 class UnifiedAuthenticator:
     """Unified authentication system supporting JWT and API keys."""
@@ -77,7 +100,8 @@ class UnifiedAuthenticator:
         self.security_logger = get_security_logger()
         self.jwt_manager = None
         self.api_key_manager = None
-        
+        self.master_key_validator = get_master_key_validator()
+
         # Security schemes
         self.bearer_security = HTTPBearer(auto_error=False)
         self.api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -202,7 +226,52 @@ class UnifiedAuthenticator:
                 request=request
             )
             raise AuthenticationError(f"API key authentication failed: {str(e)}")
-    
+
+    async def authenticate_master_key(
+        self,
+        request: Request,
+        api_key: str
+    ) -> AuthenticatedUser:
+        """Authenticate using master API key."""
+        try:
+            # Check if this is a master key format
+            if not api_key.startswith("grak_master_"):
+                raise AuthenticationError("Not a master key")
+
+            # Validate master key
+            if not self.master_key_validator.validate_master_key(api_key):
+                raise AuthenticationError("Invalid master key")
+
+            # Get master key permissions
+            master_permissions = self.master_key_validator.get_master_permissions()
+
+            # Log successful master key authentication
+            self.security_logger.authentication_attempt(
+                success=True,
+                user_id="master_admin",
+                method="master_key",
+                request=request
+            )
+
+            return AuthenticatedUser(
+                user_id="master_admin",
+                username="Master Administrator",
+                email="master@graphrag.local",
+                roles=["master_admin", "system_admin"],
+                permissions=master_permissions,
+                auth_method=AuthMethod.API_KEY,
+                is_master_admin=True
+            )
+
+        except Exception as e:
+            self.security_logger.authentication_attempt(
+                success=False,
+                method="master_key",
+                request=request,
+                failure_reason=str(e)
+            )
+            raise AuthenticationError(f"Master key authentication failed: {str(e)}")
+
     async def authenticate_request(
         self,
         request: Request,
@@ -211,13 +280,17 @@ class UnifiedAuthenticator:
         api_key_query: Optional[str] = None
     ) -> AuthenticatedUser:
         """Authenticate request using available credentials.
-        
-        Tries API key first (simpler), then falls back to JWT.
+
+        Tries master key first, then API key, then falls back to JWT.
         """
-        # Try API key authentication first
+        # Try API key authentication first (includes master key check)
         api_key = api_key_header or api_key_query
         if api_key:
-            return await self.authenticate_api_key(request, api_key)
+            # Check if this is a master key
+            if api_key.startswith("grak_master_"):
+                return await self.authenticate_master_key(request, api_key)
+            else:
+                return await self.authenticate_api_key(request, api_key)
         
         # Try JWT authentication
         if bearer_token:
@@ -318,3 +391,45 @@ def require_scope(scope: APIKeyScope):
             )
         return current_user
     return scope_checker
+
+
+def require_master_admin():
+    """Require master administrator privileges for endpoint access."""
+    async def master_admin_checker(
+        current_user: AuthenticatedUser = Depends(get_current_user)
+    ) -> AuthenticatedUser:
+        if not current_user.is_master_administrator():
+            raise AuthorizationError(
+                "Master administrator privileges required",
+                required_permission="master:admin"
+            )
+        return current_user
+    return master_admin_checker
+
+
+def require_key_management():
+    """Require API key management privileges for endpoint access."""
+    async def key_management_checker(
+        current_user: AuthenticatedUser = Depends(get_current_user)
+    ) -> AuthenticatedUser:
+        if not current_user.can_manage_all_keys():
+            raise AuthorizationError(
+                "API key management privileges required",
+                required_permission="master:manage_all_keys"
+            )
+        return current_user
+    return key_management_checker
+
+
+def require_system_admin():
+    """Require system administrator privileges for endpoint access."""
+    async def system_admin_checker(
+        current_user: AuthenticatedUser = Depends(get_current_user)
+    ) -> AuthenticatedUser:
+        if not current_user.can_perform_system_admin():
+            raise AuthorizationError(
+                "System administrator privileges required",
+                required_permission="master:system_admin"
+            )
+        return current_user
+    return system_admin_checker

@@ -41,6 +41,8 @@ auth/
 ├── rate_limiting.py        # Comprehensive rate limiting system
 ├── session_manager.py      # Session management and tracking
 ├── unified_auth.py         # Unified authentication middleware
+├── master_key.py           # Master key management and validation
+├── admin_api_keys.py       # Administrative API key management
 └── README.md              # This documentation
 ```
 
@@ -55,6 +57,8 @@ auth/
 - **🛡️ Unified Authentication**: Single middleware supporting both JWT and API key authentication
 - **📝 Security Logging**: Comprehensive security event logging integrated with SecurityLogger
 - **🔒 Enhanced Security**: Token blacklisting, suspicious activity detection, and audit trails
+- **🔑 Master Key Management**: Administrative master key system with comprehensive audit logging
+- **👑 Administrative API**: Complete administrative API for managing all user API keys
 
 ## 🔑 Core Components
 
@@ -209,6 +213,93 @@ if rbac.has_permission(user_roles, "write:workspaces"):
 - `manage:users` - User administration
 - `admin:*` - Full administrative access
 
+### Master Key Management (`master_key.py`)
+
+Provides master key validation and administrative capabilities that extend the existing authentication infrastructure.
+
+```python
+from src.graphrag_api_service.auth.master_key import (
+    get_master_key_validator,
+    get_admin_audit_logger
+)
+
+# Validate master key
+validator = get_master_key_validator()
+is_valid = validator.validate_master_key(provided_key)
+
+# Get master key information
+key_info = validator.get_master_key_info()
+permissions = validator.get_master_permissions()
+
+# Generate new master key for rotation
+new_key = validator.generate_new_master_key()
+
+# Audit logging
+audit_logger = get_admin_audit_logger()
+audit_logger.log_admin_operation(
+    operation_id="op_123",
+    admin_user_id="master_admin",
+    operation_type="create_key",
+    affected_resources=["key_456"],
+    success=True
+)
+```
+
+**Key Features:**
+
+- **Secure Validation**: Constant-time comparison to prevent timing attacks
+- **Comprehensive Permissions**: Master key has all system permissions
+- **Usage Tracking**: Detailed usage statistics and last access tracking
+- **Key Rotation**: Support for generating new master keys
+- **Audit Logging**: Complete audit trail for all administrative operations
+- **Security Integration**: Full integration with SecurityLogger system
+
+### Administrative API Key Manager (`admin_api_keys.py`)
+
+Comprehensive administrative capabilities for managing API keys across all users with proper auditing and batch operations.
+
+```python
+from src.graphrag_api_service.auth.admin_api_keys import (
+    get_admin_api_key_manager,
+    AdminAPIKeyRequest,
+    AdminAPIKeyFilter,
+    BatchOperation
+)
+
+# Get admin manager
+admin_manager = get_admin_api_key_manager()
+
+# List all keys with filtering
+filters = AdminAPIKeyFilter(user_id="user_123", status="active")
+keys, total = await admin_manager.list_all_keys(filters=filters)
+
+# Create key for any user
+request = AdminAPIKeyRequest(
+    name="Admin Created Key",
+    user_id="target_user",
+    scopes=[APIKeyScope.READ_WORKSPACES],
+    created_by="master_admin"
+)
+response = await admin_manager.create_admin_key(request)
+
+# Batch operations
+batch_request = BatchOperation(
+    operation="revoke",
+    filters=AdminAPIKeyFilter(user_id="user_123"),
+    reason="Security cleanup"
+)
+result = await admin_manager.batch_operation(batch_request)
+```
+
+**Key Features:**
+
+- **Cross-User Management**: Create and manage keys for any user
+- **Advanced Filtering**: Filter by user, workspace, status, dates, usage patterns
+- **Batch Operations**: Revoke, update, or rotate multiple keys atomically
+- **Comprehensive Auditing**: Every operation logged with before/after states
+- **Transaction Support**: Batch operations with rollback capability
+- **Usage Analytics**: Detailed usage statistics and security insights
+
 ## 🔧 Configuration
 
 ### Environment Variables
@@ -222,6 +313,9 @@ JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # API Key Configuration
 API_KEY_SECRET=your-api-key-secret-here
+
+# Master Key Configuration (Administrative Access)
+MASTER_API_KEY=grak_master_your-64-character-master-key-with-high-entropy-here
 API_KEY_PREFIX=grag_
 API_KEY_LENGTH=32
 
@@ -244,6 +338,9 @@ AUTH_RATE_LIMIT_WINDOW=60
    # Generate secure keys
    JWT_SECRET_KEY=$(openssl rand -hex 32)
    API_KEY_SECRET=$(openssl rand -hex 32)
+
+   # Generate master key (64+ characters with high entropy)
+   MASTER_API_KEY="grak_master_$(openssl rand -base64 48 | tr -d '=+/' | cut -c1-52)"
    ```
 
 2. **Token Expiration**

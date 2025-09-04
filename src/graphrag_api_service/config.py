@@ -104,6 +104,13 @@ class Settings(BaseSettings):
         description="Secret key for JWT token signing - must be set via JWT_SECRET_KEY environment variable in production",
         min_length=32,  # Minimum 32 characters for security
     )
+
+    # Master Key Configuration
+    master_api_key: Optional[str] = Field(
+        default=None,
+        description="Master API key for administrative operations - must be set via MASTER_API_KEY environment variable",
+        min_length=64,  # Minimum 64 characters for master key security
+    )
     jwt_algorithm: str = Field(
         default="HS256",
         description="Algorithm for JWT token signing",
@@ -153,6 +160,36 @@ class Settings(BaseSettings):
             raise ValueError(
                 "JWT secret key must be at least 32 characters long for security. "
                 "Use a cryptographically secure random string."
+            )
+
+        return v
+
+    @field_validator("master_api_key")
+    @classmethod
+    def validate_master_api_key(cls, v: Optional[str]) -> Optional[str]:
+        """Validate master API key security requirements."""
+        if v is None:
+            return v
+
+        # Check minimum length
+        if len(v) < 64:
+            raise ConfigurationError(
+                "Master API key must be at least 64 characters long",
+                config_key="master_api_key"
+            )
+
+        # Check entropy (minimum 16 unique characters)
+        if len(set(v)) < 16:
+            raise ConfigurationError(
+                "Master API key must have sufficient entropy (at least 16 unique characters)",
+                config_key="master_api_key"
+            )
+
+        # Check format (should start with grak_master_)
+        if not v.startswith("grak_master_"):
+            raise ConfigurationError(
+                "Master API key must start with 'grak_master_' prefix",
+                config_key="master_api_key"
             )
 
         return v
@@ -436,3 +473,35 @@ def get_settings() -> Settings:
         The global settings instance
     """
     return settings
+
+
+def generate_master_api_key() -> str:
+    """Generate a secure master API key with proper format and entropy.
+
+    Returns:
+        str: A secure master API key with format 'grak_master_<random_string>'
+    """
+    # Generate 52 characters of random data (64 - 12 for prefix)
+    random_part = secrets.token_urlsafe(39)  # 39 * 4/3 ≈ 52 chars
+    return f"grak_master_{random_part}"
+
+
+def validate_master_key_format(key: str) -> bool:
+    """Validate master key format and security requirements.
+
+    Args:
+        key: Master key to validate
+
+    Returns:
+        bool: True if key meets all requirements
+    """
+    if not key or len(key) < 64:
+        return False
+
+    if not key.startswith("grak_master_"):
+        return False
+
+    if len(set(key)) < 16:  # Entropy check
+        return False
+
+    return True

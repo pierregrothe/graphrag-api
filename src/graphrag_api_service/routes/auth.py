@@ -14,7 +14,16 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
 
 from ..auth.api_keys import APIKeyManager, APIKeyRequest, APIKeyScope, RateLimitConfig
+from ..auth.admin_api_keys import (
+    get_admin_api_key_manager,
+    AdminAPIKeyRequest,
+    AdminAPIKeyFilter,
+    AdminAPIKeyUpdate,
+    BatchOperation,
+    BatchOperationResult
+)
 from ..auth.jwt_auth import JWTManager, JWTConfig, TokenData
+from ..auth.unified_auth import require_master_admin, require_key_management, require_system_admin
 from ..config import get_settings
 from ..exceptions import (
     AuthenticationError,
@@ -473,5 +482,246 @@ async def rotate_api_key(
 
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Administrative Endpoints (Master Key Required)
+
+@router.get("/admin/api-keys")
+async def list_all_api_keys(
+    request: Request,
+    user_id: Optional[str] = None,
+    workspace_id: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    current_user = Depends(require_key_management()),
+    admin_manager = Depends(get_admin_api_key_manager)
+) -> Dict[str, Any]:
+    """List all API keys with administrative filtering.
+
+    Requires master administrator or key management privileges.
+    Supports filtering by user_id, workspace_id, status, and pagination.
+    """
+    try:
+        # Build filters
+        filters = AdminAPIKeyFilter(
+            user_id=user_id,
+            workspace_id=workspace_id,
+            status=status
+        )
+
+        # Get filtered keys
+        keys, total_count = await admin_manager.list_all_keys(
+            filters=filters,
+            limit=limit,
+            offset=offset,
+            admin_user_id=current_user.user_id
+        )
+
+        # Convert to response format (exclude sensitive data)
+        key_list = []
+        for key in keys:
+            key_list.append({
+                "id": key.id,
+                "name": key.name,
+                "prefix": key.prefix,
+                "user_id": key.user_id,
+                "workspace_id": key.workspace_id,
+                "scopes": [scope.value for scope in key.scopes],
+                "is_active": key.is_active,
+                "created_at": key.created_at,
+                "expires_at": key.expires_at,
+                "last_used_at": key.last_used_at,
+                "usage_count": key.usage_count,
+                "daily_usage": key.daily_usage,
+                "hourly_usage": key.hourly_usage
+            })
+
+        return {
+            "keys": key_list,
+            "total_count": total_count,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + len(keys) < total_count
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/admin/api-keys", status_code=status.HTTP_201_CREATED)
+async def create_admin_api_key(
+    request: Request,
+    key_request: AdminAPIKeyRequest,
+    current_user = Depends(require_key_management()),
+    admin_manager = Depends(get_admin_api_key_manager)
+) -> Dict[str, Any]:
+    """Create API key for any user with administrative privileges.
+
+    Requires master administrator or key management privileges.
+    Can create keys for any user with any valid scopes.
+    """
+    try:
+        # Set the admin user who is creating the key
+        key_request.created_by = current_user.user_id
+
+        # Create the key
+        api_key_response = await admin_manager.create_admin_key(
+            request=key_request,
+            admin_user_id=current_user.user_id
+        )
+
+        return {
+            "id": api_key_response.id,
+            "name": api_key_response.name,
+            "key": api_key_response.key,  # Only returned once!
+            "prefix": api_key_response.prefix,
+            "user_id": key_request.user_id,
+            "scopes": api_key_response.scopes,
+            "rate_limit_config": api_key_response.rate_limit_config.dict() if api_key_response.rate_limit_config else None,
+            "expires_at": api_key_response.expires_at,
+            "created_at": api_key_response.created_at,
+            "created_by": current_user.user_id,
+            "warning": "Store this key securely - it will not be shown again!"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/admin/api-keys/{key_id}")
+async def get_api_key_details(
+    key_id: str,
+    current_user = Depends(require_key_management()),
+    admin_manager = Depends(get_admin_api_key_manager)
+) -> Dict[str, Any]:
+    """Get detailed API key information.
+
+    Requires master administrator or key management privileges.
+    Returns comprehensive key details including usage statistics.
+    """
+    try:
+        key = await admin_manager.get_key_details(
+            key_id=key_id,
+            admin_user_id=current_user.user_id
+        )
+
+        if not key:
+            raise HTTPException(status_code=404, detail="API key not found")
+
+        return {
+            "id": key.id,
+            "name": key.name,
+            "prefix": key.prefix,
+            "user_id": key.user_id,
+            "workspace_id": key.workspace_id,
+            "scopes": [scope.value for scope in key.scopes],
+            "rate_limit_config": key.rate_limit_config.dict(),
+            "is_active": key.is_active,
+            "created_at": key.created_at,
+            "expires_at": key.expires_at,
+            "last_used_at": key.last_used_at,
+            "usage_count": key.usage_count,
+            "daily_usage": key.daily_usage,
+            "hourly_usage": key.hourly_usage,
+            "minute_usage": key.minute_usage,
+            "created_from_ip": key.created_from_ip,
+            "last_used_ip": key.last_used_ip,
+            "suspicious_activity_count": key.suspicious_activity_count
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/admin/api-keys/{key_id}")
+async def update_api_key_admin(
+    key_id: str,
+    updates: AdminAPIKeyUpdate,
+    current_user = Depends(require_key_management()),
+    admin_manager = Depends(get_admin_api_key_manager)
+) -> Dict[str, str]:
+    """Update API key with administrative privileges.
+
+    Requires master administrator or key management privileges.
+    Can update any key property including scopes and rate limits.
+    """
+    try:
+        # Set the admin user performing the update
+        updates.updated_by = current_user.user_id
+
+        success = await admin_manager.update_key_admin(
+            key_id=key_id,
+            updates=updates,
+            admin_user_id=current_user.user_id
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="API key not found")
+
+        return {"message": f"API key {key_id} updated successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/admin/api-keys/{key_id}")
+async def revoke_api_key_admin(
+    key_id: str,
+    reason: Optional[str] = None,
+    current_user = Depends(require_key_management()),
+    admin_manager = Depends(get_admin_api_key_manager)
+) -> Dict[str, str]:
+    """Revoke API key with administrative privileges.
+
+    Requires master administrator or key management privileges.
+    Can revoke any API key with optional reason logging.
+    """
+    try:
+        success = await admin_manager.revoke_key_admin(
+            key_id=key_id,
+            reason=reason,
+            admin_user_id=current_user.user_id
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="API key not found")
+
+        return {"message": f"API key {key_id} revoked successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/admin/api-keys/batch")
+async def batch_api_key_operations(
+    batch_request: BatchOperation,
+    current_user = Depends(require_key_management()),
+    admin_manager = Depends(get_admin_api_key_manager)
+) -> BatchOperationResult:
+    """Perform batch operations on API keys.
+
+    Requires master administrator or key management privileges.
+    Supports batch revoke, update, and rotate operations with filtering.
+    """
+    try:
+        # Set the admin user performing the batch operation
+        batch_request.performed_by = current_user.user_id
+
+        result = await admin_manager.batch_operation(
+            batch_request=batch_request,
+            admin_user_id=current_user.user_id
+        )
+
+        return result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

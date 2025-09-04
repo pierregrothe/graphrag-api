@@ -43,6 +43,13 @@ class APIKeyScope(str, Enum):
     # API key management
     MANAGE_API_KEYS = "manage:api_keys"
 
+    # Master admin scopes
+    MASTER_ADMIN = "master:admin"
+    MANAGE_ALL_KEYS = "master:manage_all_keys"
+    SYSTEM_ADMIN = "master:system_admin"
+    ADMIN_AUDIT = "master:audit"
+    ADMIN_BATCH_OPS = "master:batch_operations"
+
 
 class RateLimitConfig(BaseModel):
     """Rate limiting configuration for API keys."""
