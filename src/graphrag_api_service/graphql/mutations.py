@@ -15,9 +15,8 @@ from ..config import settings
 from ..graphrag_integration import GraphRAGIntegration
 from ..system.operations import SystemOperations
 from ..workspace.manager import WorkspaceManager
-from ..workspace.models import WorkspaceCreateRequest
+from ..workspace.models import WorkspaceCreateRequest, WorkspaceUpdateRequest
 from ..workspace.models import WorkspaceStatus as WorkspaceModelStatus
-from ..workspace.models import WorkspaceUpdateRequest
 from .optimization import get_query_cache
 from .types import (
     CacheClearResult,
