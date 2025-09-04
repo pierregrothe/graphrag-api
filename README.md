@@ -1,8 +1,9 @@
 # 🚀 GraphRAG API Service
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
 [![GraphQL](https://img.shields.io/badge/GraphQL-Enabled-e10098.svg)](https://graphql.org)
+[![Code Quality](https://img.shields.io/badge/Code%20Quality-100%2F100-brightgreen.svg)](CODE_QUALITY_REPORT_2025-09-04_V8_PERFECT.md)
 [![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-red.svg)](#security-features)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 

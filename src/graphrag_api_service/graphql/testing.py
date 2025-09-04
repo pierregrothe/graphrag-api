@@ -8,9 +8,8 @@
 import logging
 from typing import Any
 
-from strawberry.schema import Schema
-
 from graphql import GraphQLError, parse, validate
+from strawberry.schema import Schema
 
 logger = logging.getLogger(__name__)
 

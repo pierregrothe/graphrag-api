@@ -8,8 +8,6 @@
 import logging
 from typing import Any
 
-from strawberry.types import Info
-
 from graphql import (
     FieldNode,
     FragmentSpreadNode,
@@ -17,6 +15,7 @@ from graphql import (
     SelectionNode,
     SelectionSetNode,
 )
+from strawberry.types import Info
 
 logger = logging.getLogger(__name__)
 
