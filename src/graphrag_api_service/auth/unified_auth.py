@@ -1,0 +1,320 @@
+"""
+Unified authentication middleware for GraphRAG API Service.
+
+This module provides a unified authentication system that supports both
+JWT tokens and API keys with proper security logging and rate limiting.
+"""
+
+import asyncio
+from typing import Any, Dict, Optional, Union
+from enum import Enum
+
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
+
+from .api_keys import APIKeyManager, APIKeyScope
+from .jwt_auth import JWTManager, JWTConfig
+from ..config import get_settings
+from ..exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    QuotaExceededError,
+    RateLimitError
+)
+from ..security import get_security_logger
+
+
+class AuthMethod(str, Enum):
+    """Authentication methods."""
+    JWT = "jwt"
+    API_KEY = "api_key"
+    NONE = "none"
+
+
+class AuthenticatedUser:
+    """Authenticated user information."""
+    
+    def __init__(
+        self,
+        user_id: str,
+        username: str,
+        email: str,
+        roles: list[str],
+        permissions: list[str],
+        auth_method: AuthMethod,
+        tenant_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        api_key_id: Optional[str] = None
+    ):
+        self.user_id = user_id
+        self.username = username
+        self.email = email
+        self.roles = roles
+        self.permissions = permissions
+        self.auth_method = auth_method
+        self.tenant_id = tenant_id
+        self.workspace_id = workspace_id
+        self.api_key_id = api_key_id
+    
+    def has_permission(self, permission: str) -> bool:
+        """Check if user has specific permission."""
+        return permission in self.permissions
+    
+    def has_role(self, role: str) -> bool:
+        """Check if user has specific role."""
+        return role in self.roles
+    
+    def has_scope(self, scope: APIKeyScope) -> bool:
+        """Check if user has specific API key scope."""
+        return scope.value in self.permissions
+
+
+class UnifiedAuthenticator:
+    """Unified authentication system supporting JWT and API keys."""
+    
+    def __init__(self):
+        self.security_logger = get_security_logger()
+        self.jwt_manager = None
+        self.api_key_manager = None
+        
+        # Security schemes
+        self.bearer_security = HTTPBearer(auto_error=False)
+        self.api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+        self.api_key_query = APIKeyQuery(name="api_key", auto_error=False)
+    
+    async def get_jwt_manager(self) -> JWTManager:
+        """Get JWT manager instance."""
+        if not self.jwt_manager:
+            settings = get_settings()
+            config = JWTConfig(
+                secret_key=settings.jwt_secret_key,
+                algorithm=settings.jwt_algorithm,
+                access_token_expire_minutes=settings.jwt_access_token_expire_minutes,
+                refresh_token_expire_days=settings.jwt_refresh_token_expire_days
+            )
+            self.jwt_manager = JWTManager(config)
+        return self.jwt_manager
+    
+    async def get_api_key_manager(self) -> APIKeyManager:
+        """Get API key manager instance."""
+        if not self.api_key_manager:
+            self.api_key_manager = APIKeyManager()
+        return self.api_key_manager
+    
+    async def authenticate_jwt(
+        self,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials
+    ) -> AuthenticatedUser:
+        """Authenticate using JWT token."""
+        try:
+            jwt_manager = await self.get_jwt_manager()
+            
+            # Check if token is blacklisted
+            if jwt_manager.is_token_blacklisted(credentials.credentials):
+                raise AuthenticationError("Token has been revoked")
+            
+            # Verify token
+            payload = jwt_manager.verify_token(credentials.credentials)
+            
+            # Log successful authentication
+            self.security_logger.authentication_attempt(
+                success=True,
+                user_id=payload.get("sub"),
+                method="jwt",
+                request=request
+            )
+            
+            return AuthenticatedUser(
+                user_id=payload["sub"],
+                username=payload["username"],
+                email=payload["email"],
+                roles=payload.get("roles", []),
+                permissions=payload.get("permissions", []),
+                auth_method=AuthMethod.JWT,
+                tenant_id=payload.get("tenant_id")
+            )
+            
+        except Exception as e:
+            self.security_logger.authentication_attempt(
+                success=False,
+                method="jwt",
+                request=request,
+                failure_reason=str(e)
+            )
+            raise AuthenticationError(f"JWT authentication failed: {str(e)}")
+    
+    async def authenticate_api_key(
+        self,
+        request: Request,
+        api_key: str
+    ) -> AuthenticatedUser:
+        """Authenticate using API key."""
+        try:
+            api_key_manager = await self.get_api_key_manager()
+            
+            # Validate API key
+            key_data = await api_key_manager.validate_key(api_key)
+            if not key_data:
+                raise AuthenticationError("Invalid API key")
+            
+            # Check if key is active and not expired
+            if not key_data.is_active:
+                raise AuthenticationError("API key is inactive")
+            
+            if key_data.expires_at and key_data.expires_at < asyncio.get_event_loop().time():
+                raise AuthenticationError("API key has expired")
+            
+            # Validate rate limits
+            client_ip = getattr(request.client, 'host', None)
+            await api_key_manager.validate_rate_limit(key_data, client_ip)
+            
+            # Log successful authentication
+            self.security_logger.api_key_usage(
+                api_key_id=key_data.id,
+                success=True,
+                request=request,
+                permissions_used=[scope.value for scope in key_data.scopes]
+            )
+            
+            # Get user data (would typically come from database)
+            user_data = await self._get_user_from_api_key(key_data)
+            
+            return AuthenticatedUser(
+                user_id=key_data.user_id,
+                username=user_data.get("username", f"api_user_{key_data.user_id}"),
+                email=user_data.get("email", f"api_user_{key_data.user_id}@api.local"),
+                roles=user_data.get("roles", ["api_user"]),
+                permissions=[scope.value for scope in key_data.scopes],
+                auth_method=AuthMethod.API_KEY,
+                tenant_id=key_data.tenant_id,
+                workspace_id=key_data.workspace_id,
+                api_key_id=key_data.id
+            )
+            
+        except (AuthenticationError, QuotaExceededError):
+            raise
+        except Exception as e:
+            self.security_logger.api_key_usage(
+                api_key_id="unknown",
+                success=False,
+                request=request
+            )
+            raise AuthenticationError(f"API key authentication failed: {str(e)}")
+    
+    async def authenticate_request(
+        self,
+        request: Request,
+        bearer_token: Optional[HTTPAuthorizationCredentials] = None,
+        api_key_header: Optional[str] = None,
+        api_key_query: Optional[str] = None
+    ) -> AuthenticatedUser:
+        """Authenticate request using available credentials.
+        
+        Tries API key first (simpler), then falls back to JWT.
+        """
+        # Try API key authentication first
+        api_key = api_key_header or api_key_query
+        if api_key:
+            return await self.authenticate_api_key(request, api_key)
+        
+        # Try JWT authentication
+        if bearer_token:
+            return await self.authenticate_jwt(request, bearer_token)
+        
+        # No authentication provided
+        raise AuthenticationError("Authentication required")
+    
+    async def _get_user_from_api_key(self, key_data) -> Dict[str, Any]:
+        """Get user data associated with API key."""
+        # This would typically query the database
+        # For now, return mock data
+        return {
+            "username": f"api_user_{key_data.user_id}",
+            "email": f"api_user_{key_data.user_id}@api.local",
+            "roles": ["api_user"],
+            "full_name": f"API User {key_data.user_id}"
+        }
+
+
+# Global authenticator instance
+_authenticator = UnifiedAuthenticator()
+
+
+# FastAPI Dependencies
+
+async def get_current_user(
+    request: Request,
+    bearer_token: Optional[HTTPAuthorizationCredentials] = Depends(_authenticator.bearer_security),
+    api_key_header: Optional[str] = Depends(_authenticator.api_key_header),
+    api_key_query: Optional[str] = Depends(_authenticator.api_key_query)
+) -> AuthenticatedUser:
+    """Get current authenticated user from any supported auth method."""
+    return await _authenticator.authenticate_request(
+        request=request,
+        bearer_token=bearer_token,
+        api_key_header=api_key_header,
+        api_key_query=api_key_query
+    )
+
+
+async def get_current_user_optional(
+    request: Request,
+    bearer_token: Optional[HTTPAuthorizationCredentials] = Depends(_authenticator.bearer_security),
+    api_key_header: Optional[str] = Depends(_authenticator.api_key_header),
+    api_key_query: Optional[str] = Depends(_authenticator.api_key_query)
+) -> Optional[AuthenticatedUser]:
+    """Get current authenticated user, returning None if not authenticated."""
+    try:
+        return await _authenticator.authenticate_request(
+            request=request,
+            bearer_token=bearer_token,
+            api_key_header=api_key_header,
+            api_key_query=api_key_query
+        )
+    except AuthenticationError:
+        return None
+
+
+def require_permission(permission: str):
+    """Require specific permission for endpoint access."""
+    async def permission_checker(
+        current_user: AuthenticatedUser = Depends(get_current_user)
+    ) -> AuthenticatedUser:
+        if not current_user.has_permission(permission):
+            raise AuthorizationError(
+                f"Permission '{permission}' required",
+                required_permission=permission,
+                resource_id=current_user.workspace_id
+            )
+        return current_user
+    return permission_checker
+
+
+def require_role(role: str):
+    """Require specific role for endpoint access."""
+    async def role_checker(
+        current_user: AuthenticatedUser = Depends(get_current_user)
+    ) -> AuthenticatedUser:
+        if not current_user.has_role(role):
+            raise AuthorizationError(
+                f"Role '{role}' required",
+                required_permission=f"role:{role}"
+            )
+        return current_user
+    return role_checker
+
+
+def require_scope(scope: APIKeyScope):
+    """Require specific API key scope for endpoint access."""
+    async def scope_checker(
+        current_user: AuthenticatedUser = Depends(get_current_user)
+    ) -> AuthenticatedUser:
+        if not current_user.has_scope(scope):
+            raise AuthorizationError(
+                f"Scope '{scope.value}' required",
+                required_permission=scope.value
+            )
+        return current_user
+    return scope_checker

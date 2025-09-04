@@ -1,6 +1,6 @@
 # 🔐 Authentication & Authorization Module
 
-The authentication module provides enterprise-grade security features including JWT authentication, API key management, and role-based access control (RBAC).
+The authentication module provides enterprise-grade security features including JWT authentication with refresh token rotation, API key management with granular scoping, role-based access control (RBAC), rate limiting, session management, and comprehensive security logging.
 
 ## 🏗️ Architecture
 
@@ -35,11 +35,26 @@ graph TB
 ```
 auth/
 ├── __init__.py              # Module exports
-├── api_keys.py             # API key management
+├── api_keys.py             # Enhanced API key management with scoping
 ├── database_auth.py        # Database authentication service
-├── jwt_auth.py            # JWT token management
+├── jwt_auth.py            # Enhanced JWT with refresh token rotation
+├── rate_limiting.py        # Comprehensive rate limiting system
+├── session_manager.py      # Session management and tracking
+├── unified_auth.py         # Unified authentication middleware
 └── README.md              # This documentation
 ```
+
+## 🚀 Enhanced Features
+
+### **New in This Version**
+
+- **🔄 Refresh Token Rotation**: Automatic refresh token rotation for enhanced security
+- **🎯 API Key Scoping**: Granular permission scoping for API keys with workspace isolation
+- **⚡ Rate Limiting**: Comprehensive rate limiting with fixed window, sliding window, and token bucket strategies
+- **📊 Session Management**: Advanced session tracking with concurrent limits and device monitoring
+- **🛡️ Unified Authentication**: Single middleware supporting both JWT and API key authentication
+- **📝 Security Logging**: Comprehensive security event logging integrated with SecurityLogger
+- **🔒 Enhanced Security**: Token blacklisting, suspicious activity detection, and audit trails
 
 ## 🔑 Core Components
 
