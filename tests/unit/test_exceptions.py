@@ -30,7 +30,7 @@ from src.graphrag_api_service.exceptions import (
 class TestGraphRAGServiceError:
     """Test base exception class."""
 
-    def test_base_exception_creation(self):
+    def test_base_exception_creation(self) -> None:
         """Test basic exception creation."""
         error = GraphRAGServiceError(
             message="Test error", error_code="TEST_ERROR", status_code=400, details={"key": "value"}
@@ -42,7 +42,7 @@ class TestGraphRAGServiceError:
         assert error.details == {"key": "value"}
         assert str(error) == "Test error"
 
-    def test_to_dict_conversion(self):
+    def test_to_dict_conversion(self) -> None:
         """Test exception to dictionary conversion."""
         error = GraphRAGServiceError(
             message="Test error", error_code="TEST_ERROR", status_code=400, details={"key": "value"}
@@ -58,7 +58,7 @@ class TestGraphRAGServiceError:
 
         assert result == expected
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         """Test exception with default values."""
         error = GraphRAGServiceError("Test error")
 
@@ -71,7 +71,7 @@ class TestGraphRAGServiceError:
 class TestValidationError:
     """Test validation error class."""
 
-    def test_validation_error_creation(self):
+    def test_validation_error_creation(self) -> None:
         """Test validation error creation."""
         error = ValidationError(message="Invalid input", field="username", value="invalid_user")
 
@@ -81,7 +81,7 @@ class TestValidationError:
         assert error.details["field"] == "username"
         assert error.details["invalid_value"] == "invalid_user"
 
-    def test_validation_error_without_field(self):
+    def test_validation_error_without_field(self) -> None:
         """Test validation error without field information."""
         error = ValidationError("General validation error")
 
@@ -93,7 +93,7 @@ class TestValidationError:
 class TestAuthenticationError:
     """Test authentication error class."""
 
-    def test_authentication_error_default(self):
+    def test_authentication_error_default(self) -> None:
         """Test authentication error with default message."""
         error = AuthenticationError()
 
@@ -101,7 +101,7 @@ class TestAuthenticationError:
         assert error.error_code == "AUTHENTICATION_ERROR"
         assert error.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_authentication_error_custom(self):
+    def test_authentication_error_custom(self) -> None:
         """Test authentication error with custom message."""
         error = AuthenticationError(message="Invalid token", details={"token_type": "JWT"})
 
@@ -112,7 +112,7 @@ class TestAuthenticationError:
 class TestAuthorizationError:
     """Test authorization error class."""
 
-    def test_authorization_error_with_permission(self):
+    def test_authorization_error_with_permission(self) -> None:
         """Test authorization error with permission details."""
         error = AuthorizationError(
             message="Access denied", required_permission="read:workspace", resource_id="ws_123"
@@ -128,7 +128,7 @@ class TestAuthorizationError:
 class TestResourceNotFoundError:
     """Test resource not found error class."""
 
-    def test_resource_not_found_with_details(self):
+    def test_resource_not_found_with_details(self) -> None:
         """Test resource not found error with resource details."""
         error = ResourceNotFoundError(
             message="Workspace not found", resource_type="workspace", resource_id="ws_123"
@@ -144,7 +144,7 @@ class TestResourceNotFoundError:
 class TestQuotaExceededError:
     """Test quota exceeded error class."""
 
-    def test_quota_exceeded_with_metrics(self):
+    def test_quota_exceeded_with_metrics(self) -> None:
         """Test quota exceeded error with usage metrics."""
         error = QuotaExceededError(
             message="Storage quota exceeded",
@@ -164,7 +164,7 @@ class TestQuotaExceededError:
 class TestSecurityError:
     """Test security error class."""
 
-    def test_security_error_with_violation_type(self):
+    def test_security_error_with_violation_type(self) -> None:
         """Test security error with violation type."""
         error = SecurityError(message="Path traversal detected", violation_type="path_traversal")
 
@@ -177,7 +177,7 @@ class TestSecurityError:
 class TestConvenienceFunctions:
     """Test convenience functions for common errors."""
 
-    def test_workspace_not_found(self):
+    def test_workspace_not_found(self) -> None:
         """Test workspace not found convenience function."""
         error = workspace_not_found("ws_123")
 
@@ -186,7 +186,7 @@ class TestConvenienceFunctions:
         assert error.details["resource_type"] == "workspace"
         assert error.details["resource_id"] == "ws_123"
 
-    def test_insufficient_permissions(self):
+    def test_insufficient_permissions(self) -> None:
         """Test insufficient permissions convenience function."""
         error = insufficient_permissions("read:workspace", "ws_123")
 
@@ -195,7 +195,7 @@ class TestConvenienceFunctions:
         assert error.details["required_permission"] == "read:workspace"
         assert error.details["resource_id"] == "ws_123"
 
-    def test_invalid_workspace_id(self):
+    def test_invalid_workspace_id(self) -> None:
         """Test invalid workspace ID convenience function."""
         error = invalid_workspace_id("../../../etc/passwd")
 
@@ -205,7 +205,7 @@ class TestConvenienceFunctions:
         assert error.details["invalid_value"] == "../../../etc/passwd"
         assert "expected_format" in error.details
 
-    def test_storage_quota_exceeded(self):
+    def test_storage_quota_exceeded(self) -> None:
         """Test storage quota exceeded convenience function."""
         error = storage_quota_exceeded(1024.5, 1000.0)
 
@@ -216,7 +216,7 @@ class TestConvenienceFunctions:
         assert error.details["current_usage"] == 1024.5
         assert error.details["quota_limit"] == 1000.0
 
-    def test_path_traversal_attempt(self):
+    def test_path_traversal_attempt(self) -> None:
         """Test path traversal attempt convenience function."""
         error = path_traversal_attempt("../../../etc/passwd")
 
@@ -229,7 +229,7 @@ class TestConvenienceFunctions:
 class TestErrorChaining:
     """Test error handling and chaining."""
 
-    def test_exception_inheritance(self):
+    def test_exception_inheritance(self) -> None:
         """Test that all custom exceptions inherit from base."""
         errors = [
             ValidationError("test"),
@@ -248,7 +248,7 @@ class TestErrorChaining:
             assert isinstance(error, GraphRAGServiceError)
             assert isinstance(error, Exception)
 
-    def test_error_status_codes(self):
+    def test_error_status_codes(self) -> None:
         """Test that errors have appropriate HTTP status codes."""
         error_status_map = {
             ValidationError("test"): status.HTTP_422_UNPROCESSABLE_ENTITY,

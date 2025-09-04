@@ -11,7 +11,7 @@ import pytest
 
 
 @pytest.fixture
-def mock_workspace_manager():
+def mock_workspace_manager() -> AsyncMock:
     """Mock workspace manager for testing."""
     manager = AsyncMock()
     manager.create_workspace = AsyncMock(
@@ -29,7 +29,7 @@ def mock_workspace_manager():
 
 
 @pytest.fixture
-def mock_llm_provider():
+def mock_llm_provider() -> MagicMock:
     """Mock LLM provider for testing."""
     provider = MagicMock()
     provider.validate_connection = AsyncMock(return_value=True)
@@ -46,7 +46,7 @@ def mock_llm_provider():
 
 
 @pytest.fixture
-def mock_indexing_manager():
+def mock_indexing_manager() -> AsyncMock:
     """Mock indexing manager for testing."""
     manager = AsyncMock()
     manager.start_indexing = AsyncMock(
