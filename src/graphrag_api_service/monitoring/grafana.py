@@ -99,7 +99,10 @@ class GraphRAGDashboards:
                 "type": "stat",
                 "targets": [
                     {
-                        "expr": "histogram_quantile(0.95, rate(graphrag_request_duration_seconds_bucket[5m]))",
+                        "expr": (
+                            "histogram_quantile(0.95, "
+                            "rate(graphrag_request_duration_seconds_bucket[5m]))"
+                        ),
                         "legendFormat": "P95 Response Time",
                     }
                 ],
@@ -115,7 +118,10 @@ class GraphRAGDashboards:
                 "type": "stat",
                 "targets": [
                     {
-                        "expr": 'rate(graphrag_requests_total{status=~"4..|5.."}[5m]) / rate(graphrag_requests_total[5m]) * 100',
+                        "expr": (
+                            'rate(graphrag_requests_total{status=~"4..|5.."}[5m]) / '
+                            "rate(graphrag_requests_total[5m]) * 100"
+                        ),
                         "legendFormat": "Error Rate %",
                     }
                 ],
@@ -167,15 +173,24 @@ class GraphRAGDashboards:
                 "type": "graph",
                 "targets": [
                     {
-                        "expr": "histogram_quantile(0.50, rate(graphrag_request_duration_seconds_bucket[5m]))",
+                        "expr": (
+                            "histogram_quantile(0.50, "
+                            "rate(graphrag_request_duration_seconds_bucket[5m]))"
+                        ),
                         "legendFormat": "P50",
                     },
                     {
-                        "expr": "histogram_quantile(0.95, rate(graphrag_request_duration_seconds_bucket[5m]))",
+                        "expr": (
+                            "histogram_quantile(0.95, "
+                            "rate(graphrag_request_duration_seconds_bucket[5m]))"
+                        ),
                         "legendFormat": "P95",
                     },
                     {
-                        "expr": "histogram_quantile(0.99, rate(graphrag_request_duration_seconds_bucket[5m]))",
+                        "expr": (
+                            "histogram_quantile(0.99, "
+                            "rate(graphrag_request_duration_seconds_bucket[5m]))"
+                        ),
                         "legendFormat": "P99",
                     },
                 ],
@@ -219,7 +234,10 @@ class GraphRAGDashboards:
                 "type": "graph",
                 "targets": [
                     {
-                        "expr": "histogram_quantile(0.95, rate(graphrag_graphql_query_complexity_bucket[5m]))",
+                        "expr": (
+                            "histogram_quantile(0.95, "
+                            "rate(graphrag_graphql_query_complexity_bucket[5m]))"
+                        ),
                         "legendFormat": "P95 Complexity",
                     }
                 ],
@@ -234,7 +252,10 @@ class GraphRAGDashboards:
                 "type": "graph",
                 "targets": [
                     {
-                        "expr": "histogram_quantile(0.95, rate(graphrag_graphql_query_duration_seconds_bucket[5m]))",
+                        "expr": (
+                            "histogram_quantile(0.95, "
+                            "rate(graphrag_graphql_query_duration_seconds_bucket[5m]))"
+                        ),
                         "legendFormat": "{{operation_type}} P95",
                     }
                 ],
@@ -262,7 +283,11 @@ class GraphRAGDashboards:
                 "type": "stat",
                 "targets": [
                     {
-                        "expr": "rate(graphrag_cache_hits_total[5m]) / (rate(graphrag_cache_hits_total[5m]) + rate(graphrag_cache_misses_total[5m])) * 100",
+                        "expr": (
+                            "rate(graphrag_cache_hits_total[5m]) / "
+                            "(rate(graphrag_cache_hits_total[5m]) + "
+                            "rate(graphrag_cache_misses_total[5m])) * 100"
+                        ),
                         "legendFormat": "Hit Rate %",
                     }
                 ],

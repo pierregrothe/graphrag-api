@@ -5,7 +5,7 @@
 
 """FastAPI dependency injection for accessing services."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends
 
@@ -18,37 +18,37 @@ from .system.operations import SystemOperations
 from .workspace.manager import WorkspaceManager
 
 
-def get_workspace_manager():
+def get_workspace_manager() -> Any:
     """Get workspace manager from service container."""
     container = get_service_container()
     return container.workspace_manager
 
 
-def get_indexing_manager():
+def get_indexing_manager() -> Any:
     """Get indexing manager from service container."""
     container = get_service_container()
     return container.indexing_manager
 
 
-def get_graph_operations():
+def get_graph_operations() -> Any:
     """Get graph operations from service container."""
     container = get_service_container()
     return container.graph_operations
 
 
-def get_graphrag_integration():
+def get_graphrag_integration() -> Any:
     """Get GraphRAG integration from service container."""
     container = get_service_container()
     return container.graphrag_integration
 
 
-def get_system_operations():
+def get_system_operations() -> Any:
     """Get system operations from service container."""
     container = get_service_container()
     return container.system_operations
 
 
-async def get_cache_manager_dep():
+async def get_cache_manager_dep() -> Any:
     """Get cache manager for dependency injection."""
     try:
         # Get cache manager asynchronously

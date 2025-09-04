@@ -181,6 +181,7 @@ class SQLiteManager:
         values.append(workspace_id)
 
         # Use parameterized query with explicit field validation
+        # Note: set_clauses are built from whitelisted allowed_fields, preventing SQL injection
         query = f"UPDATE workspaces SET {', '.join(set_clauses)}, updated_at = ? WHERE id = ?"
 
         with sqlite3.connect(self.db_path) as conn:
@@ -298,7 +299,7 @@ class SQLiteManager:
                 }
             return None
 
-    def close(self):
+    def close(self) -> None:
         """Close database connection (for cleanup)."""
         # SQLite connections are closed automatically
         pass

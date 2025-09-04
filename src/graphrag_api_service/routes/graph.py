@@ -5,7 +5,6 @@
 
 """Graph data API route handlers with proper dependency injection."""
 
-import asyncio
 import csv
 import json
 import tempfile
@@ -14,11 +13,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from ..auth.unified_auth import AuthenticatedUser, get_current_user
 from ..config import get_settings
 from ..deps import GraphOperationsDep
-from ..exceptions import SecurityError, ValidationError, path_traversal_attempt
+from ..exceptions import SecurityError, ValidationError
 from ..logging_config import get_logger
 from ..security import get_security_logger
 
@@ -29,7 +29,9 @@ security_logger = get_security_logger()
 router = APIRouter(prefix="/api/graph", tags=["Graph"])
 
 
-def validate_workspace_path(workspace_id: str | None, settings, request: Request = None) -> str:
+def validate_workspace_path(
+    workspace_id: str | None, settings: Any, request: Request | None = None
+) -> str:
     """Validate and resolve workspace path to prevent traversal attacks.
 
     Parameters
@@ -54,19 +56,14 @@ def validate_workspace_path(workspace_id: str | None, settings, request: Request
         data_path = settings.graphrag_data_path
         if not data_path:
             raise HTTPException(status_code=400, detail="No default data path configured")
-        return data_path
+        return str(data_path)
 
     # Validate workspace_id format (prevent obvious attacks)
     if not workspace_id.replace("-", "").replace("_", "").isalnum():
         # Log security violation
-        security_logger.path_traversal_attempt(
-            attempted_path=workspace_id,
-            request=request
-        )
+        security_logger.path_traversal_attempt(attempted_path=workspace_id, request=request)
         raise ValidationError(
-            message="Invalid workspace ID format",
-            field="workspace_id",
-            value=workspace_id
+            message="Invalid workspace ID format", field="workspace_id", value=workspace_id
         )
 
     # Construct safe workspace path
@@ -80,14 +77,11 @@ def validate_workspace_path(workspace_id: str | None, settings, request: Request
         # Ensure the resolved path is within the base directory
         if not str(workspace_path).startswith(str(base_path)):
             # Log security violation
-            security_logger.path_traversal_attempt(
-                attempted_path=workspace_id,
-                request=request
-            )
+            security_logger.path_traversal_attempt(attempted_path=workspace_id, request=request)
             raise SecurityError(
                 message="Access to workspace denied - path traversal attempt",
                 violation_type="path_traversal",
-                details={"attempted_path": workspace_id}
+                details={"attempted_path": workspace_id},
             )
 
         # Check if workspace directory exists
@@ -110,6 +104,7 @@ async def get_entities(
     entity_type: str | None = Query(None),
     workspace_id: str = Query("default"),
     graph_operations: GraphOperationsDep = None,
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Get entities from the knowledge graph.
 
@@ -156,22 +151,22 @@ async def get_entities(
         settings = get_settings()
         data_path = validate_workspace_path(workspace_id, settings, request)
 
-        # Use thread pool for potentially CPU-intensive graph operations
-        result = await asyncio.to_thread(
-            graph_operations.query_entities,
+        # Call async graph operations directly
+        result: dict[str, Any] = await graph_operations.query_entities(
             data_path=data_path,
+            entity_name=filters.get("entity_name"),
+            entity_type=filters.get("entity_type"),
             limit=limit,
             offset=offset,
-            **filters,
         )
 
         # Log successful access
         security_logger.workspace_access(
             workspace_id=workspace_id,
-            user_id=getattr(request.state, 'user_id', 'anonymous'),
+            user_id=getattr(request.state, "user_id", "anonymous"),
             action="read_entities",
             success=True,
-            request=request
+            request=request,
         )
 
         return {
@@ -186,17 +181,19 @@ async def get_entities(
         # Log failed access
         security_logger.workspace_access(
             workspace_id=workspace_id,
-            user_id=getattr(request.state, 'user_id', 'anonymous'),
+            user_id=getattr(request.state, "user_id", "anonymous"),
             action="read_entities",
             success=False,
-            request=request
+            request=request,
         )
 
         logger.error(f"Failed to get entities: {e}")
 
         # Re-raise service exceptions as-is, convert others to HTTP exceptions
-        if hasattr(e, 'status_code'):
-            raise HTTPException(status_code=e.status_code, detail=e.message)
+        if hasattr(e, "status_code"):
+            detail = getattr(e, "message", str(e))
+            status_code = getattr(e, "status_code", 500)
+            raise HTTPException(status_code=status_code, detail=detail)
         else:
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -576,7 +573,8 @@ def _export_to_graphml(export_data: dict[str, Any], file_path: Path) -> None:
         for rel in export_data.get("relationships", []):
             if isinstance(rel, dict):
                 f.write(
-                    f'    <edge source="{rel.get("source", "")}" target="{rel.get("target", "")}"/>\n'
+                    f'    <edge source="{rel.get("source", "")}" '
+                    f'target="{rel.get("target", "")}"/>\n'
                 )
 
         f.write("  </graph>\n")

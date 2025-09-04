@@ -18,10 +18,13 @@ class TestSystemOperations:
     """Test system operations functionality."""
 
     @pytest.fixture
-    def settings(self, default_settings):
+    def settings(self):
         """Create test settings."""
-        default_settings.graphrag_data_path = "/test/data"
-        return default_settings
+        from src.graphrag_api_service.config import Settings
+
+        settings = Settings()
+        settings.graphrag_data_path = "/test/data"
+        return settings
 
     @pytest.fixture
     def mock_provider_factory(self):

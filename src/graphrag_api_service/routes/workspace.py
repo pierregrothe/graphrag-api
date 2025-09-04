@@ -12,6 +12,7 @@ import yaml
 from fastapi import APIRouter, HTTPException
 
 from ..deps import WorkspaceManagerDep
+from ..exceptions import ResourceNotFoundError
 from ..logging_config import get_logger
 from ..workspace.models import (
     Workspace,
@@ -156,6 +157,8 @@ async def update_workspace(
         return workspace
     except HTTPException:
         raise
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to update workspace {workspace_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update workspace: {e}") from e
@@ -240,3 +243,139 @@ async def get_workspace_config(
     except Exception as e:
         logger.error(f"Failed to get config for workspace {workspace_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get workspace config: {e}") from e
+
+
+# Workspace Cleanup Endpoints
+
+
+@router.post("/workspaces/{workspace_id}/cleanup")
+async def force_cleanup_workspace(
+    workspace_id: str, workspace_manager: WorkspaceManagerDep
+) -> dict[str, Any]:
+    """Force cleanup of a specific workspace.
+
+    Args:
+        workspace_id: ID of workspace to clean up
+        workspace_manager: Workspace manager instance (injected)
+
+    Returns:
+        Cleanup result information
+
+    Raises:
+        HTTPException: If cleanup fails
+    """
+    logger.info(f"Force cleanup requested for workspace: {workspace_id}")
+
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
+
+    try:
+        # Get the cleanup service from the service container
+        from ..dependencies import get_service_container
+
+        container = get_service_container()
+
+        if not container.workspace_cleanup_service:
+            raise HTTPException(status_code=503, detail="Workspace cleanup service not available")
+
+        success = await container.workspace_cleanup_service.force_cleanup(workspace_id)
+
+        if success:
+            return {
+                "success": True,
+                "message": f"Workspace {workspace_id} cleaned up successfully",
+                "workspace_id": workspace_id,
+            }
+        else:
+            raise HTTPException(
+                status_code=404, detail=f"Workspace {workspace_id} not found or cleanup failed"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to cleanup workspace {workspace_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to cleanup workspace: {e}") from e
+
+
+@router.get("/workspaces/cleanup/stats")
+async def get_cleanup_stats(workspace_manager: WorkspaceManagerDep) -> dict[str, Any]:
+    """Get workspace cleanup service statistics.
+
+    Args:
+        workspace_manager: Workspace manager instance (injected)
+
+    Returns:
+        Cleanup service statistics
+
+    Raises:
+        HTTPException: If stats retrieval fails
+    """
+    logger.debug("Getting cleanup service statistics")
+
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
+
+    try:
+        # Get the cleanup service from the service container
+        from ..dependencies import get_service_container
+
+        container = get_service_container()
+
+        if not container.workspace_cleanup_service:
+            raise HTTPException(status_code=503, detail="Workspace cleanup service not available")
+
+        stats = container.workspace_cleanup_service.get_stats()
+        return dict(stats)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get cleanup stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get cleanup stats: {e}") from e
+
+
+@router.post("/workspaces/cleanup/run")
+async def trigger_cleanup_cycle(workspace_manager: WorkspaceManagerDep) -> dict[str, Any]:
+    """Manually trigger a workspace cleanup cycle.
+
+    Args:
+        workspace_manager: Workspace manager instance (injected)
+
+    Returns:
+        Cleanup cycle result
+
+    Raises:
+        HTTPException: If cleanup cycle fails
+    """
+    logger.info("Manual cleanup cycle triggered")
+
+    if not workspace_manager:
+        logger.error("Workspace manager not available")
+        raise HTTPException(status_code=503, detail="Workspace manager not available")
+
+    try:
+        # Get the cleanup service from the service container
+        from ..dependencies import get_service_container
+
+        container = get_service_container()
+
+        if not container.workspace_cleanup_service:
+            raise HTTPException(status_code=503, detail="Workspace cleanup service not available")
+
+        # Trigger a manual cleanup cycle
+        await container.workspace_cleanup_service._perform_cleanup()
+
+        return {
+            "success": True,
+            "message": "Cleanup cycle completed successfully",
+            "stats": container.workspace_cleanup_service.get_stats(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to trigger cleanup cycle: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to trigger cleanup cycle: {e}") from e

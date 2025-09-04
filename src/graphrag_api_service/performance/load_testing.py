@@ -260,7 +260,7 @@ class BenchmarkSuite:
                 "timestamp": start_time,
             }
 
-        except (aiohttp.ClientError, TimeoutError) as e:
+        except Exception as e:
             response_time = time.time() - start_time
             return {
                 "scenario": scenario.name,

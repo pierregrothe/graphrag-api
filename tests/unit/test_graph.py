@@ -7,12 +7,13 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
+from src.graphrag_api_service.auth.unified_auth import AuthenticatedUser, AuthMethod
 from src.graphrag_api_service.config import Settings
 from src.graphrag_api_service.graph.operations import GraphOperations, GraphOperationsError
 from src.graphrag_api_service.main import app
@@ -306,16 +307,36 @@ class TestGraphOperations:
 class TestGraphAPI:
     """Test graph API endpoints."""
 
-    def test_query_entities_endpoint_no_data_path(self):
-        """Test entities endpoint when data path not configured."""
-        client = TestClient(app)
-        response = client.get("/api/graph/entities")
+    @pytest.fixture
+    def mock_authenticated_user(self):
+        """Mock authenticated user for testing."""
+        return AuthenticatedUser(
+            user_id="test-user",
+            username="testuser",
+            email="test@example.com",
+            roles=["user"],
+            permissions=["read:graph"],
+            auth_method=AuthMethod.API_KEY,
+        )
 
-        # When data path is not configured, it returns a mock response with status 200
-        assert response.status_code == 200
-        data = response.json()
-        assert "entities" in data
-        assert "total_count" in data
+    def test_query_entities_endpoint_no_data_path(self, mock_authenticated_user):
+        """Test entities endpoint when data path not configured."""
+        from src.graphrag_api_service.auth.unified_auth import get_current_user
+
+        # Override the dependency
+        app.dependency_overrides[get_current_user] = lambda: mock_authenticated_user
+
+        try:
+            client = TestClient(app)
+            response = client.get("/api/graph/entities")
+
+            # When data path is not configured, it returns a 400 error
+            assert response.status_code == 400
+            data = response.json()
+            assert "No default data path configured" in data.get("error", "")
+        finally:
+            # Clean up the override
+            app.dependency_overrides.clear()
 
     def test_query_relationships_endpoint_no_data_path(self):
         """Test relationships endpoint when data path not configured."""
@@ -331,7 +352,7 @@ class TestGraphAPI:
     def test_graph_stats_endpoint_no_data_path(self):
         """Test graph stats endpoint when data path not configured."""
         client = TestClient(app)
-        response = client.get("/api/graph/stats")
+        response = client.get("/api/graph/statistics")
 
         # When data path is not configured, it returns a mock response with status 200
         assert response.status_code == 200
@@ -358,26 +379,29 @@ class TestGraphAPI:
         assert "edges" in data
 
     def test_graph_export_endpoint_no_data_path(self):
-        """Test export endpoint when data path not configured."""
+        """Test export endpoint when graph operations not available."""
         client = TestClient(app)
         response = client.post(
             "/api/graph/export",
             json={"format": "json", "include_entities": True, "include_relationships": True},
         )
 
-        # When data path is not configured, it returns a mock response with status 200
-        assert response.status_code == 200
+        # When graph operations are not available, it returns an error response
+        assert response.status_code == 200  # Still 200 but with error in body
         data = response.json()
-        assert "download_url" in data
-        assert "format" in data
+        assert data["success"] is False
+        assert "error" in data
+        assert "No default data path configured" in data["error"]
 
-    @patch("src.graphrag_api_service.routes.graph.settings")
-    @patch("src.graphrag_api_service.routes.graph.graph_operations")
-    async def test_query_entities_endpoint_success(self, mock_graph_ops, mock_settings):
+    async def test_query_entities_endpoint_success(self, mock_authenticated_user):
         """Test successful entities query."""
         from unittest.mock import AsyncMock
 
-        mock_settings.graphrag_data_path = "/test/data"
+        from src.graphrag_api_service.auth.unified_auth import get_current_user
+        from src.graphrag_api_service.deps import get_graph_operations
+
+        # Mock graph operations
+        mock_graph_ops = Mock()
         mock_graph_ops.query_entities = AsyncMock(
             return_value={
                 "entities": [
@@ -389,21 +413,36 @@ class TestGraphAPI:
             }
         )
 
-        client = TestClient(app)
-        response = client.get("/api/graph/entities?entity_name=Test")
+        # Override dependencies
+        app.dependency_overrides[get_current_user] = lambda: mock_authenticated_user
+        app.dependency_overrides[get_graph_operations] = lambda: mock_graph_ops
 
-        assert response.status_code == 200
-        data = response.json()
-        assert "entities" in data
-        assert len(data["entities"]) == 1
+        # Mock settings to provide a valid data path
+        with patch("src.graphrag_api_service.routes.graph.get_settings") as mock_settings:
+            mock_settings_obj = Mock()
+            mock_settings_obj.graphrag_data_path = "/test/data"
+            mock_settings.return_value = mock_settings_obj
 
-    @patch("src.graphrag_api_service.routes.graph.settings")
-    @patch("src.graphrag_api_service.routes.graph.graph_operations")
-    async def test_graph_stats_endpoint_success(self, mock_graph_ops, mock_settings):
+            try:
+                client = TestClient(app)
+                response = client.get("/api/graph/entities?entity_name=Test")
+
+                assert response.status_code == 200
+                data = response.json()
+                assert "entities" in data
+                assert len(data["entities"]) == 1
+            finally:
+                # Clean up the overrides
+                app.dependency_overrides.clear()
+
+    async def test_graph_stats_endpoint_success(self):
         """Test successful graph statistics endpoint."""
         from unittest.mock import AsyncMock
 
-        mock_settings.graphrag_data_path = "/test/data"
+        from src.graphrag_api_service.deps import get_graph_operations
+
+        # Mock graph operations
+        mock_graph_ops = Mock()
         mock_graph_ops.get_graph_statistics = AsyncMock(
             return_value={
                 "total_entities": 100,
@@ -417,11 +456,24 @@ class TestGraphAPI:
             }
         )
 
-        client = TestClient(app)
-        response = client.get("/api/graph/stats")
+        # Override dependency
+        app.dependency_overrides[get_graph_operations] = lambda: mock_graph_ops
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["total_entities"] == 100
-        assert data["total_relationships"] == 200
+        # Mock settings to provide a valid data path
+        with patch("src.graphrag_api_service.routes.graph.get_settings") as mock_settings:
+            mock_settings_obj = Mock()
+            mock_settings_obj.graphrag_data_path = "/test/data"
+            mock_settings.return_value = mock_settings_obj
+
+            try:
+                client = TestClient(app)
+                response = client.get("/api/graph/statistics")
+
+                assert response.status_code == 200
+                data = response.json()
+                assert data["total_entities"] == 100
+                assert data["total_relationships"] == 200
+            finally:
+                # Clean up the override
+                app.dependency_overrides.clear()
         assert data["graph_density"] == 0.02

@@ -6,6 +6,7 @@
 """Simplified database connection management supporting SQLite and PostgreSQL."""
 
 import logging
+from typing import Any
 
 from ..config import Settings
 from .sqlite_models import SQLiteManager
@@ -27,7 +28,7 @@ class SimpleDatabaseManager:
         self.db: SQLiteManager | None = None
         self._initialized = False
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Initialize database connection."""
         if self._initialized:
             return
@@ -50,7 +51,7 @@ class SimpleDatabaseManager:
             logger.error(f"Failed to initialize database: {e}")
             raise
 
-    def get_workspace_manager(self):
+    def get_workspace_manager(self) -> Any:
         """Get workspace manager for the current database type.
 
         Returns:
@@ -87,7 +88,7 @@ class SimpleDatabaseManager:
             logger.error(f"Database health check failed: {e}")
             return False
 
-    def close(self):
+    def close(self) -> None:
         """Close database connection."""
         if self.db:
             self.db.close()

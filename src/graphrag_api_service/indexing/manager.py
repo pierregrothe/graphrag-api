@@ -113,7 +113,8 @@ class IndexingManager:
         """
         if not workspace.is_ready_for_indexing():
             raise ValueError(
-                f"Workspace {workspace.config.name} is not ready for indexing (status: {workspace.status})"
+                f"Workspace {workspace.config.name} is not ready for indexing "
+                f"(status: {workspace.status})"
             )
 
         # Check if workspace already has a running job
@@ -398,6 +399,7 @@ class IndexingManager:
             last_error=None,
             workspace_path=None,
             config_file_path=None,
+            expires_at=None,
         )
 
         # Create indexing task

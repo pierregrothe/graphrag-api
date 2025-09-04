@@ -100,6 +100,16 @@ class Workspace(BaseModel):
         default_factory=lambda: datetime.now(UTC), description="Last update timestamp"
     )
 
+    # Usage tracking
+    last_accessed_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Last access timestamp"
+    )
+    access_count: int = Field(default=0, description="Total number of accesses")
+    query_count: int = Field(default=0, description="Number of queries executed")
+    indexing_count: int = Field(default=0, description="Number of indexing operations")
+    size_bytes: int = Field(default=0, description="Workspace size in bytes")
+    expires_at: datetime | None = Field(None, description="Expiration timestamp (TTL)")
+
     # Processing statistics
     files_processed: int = Field(default=0, description="Number of files processed")
     entities_extracted: int = Field(default=0, description="Number of entities extracted")
@@ -182,6 +192,49 @@ class Workspace(BaseModel):
             self.last_error = error_message
         elif new_status != WorkspaceStatus.ERROR:
             self.last_error = None
+
+    def update_access(self) -> None:
+        """Update access tracking when workspace is accessed."""
+        self.last_accessed_at = datetime.now(UTC)
+        self.access_count += 1
+
+    def update_query_count(self) -> None:
+        """Update query count when a query is executed."""
+        self.query_count += 1
+        self.update_access()
+
+    def update_indexing_count(self) -> None:
+        """Update indexing count when indexing operation is performed."""
+        self.indexing_count += 1
+        self.update_access()
+
+    def update_size(self, size_bytes: int) -> None:
+        """Update workspace size in bytes."""
+        self.size_bytes = size_bytes
+
+    def set_expiration(self, ttl_hours: int) -> None:
+        """Set workspace expiration based on TTL in hours."""
+        if ttl_hours > 0:
+            from datetime import timedelta
+
+            self.expires_at = datetime.now(UTC) + timedelta(hours=ttl_hours)
+        else:
+            self.expires_at = None
+
+    def is_expired(self) -> bool:
+        """Check if workspace has expired."""
+        if self.expires_at is None:
+            return False
+        return datetime.now(UTC) > self.expires_at
+
+    def is_idle(self, max_idle_hours: int) -> bool:
+        """Check if workspace has been idle for too long."""
+        if max_idle_hours <= 0:
+            return False
+        from datetime import timedelta
+
+        idle_threshold = datetime.now(UTC) - timedelta(hours=max_idle_hours)
+        return self.last_accessed_at < idle_threshold
 
 
 class WorkspaceSummary(BaseModel):

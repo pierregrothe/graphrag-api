@@ -490,3 +490,34 @@ async def get_cache_stats(system_operations: SystemOperationsDep = None) -> dict
         Cache statistics
     """
     return await get_cache_statistics(system_operations)
+
+
+@router.post("/system/cache/clear")
+async def clear_system_cache(
+    namespace: str | None = None, cache_manager: CacheManagerDep = None
+) -> dict[str, Any]:
+    """Clear system cache (alternate path for tests).
+
+    Args:
+        namespace: Optional namespace to clear
+        cache_manager: Cache manager (injected)
+
+    Returns:
+        Cache clear result
+    """
+    return await clear_cache(namespace, cache_manager)
+
+
+@router.get("/system/cache/statistics")
+async def get_system_cache_statistics(
+    system_operations: SystemOperationsDep = None,
+) -> dict[str, Any]:
+    """Get system cache statistics (alternate path for tests).
+
+    Args:
+        system_operations: System operations (injected)
+
+    Returns:
+        Cache statistics
+    """
+    return await get_cache_statistics(system_operations)

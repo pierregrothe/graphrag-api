@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class SubscriptionManager:
     """Manages GraphQL subscriptions and real-time updates."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the subscription manager."""
         self._subscribers: dict[str, list[asyncio.Queue]] = {
             "indexing_updates": [],

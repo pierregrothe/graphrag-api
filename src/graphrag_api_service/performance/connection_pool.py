@@ -115,7 +115,7 @@ class QueryCache:
 class MetricsManager:
     """Manages query performance metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._metrics: list[QueryMetrics] = []
 
     async def record_metrics(
@@ -163,10 +163,10 @@ class MetricsManager:
 class ConnectionPoolState:
     """Manages the state of connections within the pool."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the ConnectionPoolState."""
         self._connections: list[dict[str, Any]] = []
-        self._available_connections: asyncio.Queue = asyncio.Queue()
+        self._available_connections: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self._active_connections: int = 0
 
     def add_connection(self, connection: dict[str, Any]) -> None:
@@ -207,7 +207,7 @@ class ConnectionPoolState:
 class ConnectionPool:
     """Async connection pool for GraphRAG data operations."""
 
-    def __init__(self, config: ConnectionPoolConfig, database_manager=None):
+    def __init__(self, config: ConnectionPoolConfig, database_manager: Any = None) -> None:
         """Initialize the connection pool.
 
         Args:
@@ -514,7 +514,8 @@ class ConnectionPool:
         """Build SQL filter conditions and parameters from a dictionary of filters.
 
         Args:
-            filters: A dictionary of filters where keys are column names and values are filter values.
+            filters: A dictionary of filters where keys are column names and values are
+                filter values.
 
         Returns:
             A tuple containing a list of SQL condition strings and a dictionary of parameters.
@@ -550,6 +551,14 @@ class ConnectionPool:
             "initialized": self._initialized,
         }
 
+    async def get_metrics(self) -> list[QueryMetrics]:
+        """Get query performance metrics.
+
+        Returns:
+            List of query metrics from the metrics manager
+        """
+        return await self._metrics_manager.get_metrics()
+
     async def cleanup(self) -> None:
         """Clean up connection pool resources."""
         async with self._lock:
@@ -570,7 +579,7 @@ class ConnectionPool:
 _connection_pool: ConnectionPool | None = None
 
 
-async def get_connection_pool(database_manager=None) -> ConnectionPool:
+async def get_connection_pool(database_manager: Any = None) -> ConnectionPool:
     """Get the global connection pool instance.
 
     Args:

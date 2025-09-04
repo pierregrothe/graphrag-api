@@ -9,12 +9,12 @@ import hashlib
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-from ..exceptions import AuthenticationError, ValidationError, QuotaExceededError
+from ..exceptions import QuotaExceededError, ValidationError
 from ..security import get_security_logger
 
 logger = logging.getLogger(__name__)
@@ -68,27 +68,27 @@ class APIKey(BaseModel):
     key_hash: str
     prefix: str
     user_id: str
-    workspace_id: Optional[str] = None  # Workspace-specific keys
-    tenant_id: Optional[str] = None
-    scopes: List[APIKeyScope] = Field(default_factory=list)
+    workspace_id: str | None = None  # Workspace-specific keys
+    tenant_id: str | None = None
+    scopes: list[APIKeyScope] = Field(default_factory=list)
     rate_limit_config: RateLimitConfig = Field(default_factory=RateLimitConfig)
     is_active: bool = True
     created_at: datetime
-    expires_at: Optional[datetime] = None
-    last_used_at: Optional[datetime] = None
+    expires_at: datetime | None = None
+    last_used_at: datetime | None = None
     usage_count: int = 0
 
     # Usage tracking
     daily_usage: int = 0
     hourly_usage: int = 0
     minute_usage: int = 0
-    last_reset_daily: Optional[datetime] = None
-    last_reset_hourly: Optional[datetime] = None
-    last_reset_minute: Optional[datetime] = None
+    last_reset_daily: datetime | None = None
+    last_reset_hourly: datetime | None = None
+    last_reset_minute: datetime | None = None
 
     # Security tracking
-    created_from_ip: Optional[str] = None
-    last_used_ip: Optional[str] = None
+    created_from_ip: str | None = None
+    last_used_ip: str | None = None
     suspicious_activity_count: int = 0
 
 
@@ -96,11 +96,11 @@ class APIKeyRequest(BaseModel):
     """Enhanced API key creation request."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    scopes: List[APIKeyScope] = Field(default_factory=list)
-    workspace_id: Optional[str] = None
-    rate_limit_config: Optional[RateLimitConfig] = None
-    expires_in_days: Optional[int] = Field(None, ge=1, le=3650)  # Max 10 years
-    description: Optional[str] = Field(None, max_length=500)
+    scopes: list[APIKeyScope] = Field(default_factory=list)
+    workspace_id: str | None = None
+    rate_limit_config: RateLimitConfig | None = None
+    expires_in_days: int | None = Field(None, ge=1, le=3650)  # Max 10 years
+    description: str | None = Field(None, max_length=500)
 
 
 class APIKeyResponse(BaseModel):
@@ -118,7 +118,7 @@ class APIKeyResponse(BaseModel):
 class APIKeyManager:
     """Manages API key lifecycle and validation."""
 
-    def __init__(self, rbac_system=None):
+    def __init__(self, rbac_system: Any = None) -> None:
         """Initialize API key manager.
 
         Args:
@@ -150,8 +150,8 @@ class APIKeyManager:
         self,
         user_id: str,
         request: APIKeyRequest,
-        tenant_id: Optional[str] = None,
-        created_from_ip: Optional[str] = None
+        tenant_id: str | None = None,
+        created_from_ip: str | None = None,
     ) -> APIKeyResponse:
         """Create a new API key with enhanced security and scoping.
 
@@ -179,7 +179,7 @@ class APIKeyManager:
                 "Maximum number of API keys reached",
                 quota_type="api_keys",
                 current_usage=len(user_keys),
-                quota_limit=10
+                quota_limit=10,
             )
 
         key, prefix, key_hash = self.generate_api_key()
@@ -207,7 +207,7 @@ class APIKeyManager:
             created_from_ip=created_from_ip,
             last_reset_daily=datetime.now(UTC),
             last_reset_hourly=datetime.now(UTC),
-            last_reset_minute=datetime.now(UTC)
+            last_reset_minute=datetime.now(UTC),
         )
 
         # Store the key
@@ -217,9 +217,7 @@ class APIKeyManager:
         # Log key creation
         security_logger = get_security_logger()
         security_logger.api_key_usage(
-            api_key_id=key_id,
-            success=True,
-            permissions_used=["create_api_key"]
+            api_key_id=key_id, success=True, permissions_used=["create_api_key"]
         )
 
         return APIKeyResponse(
@@ -227,13 +225,12 @@ class APIKeyManager:
             name=request.name,
             key=key,  # Only returned once
             prefix=prefix,
-            scopes=[scope.value for scope in request.scopes],
-            rate_limit_config=rate_limit_config,
+            permissions=[scope.value for scope in request.scopes],
+            rate_limit=rate_limit_config.requests_per_minute if rate_limit_config else 100,
             expires_at=expires_at,
-            created_at=api_key.created_at
         )
 
-    async def validate_rate_limit(self, api_key: APIKey, request_ip: Optional[str] = None) -> bool:
+    async def validate_rate_limit(self, api_key: APIKey, request_ip: str | None = None) -> bool:
         """Validate rate limits for API key.
 
         Args:
@@ -269,7 +266,7 @@ class APIKeyManager:
                 "Rate limit exceeded: requests per minute",
                 quota_type="requests_per_minute",
                 current_usage=api_key.minute_usage,
-                quota_limit=config.requests_per_minute
+                quota_limit=config.requests_per_minute,
             )
 
         if api_key.hourly_usage >= config.requests_per_hour:
@@ -277,7 +274,7 @@ class APIKeyManager:
                 "Rate limit exceeded: requests per hour",
                 quota_type="requests_per_hour",
                 current_usage=api_key.hourly_usage,
-                quota_limit=config.requests_per_hour
+                quota_limit=config.requests_per_hour,
             )
 
         if api_key.daily_usage >= config.requests_per_day:
@@ -285,7 +282,7 @@ class APIKeyManager:
                 "Rate limit exceeded: requests per day",
                 quota_type="requests_per_day",
                 current_usage=api_key.daily_usage,
-                quota_limit=config.requests_per_day
+                quota_limit=config.requests_per_day,
             )
 
         # Update usage counters
@@ -322,12 +319,12 @@ class APIKeyManager:
             return None
 
         # Check if key has expired
-        if api_key.expires_at and datetime.utcnow() > api_key.expires_at:
+        if api_key.expires_at and datetime.now(UTC) > api_key.expires_at:
             logger.warning("API key %s has expired", api_key.name)
             return None
 
         # Check rate limit
-        if not await self._check_rate_limit(key_id, api_key.rate_limit):
+        if not await self._check_rate_limit(key_id, api_key.rate_limit_config.requests_per_minute):
             logger.warning("Rate limit exceeded for API key: %s", api_key.name)
             return None
 
@@ -435,7 +432,7 @@ class APIKeyManager:
         if not api_key:
             return {}
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         usage_times = self.usage_tracking.get(key_id, [])
 
         # Calculate usage in different time periods
@@ -455,7 +452,7 @@ class APIKeyManager:
             "usage_last_day": usage_last_day,
             "usage_last_week": usage_last_week,
             "last_used_at": api_key.last_used_at,
-            "rate_limit": api_key.rate_limit,
+            "rate_limit": api_key.rate_limit_config.requests_per_minute,
             "is_active": api_key.is_active,
             "expires_at": api_key.expires_at,
         }
@@ -561,7 +558,7 @@ class APIKeyPermissions:
 _api_key_manager: APIKeyManager | None = None
 
 
-def get_api_key_manager(rbac_system=None) -> APIKeyManager:
+def get_api_key_manager(rbac_system: Any = None) -> APIKeyManager:
     """Get the global API key manager.
 
     Args:

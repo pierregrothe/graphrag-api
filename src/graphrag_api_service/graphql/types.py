@@ -96,7 +96,7 @@ class Entity:
     text_unit_ids: list[str]
 
     @strawberry.field
-    async def relationships(self, info) -> list["Relationship"]:
+    async def relationships(self, info: Any) -> list["Relationship"]:
         """Get relationships for this entity using DataLoader.
 
         Args:
@@ -336,6 +336,7 @@ class ApplicationInfo:
     name: str
     version: str
     status: str
+    provider: str
     interfaces: ApplicationInterfaces
     endpoints: JSONType
 

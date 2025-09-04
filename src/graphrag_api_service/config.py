@@ -6,12 +6,10 @@
 """Configuration settings for the GraphRAG API service."""
 
 import os
-import re
 import secrets
 from enum import Enum
-from typing import Optional
 
-from pydantic import Field, HttpUrl, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .exceptions import ConfigurationError
@@ -33,6 +31,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Server Settings
+    # Note: 0.0.0.0 binding is intentional for API service - use firewall/proxy for security
     host: str = "0.0.0.0"
     port: int = 8000  # Standard port aligned with documentation
 
@@ -44,6 +43,36 @@ class Settings(BaseSettings):
         description="Base directory for workspace data (security boundary)",
     )
 
+    # Workspace Lifecycle Management
+    workspace_ttl_hours: int = Field(
+        default=24,
+        description="Default workspace TTL in hours (0 = no expiration)",
+    )
+    workspace_cleanup_enabled: bool = Field(
+        default=True,
+        description="Enable automatic workspace cleanup",
+    )
+    workspace_cleanup_interval_minutes: int = Field(
+        default=60,
+        description="Interval between cleanup runs in minutes",
+    )
+    workspace_max_idle_hours: int = Field(
+        default=12,
+        description="Maximum idle time before workspace is eligible for cleanup",
+    )
+    workspace_grace_period_minutes: int = Field(
+        default=30,
+        description="Grace period before cleanup when active operations detected",
+    )
+    workspace_max_size_mb: int = Field(
+        default=1000,
+        description="Maximum workspace size in MB (0 = no limit)",
+    )
+    workspace_usage_tracking_enabled: bool = Field(
+        default=True,
+        description="Enable workspace usage tracking and metrics",
+    )
+
     # LLM Provider Configuration
     llm_provider: LLMProvider = Field(
         default=LLMProvider.OLLAMA,
@@ -51,7 +80,7 @@ class Settings(BaseSettings):
     )
 
     # Ollama Configuration (Local)
-    ollama_base_url: HttpUrl = Field(
+    ollama_base_url: str = Field(
         default="http://localhost:11434",
         description="Ollama server base URL",
     )
@@ -101,14 +130,20 @@ class Settings(BaseSettings):
     # Authentication & Security Settings
     jwt_secret_key: str = Field(
         default_factory=lambda: os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(32),
-        description="Secret key for JWT token signing - must be set via JWT_SECRET_KEY environment variable in production",
+        description=(
+            "Secret key for JWT token signing - must be set via JWT_SECRET_KEY "
+            "environment variable in production"
+        ),
         min_length=32,  # Minimum 32 characters for security
     )
 
     # Master Key Configuration
-    master_api_key: Optional[str] = Field(
+    master_api_key: str | None = Field(
         default=None,
-        description="Master API key for administrative operations - must be set via MASTER_API_KEY environment variable",
+        description=(
+            "Master API key for administrative operations - must be set via "
+            "MASTER_API_KEY environment variable"
+        ),
         min_length=64,  # Minimum 64 characters for master key security
     )
     jwt_algorithm: str = Field(
@@ -166,7 +201,7 @@ class Settings(BaseSettings):
 
     @field_validator("master_api_key")
     @classmethod
-    def validate_master_api_key(cls, v: Optional[str]) -> Optional[str]:
+    def validate_master_api_key(cls, v: str | None) -> str | None:
         """Validate master API key security requirements."""
         if v is None:
             return v
@@ -174,22 +209,20 @@ class Settings(BaseSettings):
         # Check minimum length
         if len(v) < 64:
             raise ConfigurationError(
-                "Master API key must be at least 64 characters long",
-                config_key="master_api_key"
+                "Master API key must be at least 64 characters long", config_key="master_api_key"
             )
 
         # Check entropy (minimum 16 unique characters)
         if len(set(v)) < 16:
             raise ConfigurationError(
                 "Master API key must have sufficient entropy (at least 16 unique characters)",
-                config_key="master_api_key"
+                config_key="master_api_key",
             )
 
         # Check format (should start with grak_master_)
         if not v.startswith("grak_master_"):
             raise ConfigurationError(
-                "Master API key must start with 'grak_master_' prefix",
-                config_key="master_api_key"
+                "Master API key must start with 'grak_master_' prefix", config_key="master_api_key"
             )
 
         return v
@@ -327,40 +360,20 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    @field_validator("jwt_secret_key")
-    @classmethod
-    def validate_jwt_secret_key(cls, v: str) -> str:
-        """Validate JWT secret key has sufficient entropy."""
-        if len(v) < 32:
-            raise ConfigurationError(
-                "JWT secret key must be at least 32 characters long",
-                config_key="jwt_secret_key"
-            )
-
-        # Check for sufficient entropy (not all same character, not sequential)
-        if len(set(v)) < 8:
-            raise ConfigurationError(
-                "JWT secret key must have sufficient entropy (at least 8 unique characters)",
-                config_key="jwt_secret_key"
-            )
-
-        return v
-
     @field_validator("base_workspaces_path")
     @classmethod
     def validate_workspace_path(cls, v: str) -> str:
         """Validate workspace path format."""
         if not v or v.strip() == "":
             raise ConfigurationError(
-                "Base workspaces path cannot be empty",
-                config_key="base_workspaces_path"
+                "Base workspaces path cannot be empty", config_key="base_workspaces_path"
             )
 
         # Prevent path traversal in configuration
         if ".." in v or v.startswith("/"):
             raise ConfigurationError(
                 "Base workspaces path cannot contain '..' or start with '/'",
-                config_key="base_workspaces_path"
+                config_key="base_workspaces_path",
             )
 
         return v.strip()

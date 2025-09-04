@@ -11,7 +11,11 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from src.graphrag_api_service.performance.cache_manager import CacheConfig, CacheManager
+from src.graphrag_api_service.performance.cache_manager import (
+    CacheConfig,
+    CacheKeyComponents,
+    CacheManager,
+)
 from src.graphrag_api_service.performance.compression import (
     CompressionConfig,
     PaginationConfig,
@@ -42,51 +46,60 @@ class TestCacheManager:
     async def test_cache_set_and_get(self, cache_manager):
         """Test basic cache set and get operations."""
         # Test setting and getting a value
-        success = await cache_manager.set("test", "key1", {"data": "value1"})
+        components = CacheKeyComponents(namespace="test", identifier="key1")
+        success = await cache_manager.set(components, {"data": "value1"})
         assert success is True
 
-        result = await cache_manager.get("test", "key1")
+        result = await cache_manager.get(components)
         assert result is not None
 
     @pytest.mark.asyncio
     async def test_cache_ttl_expiration(self, cache_manager):
         """Test cache TTL expiration."""
         # Set with short TTL
-        await cache_manager.set("test", "key1", {"data": "value1"}, ttl=1)
+        components = CacheKeyComponents(namespace="test", identifier="key1")
+        await cache_manager.set(components, {"data": "value1"}, ttl=1)
 
         # Should be available immediately
-        result = await cache_manager.get("test", "key1")
+        result = await cache_manager.get(components)
         assert result is not None
 
         # Wait for expiration
         await asyncio.sleep(1.1)
 
-        result = await cache_manager.get("test", "key1")
+        result = await cache_manager.get(components)
         assert result is None
 
     @pytest.mark.asyncio
     async def test_cache_namespace_clearing(self, cache_manager):
         """Test clearing cache by namespace."""
         # Set multiple values in different namespaces
-        await cache_manager.set("ns1", "key1", {"data": "value1"})
-        await cache_manager.set("ns1", "key2", {"data": "value2"})
-        await cache_manager.set("ns2", "key1", {"data": "value3"})
+        components1 = CacheKeyComponents(namespace="ns1", identifier="key1")
+        components2 = CacheKeyComponents(namespace="ns1", identifier="key2")
+        components3 = CacheKeyComponents(namespace="ns2", identifier="key1")
+
+        await cache_manager.set(components1, {"data": "value1"})
+        await cache_manager.set(components2, {"data": "value2"})
+        await cache_manager.set(components3, {"data": "value3"})
 
         # Clear one namespace
         cleared_count = await cache_manager.clear_namespace("ns1")
         assert cleared_count >= 0  # Should clear some entries
 
         # Check that ns2 still has data
-        await cache_manager.get("ns2", "key1")
+        await cache_manager.get(components3)
         # Note: Simple implementation may not preserve across namespaces
 
     @pytest.mark.asyncio
     async def test_cache_metrics(self, cache_manager):
         """Test cache metrics collection."""
         # Perform some operations
-        await cache_manager.set("test", "key1", {"data": "value1"})
-        await cache_manager.get("test", "key1")  # Hit
-        await cache_manager.get("test", "nonexistent")  # Miss
+        components1 = CacheKeyComponents(namespace="test", identifier="key1")
+        components2 = CacheKeyComponents(namespace="test", identifier="nonexistent")
+
+        await cache_manager.set(components1, {"data": "value1"})
+        await cache_manager.get(components1)  # Hit
+        await cache_manager.get(components2)  # Miss
 
         metrics = await cache_manager.get_metrics()
         assert metrics.total_requests >= 2

@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class FieldSelector:
     """Optimizes database queries based on GraphQL field selection."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the field selector."""
         self._field_mappings = {
             # Entity field mappings
@@ -287,7 +287,7 @@ class QueryComplexityAnalyzer:
 class QueryCache:
     """Caches GraphQL query results based on field selection."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the query cache."""
         self._cache: dict[str, Any] = {}
 

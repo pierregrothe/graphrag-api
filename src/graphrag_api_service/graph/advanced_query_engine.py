@@ -3,7 +3,7 @@
 # Author: Pierre Grothé
 # Creation Date: 2025-08-29
 
-"""Advanced query engine for GraphRAG with multi-hop reasoning, temporal queries, and custom scoring."""
+"""Advanced query engine for GraphRAG with multi-hop reasoning, temporal queries, and scoring."""
 
 import logging
 from datetime import datetime

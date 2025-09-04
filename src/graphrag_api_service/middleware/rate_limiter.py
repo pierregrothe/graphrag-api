@@ -117,7 +117,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 class AdvancedRateLimiter:
     """Advanced rate limiter with multiple strategies."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize advanced rate limiter."""
         self.strategies = {
             "fixed_window": self._fixed_window_check,

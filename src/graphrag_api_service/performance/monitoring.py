@@ -57,7 +57,7 @@ class AlertConfig(BaseModel):
 class MetricsStore:
     """Manages storage and retrieval of performance and request metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the MetricsStore."""
         self._metrics_history: list[PerformanceMetrics] = []
         self._request_history: list[RequestMetrics] = []
@@ -135,7 +135,7 @@ class PerformanceMonitor:
             alert_config: Alert configuration
         """
         self.alert_config = alert_config or AlertConfig()
-        self._monitoring_task: asyncio.Task | None = None
+        self._monitoring_task: asyncio.Task[None] | None = None
         self._active_requests: dict[str, float] = {}
         self._lock = asyncio.Lock()
         self._metrics_store = MetricsStore()  # Use the new MetricsStore class
@@ -299,7 +299,8 @@ class PerformanceMonitor:
             await self._check_alerts(metrics)
 
             logger.debug(
-                "Metrics collected - CPU: %.1f%%, Memory: %.1f%%, Requests: %s, Avg Response: %.3fs",
+                "Metrics collected - CPU: %.1f%%, Memory: %.1f%%, Requests: %s, "
+                "Avg Response: %.3fs",
                 cpu_usage,
                 memory.percent,
                 request_count,
@@ -307,8 +308,8 @@ class PerformanceMonitor:
             )
 
         except psutil.Error as e:
-            # Pylint might incorrectly flag psutil.Error as too general, but it is a specific exception
-            # provided by the psutil library for its own errors.
+            # Pylint might incorrectly flag psutil.Error as too general, but it is a
+            # specific exception provided by the psutil library for its own errors.
             logger.error("Failed to collect metrics: %s", e)
 
     async def _check_alerts(self, metrics: PerformanceMetrics) -> None:

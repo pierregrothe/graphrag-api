@@ -11,7 +11,7 @@ from .gemini_provider import GeminiGraphRAGLLM
 from .ollama_provider import OllamaGraphRAGLLM
 
 
-def register_providers():
+def register_providers() -> None:
     """Register all available providers with the factory.
 
     This function should be called during application startup to ensure

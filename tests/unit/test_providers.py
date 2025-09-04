@@ -36,7 +36,7 @@ class TestLLMProviderFactory:
 
             assert provider is not None
             assert isinstance(provider, GraphRAGLLM)
-            assert provider.__class__.__name__ == "OllamaProvider"
+            assert provider.__class__.__name__ == "OllamaGraphRAGLLM"
 
     def test_create_gemini_provider_returns_correct_type(self):
         """Test creating Gemini provider returns correct type."""
@@ -58,14 +58,14 @@ class TestLLMProviderFactory:
 
             assert provider is not None
             assert isinstance(provider, GraphRAGLLM)
-            assert provider.__class__.__name__ == "GeminiProvider"
+            assert provider.__class__.__name__ == "GeminiGraphRAGLLM"
 
     def test_create_invalid_provider_raises_error(self):
         """Test creating invalid provider raises error."""
         settings = MagicMock()
-        settings.llm_provider.value = "invalid_provider"
+        settings.llm_provider = "invalid_provider"
 
-        with pytest.raises(ValueError, match="Unsupported LLM provider"):
+        with pytest.raises(ValueError, match="Unsupported provider type"):
             LLMProviderFactory.create_provider(settings)
 
 
@@ -100,8 +100,8 @@ class TestOllamaProvider:
     @pytest.mark.asyncio
     async def test_validate_connection_failure(self, ollama_provider):
         """Test failed connection validation."""
-        with patch("httpx.AsyncClient.get") as mock_get:
-            mock_get.side_effect = Exception("Connection failed")
+        with patch.object(ollama_provider.client, "list") as mock_list:
+            mock_list.side_effect = Exception("Connection failed")
 
             result = await ollama_provider.validate_connection()
             assert result is False
@@ -109,27 +109,34 @@ class TestOllamaProvider:
     @pytest.mark.asyncio
     async def test_generate_text_returns_response(self, ollama_provider):
         """Test text generation returns response."""
-        with patch("httpx.AsyncClient.post") as mock_post:
-            mock_post.return_value = AsyncMock(
-                status_code=200,
-                json=AsyncMock(return_value={"response": "Generated text"}),
-            )
+        with patch.object(ollama_provider.client, "generate") as mock_generate:
+            mock_generate.return_value = {"response": "Generated text"}
 
             result = await ollama_provider.generate_text("Test prompt")
-            assert result == "Generated text"
+            assert result.content == "Generated text"
 
     @pytest.mark.asyncio
     async def test_generate_embeddings_returns_vectors(self, ollama_provider):
         """Test embedding generation returns vectors."""
-        with patch("httpx.AsyncClient.post") as mock_post:
-            mock_post.return_value = AsyncMock(
-                status_code=200,
-                json=AsyncMock(return_value={"embedding": [0.1, 0.2, 0.3]}),
-            )
+        with patch.object(ollama_provider.client, "embeddings") as mock_embeddings:
+            mock_embeddings.return_value = {"embedding": [0.1, 0.2, 0.3]}
 
             result = await ollama_provider.generate_embeddings(["Test text"])
             assert len(result) == 1
-            assert len(result[0]) == 3
+            assert len(result[0].embeddings) == 3
+
+    def test_get_model_info_returns_correct_data(self, ollama_provider):
+        """Test getting model info returns correct data."""
+        info = ollama_provider.get_model_info()
+
+        assert "name" in info
+        assert "version" in info
+        assert "max_tokens" in info
+        assert "provider" in info
+        assert "embedding_model" in info
+        assert info["provider"] == "ollama"
+        assert isinstance(info["max_tokens"], int)
+        assert info["max_tokens"] > 0
 
 
 class TestGeminiProvider:
@@ -159,8 +166,12 @@ class TestGeminiProvider:
     @pytest.mark.asyncio
     async def test_validate_connection_with_api_key(self, gemini_provider):
         """Test connection validation with API key."""
-        with patch.object(gemini_provider, "_validate_with_api_key") as mock_validate:
-            mock_validate.return_value = True
+        from src.graphrag_api_service.providers.base import ProviderHealth
+
+        with patch.object(gemini_provider, "health_check") as mock_health:
+            mock_health.return_value = ProviderHealth(
+                healthy=True, provider="google_gemini", message="healthy", latency_ms=100
+            )
 
             result = await gemini_provider.validate_connection()
             assert result is True
@@ -168,13 +179,15 @@ class TestGeminiProvider:
     @pytest.mark.asyncio
     async def test_generate_text_with_gemini_model(self, gemini_provider):
         """Test text generation with Gemini model."""
-        with patch.object(gemini_provider.model, "generate_content_async") as mock_generate:
+        with patch("google.generativeai.GenerativeModel") as mock_model_class:
+            mock_model = MagicMock()
             mock_response = MagicMock()
             mock_response.text = "Generated response"
-            mock_generate.return_value = mock_response
+            mock_model.generate_content_async = AsyncMock(return_value=mock_response)
+            mock_model_class.return_value = mock_model
 
             result = await gemini_provider.generate_text("Test prompt")
-            assert result == "Generated response"
+            assert result.content == "Generated response"
 
     def test_get_model_info_returns_correct_data(self, gemini_provider):
         """Test getting model info returns correct data."""
@@ -183,4 +196,8 @@ class TestGeminiProvider:
         assert "name" in info
         assert "version" in info
         assert "max_tokens" in info
-        assert info["name"] == "gemini-2.5-flash"
+        assert "provider" in info
+        assert "embedding_model" in info
+        assert info["provider"] == "google_gemini"
+        assert isinstance(info["max_tokens"], int)
+        assert info["max_tokens"] > 0

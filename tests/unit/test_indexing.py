@@ -153,6 +153,7 @@ class TestIndexingTask:
             last_error=None,
             workspace_path=None,
             config_file_path=None,
+            expires_at=None,
         )
 
         # Create required directories and files
@@ -355,6 +356,7 @@ class TestIndexingManager:
             last_error=None,
             workspace_path=None,
             config_file_path=None,
+            expires_at=None,
         )
 
         request = IndexingJobCreate(workspace_id=workspace.id, priority=5, max_retries=3)

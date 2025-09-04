@@ -31,8 +31,16 @@ class TestWorkspaceManager:
     @pytest.fixture
     def workspace_manager(self):
         """Create a workspace manager instance for testing."""
-        settings = Settings()
-        return WorkspaceManager(settings)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            settings = Settings()
+            manager = WorkspaceManager(settings)
+            # Override the base workspaces path to use temp directory
+            manager.base_workspaces_path = Path(temp_dir) / "workspaces"
+            manager.workspaces_index_file = manager.base_workspaces_path / "workspaces.json"
+            manager.base_workspaces_path.mkdir(exist_ok=True)
+            # Initialize empty workspaces dict
+            manager._workspaces = {}
+            yield manager
 
     @pytest.fixture
     def temp_data_dir(self):

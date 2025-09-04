@@ -7,45 +7,41 @@ authorization failures, suspicious activities, and security violations.
 
 import json
 import logging
-from datetime import datetime
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import Request
-
-from ..exceptions import SecurityError
 
 
 class SecurityLogger:
     """Structured security event logger.
-    
+
     Provides methods for logging security-related events with consistent
     formatting and metadata for security monitoring and analysis.
     """
-    
+
     def __init__(self, logger_name: str = "graphrag.security"):
         self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(logging.INFO)
-        
+
         # Ensure security logs are always written
         if not self.logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
-    
+
     def _log_security_event(
         self,
         event_type: str,
         level: str,
         message: str,
-        request: Optional[Request] = None,
-        user_id: Optional[str] = None,
-        **kwargs
+        request: Request | None = None,
+        user_id: str | None = None,
+        **kwargs: Any,
     ) -> None:
         """Log a structured security event.
-        
+
         Parameters
         ----------
         event_type : str
@@ -64,39 +60,42 @@ class SecurityLogger:
         event_data = {
             "event_type": event_type,
             "message": message,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "user_id": user_id,
-            **kwargs
+            **kwargs,
         }
-        
+
         # Extract request metadata if available
         if request:
-            event_data.update({
-                "ip_address": getattr(request.client, 'host', None),
-                "user_agent": request.headers.get("user-agent"),
-                "method": request.method,
-                "path": request.url.path,
-                "query_params": dict(request.query_params),
-                "headers": {
-                    key: value for key, value in request.headers.items()
-                    if key.lower() not in ['authorization', 'cookie', 'x-api-key']
+            event_data.update(
+                {
+                    "ip_address": getattr(request.client, "host", None),
+                    "user_agent": request.headers.get("user-agent"),
+                    "method": request.method,
+                    "path": request.url.path,
+                    "query_params": dict(request.query_params),
+                    "headers": {
+                        key: value
+                        for key, value in request.headers.items()
+                        if key.lower() not in ["authorization", "cookie", "x-api-key"]
+                    },
                 }
-            })
-        
+            )
+
         # Log with appropriate level
         log_method = getattr(self.logger, level.lower(), self.logger.info)
         log_method(json.dumps(event_data, default=str))
-    
+
     def authentication_attempt(
         self,
         success: bool,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
         method: str = "jwt",
-        request: Optional[Request] = None,
-        failure_reason: Optional[str] = None
+        request: Request | None = None,
+        failure_reason: str | None = None,
     ) -> None:
         """Log authentication attempt.
-        
+
         Parameters
         ----------
         success : bool
@@ -112,7 +111,7 @@ class SecurityLogger:
         """
         level = "info" if success else "warning"
         message = f"Authentication {'succeeded' if success else 'failed'}"
-        
+
         self._log_security_event(
             event_type="authentication",
             level=level,
@@ -121,18 +120,18 @@ class SecurityLogger:
             user_id=user_id,
             success=success,
             method=method,
-            failure_reason=failure_reason
+            failure_reason=failure_reason,
         )
-    
+
     def authorization_failure(
         self,
         user_id: str,
         required_permission: str,
-        resource_id: Optional[str] = None,
-        request: Optional[Request] = None
+        resource_id: str | None = None,
+        request: Request | None = None,
     ) -> None:
         """Log authorization failure.
-        
+
         Parameters
         ----------
         user_id : str
@@ -145,7 +144,7 @@ class SecurityLogger:
             Request object
         """
         message = f"Authorization failed: user lacks '{required_permission}' permission"
-        
+
         self._log_security_event(
             event_type="authorization",
             level="warning",
@@ -153,20 +152,20 @@ class SecurityLogger:
             request=request,
             user_id=user_id,
             required_permission=required_permission,
-            resource_id=resource_id
+            resource_id=resource_id,
         )
-    
+
     def security_violation(
         self,
         violation_type: str,
         description: str,
-        request: Optional[Request] = None,
-        user_id: Optional[str] = None,
+        request: Request | None = None,
+        user_id: str | None = None,
         severity: str = "high",
-        **details
+        **details: Any,
     ) -> None:
         """Log security violation.
-        
+
         Parameters
         ----------
         violation_type : str
@@ -184,7 +183,7 @@ class SecurityLogger:
         """
         level = "critical" if severity == "critical" else "error"
         message = f"Security violation: {description}"
-        
+
         self._log_security_event(
             event_type="security_violation",
             level=level,
@@ -193,17 +192,14 @@ class SecurityLogger:
             user_id=user_id,
             violation_type=violation_type,
             severity=severity,
-            **details
+            **details,
         )
-    
+
     def path_traversal_attempt(
-        self,
-        attempted_path: str,
-        request: Optional[Request] = None,
-        user_id: Optional[str] = None
+        self, attempted_path: str, request: Request | None = None, user_id: str | None = None
     ) -> None:
         """Log path traversal attempt.
-        
+
         Parameters
         ----------
         attempted_path : str
@@ -219,19 +215,19 @@ class SecurityLogger:
             request=request,
             user_id=user_id,
             severity="high",
-            attempted_path=attempted_path
+            attempted_path=attempted_path,
         )
-    
+
     def suspicious_activity(
         self,
         activity_type: str,
         description: str,
-        request: Optional[Request] = None,
-        user_id: Optional[str] = None,
-        **details
+        request: Request | None = None,
+        user_id: str | None = None,
+        **details: Any,
     ) -> None:
         """Log suspicious activity.
-        
+
         Parameters
         ----------
         activity_type : str
@@ -252,19 +248,19 @@ class SecurityLogger:
             request=request,
             user_id=user_id,
             activity_type=activity_type,
-            **details
+            **details,
         )
-    
+
     def rate_limit_exceeded(
         self,
         limit_type: str,
-        request: Optional[Request] = None,
-        user_id: Optional[str] = None,
-        current_rate: Optional[float] = None,
-        limit: Optional[float] = None
+        request: Request | None = None,
+        user_id: str | None = None,
+        current_rate: float | None = None,
+        limit: float | None = None,
     ) -> None:
         """Log rate limit exceeded event.
-        
+
         Parameters
         ----------
         limit_type : str
@@ -279,7 +275,7 @@ class SecurityLogger:
             Rate limit threshold
         """
         message = f"Rate limit exceeded: {limit_type}"
-        
+
         self._log_security_event(
             event_type="rate_limit",
             level="warning",
@@ -288,18 +284,18 @@ class SecurityLogger:
             user_id=user_id,
             limit_type=limit_type,
             current_rate=current_rate,
-            limit=limit
+            limit=limit,
         )
-    
+
     def api_key_usage(
         self,
         api_key_id: str,
         success: bool,
-        request: Optional[Request] = None,
-        permissions_used: Optional[list] = None
+        request: Request | None = None,
+        permissions_used: list | None = None,
     ) -> None:
         """Log API key usage.
-        
+
         Parameters
         ----------
         api_key_id : str
@@ -313,7 +309,7 @@ class SecurityLogger:
         """
         level = "info" if success else "warning"
         message = f"API key {'used successfully' if success else 'authentication failed'}"
-        
+
         self._log_security_event(
             event_type="api_key_usage",
             level=level,
@@ -321,19 +317,19 @@ class SecurityLogger:
             request=request,
             api_key_id=api_key_id,
             success=success,
-            permissions_used=permissions_used
+            permissions_used=permissions_used,
         )
-    
+
     def workspace_access(
         self,
         workspace_id: str,
         user_id: str,
         action: str,
         success: bool,
-        request: Optional[Request] = None
+        request: Request | None = None,
     ) -> None:
         """Log workspace access attempt.
-        
+
         Parameters
         ----------
         workspace_id : str
@@ -349,7 +345,7 @@ class SecurityLogger:
         """
         level = "info" if success else "warning"
         message = f"Workspace access {'granted' if success else 'denied'}: {action}"
-        
+
         self._log_security_event(
             event_type="workspace_access",
             level=level,
@@ -358,7 +354,7 @@ class SecurityLogger:
             user_id=user_id,
             workspace_id=workspace_id,
             action=action,
-            success=success
+            success=success,
         )
 
 
@@ -368,7 +364,7 @@ security_logger = SecurityLogger()
 
 def get_security_logger() -> SecurityLogger:
     """Get the global security logger instance.
-    
+
     Returns
     -------
     SecurityLogger

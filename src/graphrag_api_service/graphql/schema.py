@@ -21,11 +21,11 @@ schema = strawberry.Schema(query=Query, mutation=Mutation, subscription=Subscrip
 
 
 def create_graphql_router(
-    graph_operations=None,
-    workspace_manager=None,
-    system_operations=None,
-    graphrag_integration=None,
-    indexing_manager=None,
+    graph_operations: Any = None,
+    workspace_manager: Any = None,
+    system_operations: Any = None,
+    graphrag_integration: Any = None,
+    indexing_manager: Any = None,
 ) -> GraphQLRouter[dict[str, Any], None]:
     """Create a GraphQL router with context.
 
@@ -40,7 +40,7 @@ def create_graphql_router(
         GraphQL router
     """
 
-    async def get_context():
+    def get_context() -> dict[str, Any]:
         """Get context for GraphQL resolvers."""
         # Create DataLoaders for this request
         dataloaders = {}

@@ -108,6 +108,14 @@ class GraphRAGLLM(ABC):
             ProviderHealth object with status and details
         """
 
+    @abstractmethod
+    def get_model_info(self) -> dict[str, Any]:
+        """Get information about the current model configuration.
+
+        Returns:
+            Dictionary containing model information including name, version, max_tokens, etc.
+        """
+
     async def validate_connection(self) -> bool:
         """Validate that the provider connection is working.
 

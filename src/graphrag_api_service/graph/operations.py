@@ -326,7 +326,7 @@ class GraphOperations:
             logger.error(f"Community retrieval failed: {e}")
             return []
 
-    async def query_communities(self, data_path: str, **kwargs) -> dict[str, Any]:
+    async def query_communities(self, data_path: str, **kwargs: Any) -> dict[str, Any]:
         """Query communities from the knowledge graph.
 
         Args:
@@ -427,7 +427,7 @@ class GraphOperations:
                 max_edges = total_entities * (total_entities - 1)
                 graph_density = (2.0 * total_relationships) / max_edges
 
-            # Estimate connected components (simplified - actual calculation would require graph analysis)
+            # Estimate connected components (simplified - actual calculation would require analysis)
             connected_components = 1 if total_relationships > 0 else total_entities
 
             return {

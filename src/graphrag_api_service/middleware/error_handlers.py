@@ -10,6 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from ..exceptions import AuthenticationError, ValidationError
 from ..logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -41,7 +42,7 @@ def setup_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(
+    async def request_validation_exception_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         """Handle request validation errors.
@@ -89,5 +90,57 @@ def setup_error_handlers(app: FastAPI) -> None:
             content={
                 "error": "Internal server error",
                 "message": "An unexpected error occurred. Please try again later.",
+            },
+        )
+
+    @app.exception_handler(AuthenticationError)
+    async def authentication_exception_handler(
+        request: Request, exc: AuthenticationError
+    ) -> JSONResponse:
+        """Handle authentication errors with comprehensive security logging.
+
+        This handler was enhanced in 2025 to provide proper HTTP status code mapping
+        for authentication failures, ensuring consistent API responses and security
+        event logging for audit trails.
+
+        Security Features:
+        - Converts internal AuthenticationError to standard HTTP 401 responses
+        - Logs authentication failures for security monitoring
+        - Prevents information leakage through standardized error messages
+        - Integrates with security logging system for audit compliance
+
+        Args:
+            request: FastAPI request object containing client information
+            exc: Authentication exception with failure details
+
+        Returns:
+            JSON response with 401 status code and standardized error format
+        """
+        logger.warning(f"Authentication error: {str(exc)}")
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error": "Authentication failed",
+                "message": str(exc),
+            },
+        )
+
+    @app.exception_handler(ValidationError)
+    async def validation_exception_handler(request: Request, exc: ValidationError) -> JSONResponse:
+        """Handle validation errors.
+
+        Args:
+            request: FastAPI request object
+            exc: Validation exception
+
+        Returns:
+            JSON response with 400 status code
+        """
+        logger.warning(f"Validation error: {str(exc)}")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "Validation failed",
+                "message": str(exc),
             },
         )

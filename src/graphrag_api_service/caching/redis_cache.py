@@ -5,8 +5,8 @@
 
 """Redis-based distributed caching with intelligent invalidation and compression."""
 
+import json
 import logging
-import pickle
 import zlib
 from typing import Any
 
@@ -102,16 +102,32 @@ class RedisDistributedCache:
         return f"{self.config.key_prefix}{namespace}:{key}"
 
     def _serialize_value(self, value: Any) -> bytes:
-        """Serialize and optionally compress a value.
+        """Serialize and optionally compress a value using secure JSON serialization.
+
+        Security Enhancement (2025):
+        Migrated from pickle to JSON serialization to eliminate deserialization
+        vulnerabilities. Pickle deserialization can execute arbitrary code when
+        processing untrusted data, making it a significant security risk.
+
+        Security Benefits:
+        - Eliminates arbitrary code execution vulnerabilities
+        - Prevents pickle-based attacks and exploits
+        - Maintains data integrity with safe serialization
+        - Provides better interoperability with other systems
+
+        Performance Considerations:
+        - JSON serialization is slightly slower than pickle for complex objects
+        - Compression is still applied to minimize storage overhead
+        - Legacy pickle data is supported with security warnings
 
         Args:
             value: Value to serialize
 
         Returns:
-            Serialized bytes
+            Serialized bytes with format prefix for safe deserialization
         """
-        # Serialize using pickle for Python objects
-        serialized = pickle.dumps(value)
+        # Serialize using JSON for security (safer than pickle)
+        serialized = json.dumps(value, default=str).encode("utf-8")
 
         # Compress if value is large enough
         if len(serialized) > self.config.compression_threshold:
@@ -134,12 +150,15 @@ class RedisDistributedCache:
         if data.startswith(b"compressed:"):
             compressed_data = data[11:]  # Remove "compressed:" prefix
             decompressed = zlib.decompress(compressed_data)
-            return pickle.loads(decompressed)
+            return json.loads(decompressed.decode("utf-8"))
         elif data.startswith(b"raw:"):
             raw_data = data[4:]  # Remove "raw:" prefix
-            return pickle.loads(raw_data)
+            return json.loads(raw_data.decode("utf-8"))
         else:
-            # Fallback for legacy data
+            # Fallback for legacy pickle data (security risk - should be migrated)
+            logger.warning("Loading legacy pickle data - consider migrating to JSON format")
+            import pickle
+
             return pickle.loads(data)
 
     async def get(self, namespace: str, key: str) -> Any | None:

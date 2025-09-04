@@ -441,7 +441,7 @@ class SystemOperations:
                 "validated_config": None,
             }
 
-    def _record_operation(self, operation_type: str, details: dict[str, Any] | None = None):
+    def _record_operation(self, operation_type: str, details: dict[str, Any] | None = None) -> None:
         """Record an operation in history.
 
         Args:
@@ -459,7 +459,7 @@ class SystemOperations:
         if len(self.operation_history) > 100:
             self.operation_history = self.operation_history[-100:]
 
-    def update_metrics(self, metric_type: str, increment: int = 1):
+    def update_metrics(self, metric_type: str, increment: int = 1) -> None:
         """Update system metrics.
 
         Args:

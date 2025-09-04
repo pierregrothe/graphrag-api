@@ -5,14 +5,19 @@
 
 """Database models for GraphRAG API Service - SQLite implementation."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import DeclarativeBase, relationship
+
+
+def utc_now() -> datetime:
+    """Helper function for SQLAlchemy default datetime values."""
+    return datetime.now(UTC)
 
 
 class Base(DeclarativeBase):
@@ -50,8 +55,8 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     roles = relationship("Role", secondary=user_roles, back_populates="users")
@@ -68,8 +73,8 @@ class Role(Base):
     name = Column(String(100), unique=True, nullable=False, index=True)
     description = Column(Text)
     permissions = Column(JSON, default=list)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     users = relationship("User", secondary=user_roles, back_populates="roles")
@@ -83,7 +88,7 @@ class UserRole(Base):
     id = Column(PostgresUUID(as_uuid=True), primary_key=True, default=uuid4)
     user_id = Column(PostgresUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     role_id = Column(PostgresUUID(as_uuid=True), ForeignKey("roles.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class ApiKey(Base):
@@ -99,7 +104,7 @@ class ApiKey(Base):
     rate_limit = Column(Integer, default=1000)
     expires_at = Column(DateTime, nullable=True)
     last_used_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     revoked_at = Column(DateTime, nullable=True)
 
     # Relationships
@@ -122,8 +127,8 @@ class Workspace(Base):
     config_file_path = Column(String(500))
     workspace_metadata = Column(JSON, default=dict)
     last_error = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     deleted_at = Column(DateTime, nullable=True)
 
     # Relationships
@@ -146,8 +151,8 @@ class IndexingJob(Base):
     error_message = Column(Text, nullable=True)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     job_metadata = Column(JSON, default=dict)
 
     # Relationships
@@ -167,7 +172,7 @@ class AuditLog(Base):
     details = Column(JSON, default=dict)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utc_now, index=True)
 
     # Relationships
     user = relationship("User", back_populates="audit_logs")
@@ -185,8 +190,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     roles: list[str] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RoleResponse(BaseModel):
@@ -198,8 +202,7 @@ class RoleResponse(BaseModel):
     permissions: list[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WorkspaceResponse(BaseModel):
@@ -213,5 +216,4 @@ class WorkspaceResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -291,3 +291,25 @@ class GeminiGraphRAGLLM(GraphRAGLLM):
                     "error": str(e),
                 },
             )
+
+    def get_model_info(self) -> dict[str, Any]:
+        """Get information about the current Gemini model configuration.
+
+        Returns:
+            Dictionary containing model information
+        """
+        return {
+            "name": self.llm_model,
+            "version": "2.5-flash" if "2.5" in self.llm_model else "1.5",
+            "max_tokens": 8192,  # Gemini 2.5 Flash max output tokens
+            "provider": self.provider_name,
+            "embedding_model": self.embedding_model,
+            "embedding_dimensions": 768,  # text-embedding-004 dimensions
+            "supports_streaming": True,
+            "supports_function_calling": True,
+            "context_window": 1048576,  # Gemini 2.5 Flash context window
+            "api_key_configured": bool(self.api_key),
+            "project_id": self.project_id,
+            "location": self.location,
+            "use_vertex_ai": self.use_vertex_ai,
+        }

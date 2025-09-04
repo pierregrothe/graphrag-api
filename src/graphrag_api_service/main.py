@@ -22,7 +22,10 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
-        description="A FastAPI-based API for the microsoft/graphrag library with REST API and GraphQL interfaces",
+        description=(
+            "A FastAPI-based API for the microsoft/graphrag library with "
+            "REST API and GraphQL interfaces"
+        ),
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
@@ -38,6 +41,7 @@ def create_app() -> FastAPI:
     setup_error_handlers(app)
 
     # Setup route handlers with dependency injection
+    from .routes.auth import router as auth_router
     from .routes.graph import router as graph_router
     from .routes.graphrag import router as graphrag_router
     from .routes.indexing import router as indexing_router
@@ -45,13 +49,14 @@ def create_app() -> FastAPI:
     from .routes.workspace import router as workspace_router
 
     # Register all routers with dependency injection
+    app.include_router(auth_router)  # Authentication routes
     app.include_router(workspace_router)
     app.include_router(graphrag_router)
     app.include_router(graph_router)
     app.include_router(system_router)  # Now includes health endpoints
     app.include_router(indexing_router)
 
-    # Setup GraphQL router
+    # Setup GraphQL router with initialized container
     from .graphql import create_graphql_router
 
     graphql_router = create_graphql_router(

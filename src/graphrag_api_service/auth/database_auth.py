@@ -7,6 +7,7 @@
 
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 class DatabaseAuthenticationService:
     """Database-backed authentication service."""
 
-    def __init__(self, jwt_config: JWTConfig, session_factory):
+    def __init__(self, jwt_config: JWTConfig, session_factory: Any) -> None:
         """Initialize database authentication service.
 
         Args:

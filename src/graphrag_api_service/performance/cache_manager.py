@@ -77,7 +77,7 @@ class CacheManager:
         self._access_order: list[str] = []
         self._lock = asyncio.Lock()
         self._metrics = CacheMetrics()
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._response_times: list[float] = []
 
     async def start(self) -> None:

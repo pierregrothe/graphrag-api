@@ -7,15 +7,18 @@
 
 import time
 from collections.abc import Callable
+from typing import Any
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 
 from ..logging_config import get_logger
 
 logger = get_logger(__name__)
 
 
-def setup_auth_middleware(app: FastAPI, security_middleware, performance_middleware) -> None:
+def setup_auth_middleware(
+    app: FastAPI, security_middleware: Any, performance_middleware: Any
+) -> None:
     """Set up authentication and performance middleware for the FastAPI application.
 
     Args:
@@ -41,13 +44,16 @@ def setup_auth_middleware(app: FastAPI, security_middleware, performance_middlew
         try:
             # Apply security checks if middleware is available
             if security_middleware:
-                security_result = await security_middleware.process_request(request)
-                if security_result.get("blocked"):
+                try:
+                    await security_middleware.process_request(request)
+                except HTTPException as security_error:
+                    # Security middleware raises HTTPException for blocked requests
                     from fastapi.responses import JSONResponse
 
                     return JSONResponse(
-                        status_code=security_result.get("status_code", 403),
-                        content={"error": security_result.get("message", "Access denied")},
+                        status_code=security_error.status_code,
+                        content={"error": security_error.detail},
+                        headers=getattr(security_error, "headers", None),
                     )
 
             # Process the request
@@ -68,9 +74,7 @@ def setup_auth_middleware(app: FastAPI, security_middleware, performance_middlew
 
             # Apply security headers if available
             if security_middleware:
-                security_headers = security_middleware.get_security_headers()
-                for header_name, header_value in security_headers.items():
-                    response.headers[header_name] = header_value
+                security_middleware.add_security_headers(response)
 
             return response  # type: ignore[no-any-return]
 

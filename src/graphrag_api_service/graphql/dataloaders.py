@@ -74,7 +74,7 @@ class DataLoader:
         """
         return await asyncio.gather(*[self.load(key) for key in keys])
 
-    async def _dispatch_batch(self):
+    async def _dispatch_batch(self) -> None:
         """Dispatch the current batch for loading."""
         # Wait a tick to allow more items to be added to the batch
         await asyncio.sleep(0)
@@ -109,7 +109,7 @@ class DataLoader:
                 if key in current_promises:
                     current_promises[key].set_exception(e)
 
-    def clear(self, key: str | None = None):
+    def clear(self, key: str | None = None) -> None:
         """Clear cache.
 
         Args:

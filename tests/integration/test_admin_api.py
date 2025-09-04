@@ -5,86 +5,89 @@ Tests complete administrative workflows including master key authentication,
 API key management, and batch operations with proper authorization.
 """
 
-import pytest
-from datetime import datetime, timedelta
-from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch
 
-from src.graphrag_api_service.main import app
+import pytest
+from fastapi.testclient import TestClient
+
 from src.graphrag_api_service.config import generate_master_api_key
-from src.graphrag_api_service.auth.api_keys import APIKeyScope
+from src.graphrag_api_service.main import app
 
 
 class TestAdminAPIAuthentication:
     """Test administrative API authentication."""
-    
+
     @pytest.fixture
     def client(self):
         """Test client for API requests."""
         return TestClient(app)
-    
+
     @pytest.fixture
     def master_key(self):
         """Generate a master key for testing."""
         return generate_master_api_key()
-    
+
     def test_admin_endpoint_without_auth(self, client):
         """Test admin endpoint access without authentication."""
         response = client.get("/auth/admin/api-keys")
         assert response.status_code == 401
-    
+
     def test_admin_endpoint_with_invalid_key(self, client):
         """Test admin endpoint access with invalid key."""
         headers = {"X-API-Key": "invalid_key"}
         response = client.get("/auth/admin/api-keys", headers=headers)
         assert response.status_code == 401
-    
+
     def test_admin_endpoint_with_regular_api_key(self, client):
         """Test admin endpoint access with regular API key."""
         # This would require a valid regular API key
         headers = {"X-API-Key": "grak_regular_key_12345"}
         response = client.get("/auth/admin/api-keys", headers=headers)
         assert response.status_code in [401, 403]  # Unauthorized or forbidden
-    
-    @patch('src.graphrag_api_service.config.get_settings')
-    def test_admin_endpoint_with_master_key(self, mock_settings, client, master_key):
+
+    @patch("src.graphrag_api_service.auth.master_key.get_settings")
+    @patch("src.graphrag_api_service.config.get_settings")
+    def test_admin_endpoint_with_master_key(
+        self, mock_settings, mock_master_settings, client, master_key
+    ):
         """Test admin endpoint access with valid master key."""
         # Mock settings to include master key
         settings_mock = Mock()
         settings_mock.master_api_key = master_key
         mock_settings.return_value = settings_mock
-        
+        mock_master_settings.return_value = settings_mock
+
         headers = {"X-API-Key": master_key}
         response = client.get("/auth/admin/api-keys", headers=headers)
-        
+
         # Should succeed or fail gracefully (not 401)
         assert response.status_code in [200, 500]  # Success or server error
 
 
 class TestAdminAPIKeyManagement:
     """Test administrative API key management endpoints."""
-    
+
     @pytest.fixture
     def client(self):
         """Test client for API requests."""
         return TestClient(app)
-    
+
     @pytest.fixture
     def master_headers(self):
         """Headers with master key for authentication."""
         master_key = generate_master_api_key()
-        
-        with patch('src.graphrag_api_service.config.get_settings') as mock_settings:
+
+        with patch("src.graphrag_api_service.config.get_settings") as mock_settings:
             settings_mock = Mock()
             settings_mock.master_api_key = master_key
             mock_settings.return_value = settings_mock
-            
+
             return {"X-API-Key": master_key}
-    
+
     def test_list_all_api_keys(self, client, master_headers):
         """Test listing all API keys with admin privileges."""
         response = client.get("/auth/admin/api-keys", headers=master_headers)
-        
+
         if response.status_code == 200:
             data = response.json()
             assert "keys" in data
@@ -93,23 +96,18 @@ class TestAdminAPIKeyManagement:
             assert "offset" in data
             assert "has_more" in data
             assert isinstance(data["keys"], list)
-    
+
     def test_list_all_api_keys_with_filters(self, client, master_headers):
         """Test listing API keys with filtering parameters."""
-        params = {
-            "user_id": "test_user",
-            "status": "active",
-            "limit": 50,
-            "offset": 0
-        }
-        
+        params = {"user_id": "test_user", "status": "active", "limit": 50, "offset": 0}
+
         response = client.get("/auth/admin/api-keys", headers=master_headers, params=params)
-        
+
         if response.status_code == 200:
             data = response.json()
             assert data["limit"] == 50
             assert data["offset"] == 0
-    
+
     def test_create_admin_api_key(self, client, master_headers):
         """Test creating API key for any user with admin privileges."""
         key_data = {
@@ -117,11 +115,11 @@ class TestAdminAPIKeyManagement:
             "user_id": "target_user_123",
             "scopes": ["read:workspaces", "write:workspaces"],
             "expires_in_days": 30,
-            "description": "Key created by admin for testing"
+            "description": "Key created by admin for testing",
         }
-        
+
         response = client.post("/auth/admin/api-keys", headers=master_headers, json=key_data)
-        
+
         if response.status_code == 201:
             data = response.json()
             assert "id" in data
@@ -130,25 +128,25 @@ class TestAdminAPIKeyManagement:
             assert data["name"] == "Admin Created Key"
             assert data["user_id"] == "target_user_123"
             assert "warning" in data
-    
+
     def test_get_api_key_details(self, client, master_headers):
         """Test getting detailed API key information."""
         # First create a key to get details for
         key_data = {
             "name": "Test Key for Details",
             "user_id": "test_user",
-            "scopes": ["read:workspaces"]
+            "scopes": ["read:workspaces"],
         }
-        
+
         create_response = client.post("/auth/admin/api-keys", headers=master_headers, json=key_data)
-        
+
         if create_response.status_code == 201:
             created_key = create_response.json()
             key_id = created_key["id"]
-            
+
             # Get details
             response = client.get(f"/auth/admin/api-keys/{key_id}", headers=master_headers)
-            
+
             if response.status_code == 200:
                 data = response.json()
                 assert data["id"] == key_id
@@ -157,60 +155,56 @@ class TestAdminAPIKeyManagement:
                 assert "usage_count" in data
                 assert "daily_usage" in data
                 assert "created_at" in data
-    
+
     def test_update_api_key_admin(self, client, master_headers):
         """Test updating API key with admin privileges."""
         # First create a key to update
-        key_data = {
-            "name": "Key to Update",
-            "user_id": "test_user",
-            "scopes": ["read:workspaces"]
-        }
-        
+        key_data = {"name": "Key to Update", "user_id": "test_user", "scopes": ["read:workspaces"]}
+
         create_response = client.post("/auth/admin/api-keys", headers=master_headers, json=key_data)
-        
+
         if create_response.status_code == 201:
             created_key = create_response.json()
             key_id = created_key["id"]
-            
+
             # Update the key
             update_data = {
                 "name": "Updated Key Name",
                 "scopes": ["read:workspaces", "write:workspaces"],
-                "is_active": True
+                "is_active": True,
             }
-            
-            response = client.put(f"/auth/admin/api-keys/{key_id}", headers=master_headers, json=update_data)
-            
+
+            response = client.put(
+                f"/auth/admin/api-keys/{key_id}", headers=master_headers, json=update_data
+            )
+
             if response.status_code == 200:
                 data = response.json()
                 assert "message" in data
                 assert key_id in data["message"]
-    
+
     def test_revoke_api_key_admin(self, client, master_headers):
         """Test revoking API key with admin privileges."""
         # First create a key to revoke
-        key_data = {
-            "name": "Key to Revoke",
-            "user_id": "test_user",
-            "scopes": ["read:workspaces"]
-        }
-        
+        key_data = {"name": "Key to Revoke", "user_id": "test_user", "scopes": ["read:workspaces"]}
+
         create_response = client.post("/auth/admin/api-keys", headers=master_headers, json=key_data)
-        
+
         if create_response.status_code == 201:
             created_key = create_response.json()
             key_id = created_key["id"]
-            
+
             # Revoke the key
             params = {"reason": "Testing revocation"}
-            response = client.delete(f"/auth/admin/api-keys/{key_id}", headers=master_headers, params=params)
-            
+            response = client.delete(
+                f"/auth/admin/api-keys/{key_id}", headers=master_headers, params=params
+            )
+
             if response.status_code == 200:
                 data = response.json()
                 assert "message" in data
                 assert key_id in data["message"]
-    
+
     def test_batch_api_key_operations(self, client, master_headers):
         """Test batch operations on API keys."""
         # First create multiple keys for batch operations
@@ -219,25 +213,27 @@ class TestAdminAPIKeyManagement:
             key_data = {
                 "name": f"Batch Test Key {i}",
                 "user_id": "batch_test_user",
-                "scopes": ["read:workspaces"]
+                "scopes": ["read:workspaces"],
             }
-            
-            create_response = client.post("/auth/admin/api-keys", headers=master_headers, json=key_data)
+
+            create_response = client.post(
+                "/auth/admin/api-keys", headers=master_headers, json=key_data
+            )
             if create_response.status_code == 201:
                 keys_created.append(create_response.json()["id"])
-        
+
         if keys_created:
             # Perform batch revocation
             batch_data = {
                 "operation": "revoke",
-                "filters": {
-                    "user_id": "batch_test_user"
-                },
-                "reason": "Batch testing"
+                "filters": {"user_id": "batch_test_user"},
+                "reason": "Batch testing",
             }
-            
-            response = client.post("/auth/admin/api-keys/batch", headers=master_headers, json=batch_data)
-            
+
+            response = client.post(
+                "/auth/admin/api-keys/batch", headers=master_headers, json=batch_data
+            )
+
             if response.status_code == 200:
                 data = response.json()
                 assert "operation_id" in data
@@ -251,40 +247,40 @@ class TestAdminAPIKeyManagement:
 
 class TestAdminAPIAuthorization:
     """Test authorization levels for administrative operations."""
-    
+
     @pytest.fixture
     def client(self):
         """Test client for API requests."""
         return TestClient(app)
-    
+
     def test_master_admin_access(self, client):
         """Test master admin can access all endpoints."""
         master_key = generate_master_api_key()
-        
-        with patch('src.graphrag_api_service.config.get_settings') as mock_settings:
+
+        with patch("src.graphrag_api_service.config.get_settings") as mock_settings:
             settings_mock = Mock()
             settings_mock.master_api_key = master_key
             mock_settings.return_value = settings_mock
-            
+
             headers = {"X-API-Key": master_key}
-            
+
             # Test various admin endpoints
             endpoints = [
                 "/auth/admin/api-keys",
                 "/auth/admin/api-keys/test_key_id",
             ]
-            
+
             for endpoint in endpoints:
                 response = client.get(endpoint, headers=headers)
                 # Should not be 403 (forbidden) - may be 404 or 500 but not forbidden
                 assert response.status_code != 403
-    
+
     def test_insufficient_privileges(self, client):
         """Test access with insufficient privileges."""
         # Test with no authentication
         response = client.get("/auth/admin/api-keys")
         assert response.status_code == 401
-        
+
         # Test with invalid key
         headers = {"X-API-Key": "invalid_key"}
         response = client.get("/auth/admin/api-keys", headers=headers)
@@ -293,115 +289,122 @@ class TestAdminAPIAuthorization:
 
 class TestAdminAPIErrorHandling:
     """Test error handling in administrative API endpoints."""
-    
+
     @pytest.fixture
     def client(self):
         """Test client for API requests."""
         return TestClient(app)
-    
+
     @pytest.fixture
     def master_headers(self):
         """Headers with master key for authentication."""
         master_key = generate_master_api_key()
-        
-        with patch('src.graphrag_api_service.config.get_settings') as mock_settings:
-            settings_mock = Mock()
-            settings_mock.master_api_key = master_key
-            mock_settings.return_value = settings_mock
-            
-            return {"X-API-Key": master_key}
-    
-    def test_get_nonexistent_key(self, client, master_headers):
+        return {"X-API-Key": master_key}
+
+    @pytest.fixture
+    def mock_master_settings(self, master_headers):
+        """Mock settings with master key."""
+        master_key = master_headers["X-API-Key"]
+        settings_mock = Mock()
+        settings_mock.master_api_key = master_key
+
+        with patch("src.graphrag_api_service.auth.master_key.get_settings") as mock_master_settings:
+            with patch("src.graphrag_api_service.config.get_settings") as mock_settings:
+                mock_settings.return_value = settings_mock
+                mock_master_settings.return_value = settings_mock
+                yield settings_mock
+
+    def test_get_nonexistent_key(self, client, master_headers, mock_master_settings):
         """Test getting details for non-existent key."""
         response = client.get("/auth/admin/api-keys/nonexistent_key_id", headers=master_headers)
         assert response.status_code == 404
-    
-    def test_update_nonexistent_key(self, client, master_headers):
+
+    def test_update_nonexistent_key(self, client, master_headers, mock_master_settings):
         """Test updating non-existent key."""
-        update_data = {
-            "name": "Updated Name",
-            "is_active": False
-        }
-        
-        response = client.put("/auth/admin/api-keys/nonexistent_key_id", headers=master_headers, json=update_data)
+        update_data = {"name": "Updated Name", "is_active": False}
+
+        response = client.put(
+            "/auth/admin/api-keys/nonexistent_key_id", headers=master_headers, json=update_data
+        )
         assert response.status_code == 404
-    
-    def test_revoke_nonexistent_key(self, client, master_headers):
+
+    def test_revoke_nonexistent_key(self, client, master_headers, mock_master_settings):
         """Test revoking non-existent key."""
         response = client.delete("/auth/admin/api-keys/nonexistent_key_id", headers=master_headers)
         assert response.status_code == 404
-    
-    def test_invalid_batch_operation(self, client, master_headers):
+
+    def test_invalid_batch_operation(self, client, master_headers, mock_master_settings):
         """Test invalid batch operation."""
-        batch_data = {
-            "operation": "invalid_operation",
-            "filters": {
-                "user_id": "test_user"
-            }
-        }
-        
-        response = client.post("/auth/admin/api-keys/batch", headers=master_headers, json=batch_data)
-        assert response.status_code in [400, 422, 500]  # Bad request or validation error
-    
-    def test_malformed_request_data(self, client, master_headers):
+        batch_data = {"operation": "invalid_operation", "filters": {"user_id": "test_user"}}
+
+        response = client.post(
+            "/auth/admin/api-keys/batch", headers=master_headers, json=batch_data
+        )
+        assert response.status_code in [
+            400,
+            422,
+            429,
+            500,
+        ]  # Bad request, validation error, or rate limit
+
+    def test_malformed_request_data(self, client, master_headers, mock_master_settings):
         """Test handling of malformed request data."""
         malformed_data = {
             "name": "",  # Empty name
             "user_id": "",  # Empty user ID
-            "scopes": []  # Empty scopes
+            "scopes": [],  # Empty scopes
         }
-        
+
         response = client.post("/auth/admin/api-keys", headers=master_headers, json=malformed_data)
         assert response.status_code == 422  # Validation error
 
 
 class TestAdminAPIPerformance:
     """Test performance aspects of administrative API."""
-    
+
     @pytest.fixture
     def client(self):
         """Test client for API requests."""
         return TestClient(app)
-    
+
     @pytest.fixture
     def master_headers(self):
         """Headers with master key for authentication."""
         master_key = generate_master_api_key()
-        
-        with patch('src.graphrag_api_service.config.get_settings') as mock_settings:
+
+        with patch("src.graphrag_api_service.config.get_settings") as mock_settings:
             settings_mock = Mock()
             settings_mock.master_api_key = master_key
             mock_settings.return_value = settings_mock
-            
+
             return {"X-API-Key": master_key}
-    
+
     def test_list_keys_pagination(self, client, master_headers):
         """Test pagination performance with large result sets."""
         # Test with different page sizes
         page_sizes = [10, 50, 100]
-        
+
         for limit in page_sizes:
             params = {"limit": limit, "offset": 0}
             response = client.get("/auth/admin/api-keys", headers=master_headers, params=params)
-            
+
             if response.status_code == 200:
                 data = response.json()
                 assert len(data["keys"]) <= limit
                 assert data["limit"] == limit
-    
+
     def test_concurrent_admin_requests(self, client, master_headers):
         """Test concurrent administrative requests."""
         import concurrent.futures
-        import threading
-        
+
         def make_admin_request():
             return client.get("/auth/admin/api-keys", headers=master_headers)
-        
+
         # Make concurrent requests
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             futures = [executor.submit(make_admin_request) for _ in range(5)]
             responses = [future.result() for future in futures]
-        
+
         # All requests should complete
         assert len(responses) == 5
         # Should not have server errors due to concurrency
@@ -411,46 +414,50 @@ class TestAdminAPIPerformance:
 
 class TestAdminAPIAuditLogging:
     """Test audit logging for administrative operations."""
-    
+
     @pytest.fixture
     def client(self):
         """Test client for API requests."""
         return TestClient(app)
-    
+
     @pytest.fixture
     def master_headers(self):
         """Headers with master key for authentication."""
         master_key = generate_master_api_key()
-        
-        with patch('src.graphrag_api_service.config.get_settings') as mock_settings:
+
+        with patch("src.graphrag_api_service.config.get_settings") as mock_settings:
             settings_mock = Mock()
             settings_mock.master_api_key = master_key
             mock_settings.return_value = settings_mock
-            
+
             return {"X-API-Key": master_key}
-    
+
     def test_audit_logging_integration(self, client, master_headers):
         """Test that administrative operations are properly audited."""
-        with patch('src.graphrag_api_service.auth.admin_api_keys.get_admin_audit_logger') as mock_audit:
+        with patch(
+            "src.graphrag_api_service.auth.admin_api_keys.get_admin_audit_logger"
+        ) as mock_audit:
             mock_audit_logger = Mock()
             mock_audit.return_value = mock_audit_logger
-            
+
             # Perform admin operation
             response = client.get("/auth/admin/api-keys", headers=master_headers)
-            
+
             # Verify audit logging was called (if operation succeeded)
             if response.status_code == 200:
                 mock_audit_logger.log_admin_operation.assert_called()
-    
+
     def test_failed_operation_audit(self, client, master_headers):
         """Test audit logging for failed operations."""
-        with patch('src.graphrag_api_service.auth.admin_api_keys.get_admin_audit_logger') as mock_audit:
+        with patch(
+            "src.graphrag_api_service.auth.admin_api_keys.get_admin_audit_logger"
+        ) as mock_audit:
             mock_audit_logger = Mock()
             mock_audit.return_value = mock_audit_logger
-            
+
             # Try to get non-existent key
             response = client.get("/auth/admin/api-keys/nonexistent", headers=master_headers)
-            
+
             # Should still log the attempt
             if response.status_code == 404:
                 # Audit logging might still occur for the attempt

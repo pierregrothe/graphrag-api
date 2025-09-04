@@ -117,7 +117,7 @@ class ChunkedProcessor:
         self.chunk_size = chunk_size
 
     def process_dataframe_chunks(
-        self, df: pd.DataFrame, processor_func: Callable, **kwargs
+        self, df: pd.DataFrame, processor_func: Callable[[pd.DataFrame], Any], **kwargs: Any
     ) -> list[Any]:
         """Process DataFrame in chunks.
 
@@ -148,7 +148,7 @@ class ChunkedProcessor:
         return results
 
     def aggregate_chunked_results(
-        self, results: list[Any], aggregation_func: Callable | None = None
+        self, results: list[Any], aggregation_func: Callable[[list[Any]], Any] | None = None
     ) -> Any:
         """Aggregate results from chunked processing.
 
@@ -189,7 +189,7 @@ class MemoryMonitor:
             config: Memory configuration
         """
         self.config = config
-        self._tracked_objects: set[weakref.ref] = set()
+        self._tracked_objects: set[weakref.ref[Any]] = set()
 
     def get_memory_stats(self) -> MemoryStats:
         """Get current memory statistics.
@@ -360,7 +360,9 @@ class MemoryOptimizer:
 
         return optimized_df
 
-    def process_large_dataset(self, df: pd.DataFrame, processor_func: Callable, **kwargs) -> Any:
+    def process_large_dataset(
+        self, df: pd.DataFrame, processor_func: Callable[[pd.DataFrame], Any], **kwargs: Any
+    ) -> Any:
         """Process large dataset with memory optimization.
 
         Args:

@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class WorkspaceManager:
     """Manager for GraphRAG workspaces providing multi-project support."""
 
-    def __init__(self, settings: Settings, database_manager=None):
+    def __init__(self, settings: Settings, database_manager: Any = None) -> None:
         """Initialize workspace manager.
 
         Args:
@@ -155,6 +155,7 @@ class WorkspaceManager:
             last_error=None,
             workspace_path=None,
             config_file_path=None,
+            expires_at=None,
         )
 
         # Create workspace directory structure
@@ -308,11 +309,14 @@ class WorkspaceManager:
             Updated workspace
 
         Raises:
-            ValueError: If workspace not found or update invalid
+            ResourceNotFoundError: If workspace not found
+            ValueError: If update invalid
         """
         workspace = await self.get_workspace(workspace_id)
         if not workspace:
-            raise ValueError(f"Workspace not found: {workspace_id}")
+            from ..exceptions import workspace_not_found
+
+            raise workspace_not_found(workspace_id)
 
         # Update configuration fields using helper methods
         self._validate_and_update_basic_fields(workspace, request)

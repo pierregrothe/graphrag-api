@@ -7,6 +7,7 @@
 
 import warnings
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 
@@ -58,18 +59,88 @@ class ServiceContainer:
     """
 
     def __init__(self) -> None:
-        self.database_manager = None
-        self.auth_service = None
-        self.workspace_manager = None
-        self.indexing_manager = None
-        self.graphrag_integration = None
-        self.graph_operations = None
-        self.system_operations = None
-        self.security_middleware = None
-        self.performance_middleware = None
+        from .auth.jwt_auth import AuthenticationService
+        from .database.simple_connection import SimpleDatabaseManager
+        from .performance.compression import PerformanceMiddleware
+        from .security.middleware import SecurityMiddleware
+        from .system.operations import SystemOperations
+
+        self.database_manager: SimpleDatabaseManager | None = None
+        self.auth_service: AuthenticationService | None = None
+        self.workspace_manager: WorkspaceManager | None = None
+        self.workspace_cleanup_service: Any | None = None
+        self.indexing_manager: IndexingManager | None = None
+        self.graphrag_integration: GraphRAGIntegration | None = None
+        self.graph_operations: GraphOperations | None = None
+        self.system_operations: SystemOperations | None = None
+        self.security_middleware: SecurityMiddleware | None = None
+        self.performance_middleware: PerformanceMiddleware | None = None
+        self.initialized = False
+        self._initializing = False
+
+    def ensure_initialized(self) -> None:
+        """Ensure the service container is initialized synchronously (for app setup)."""
+        if self.initialized or self._initializing:
+            return
+
+        self._initializing = True
+        try:
+            # Initialize core services synchronously for app setup
+            from .database.simple_connection import SimpleDatabaseManager
+            from .graph.operations import GraphOperations
+            from .graphrag_integration import GraphRAGIntegration
+            from .indexing.manager import IndexingManager
+            from .security.middleware import get_security_middleware
+            from .system.operations import SystemOperations
+            from .workspace.manager import WorkspaceManager
+
+            # Initialize database manager (using SQLite)
+            try:
+                self.database_manager = SimpleDatabaseManager(settings)
+                logger.info("SQLite database manager initialized successfully")
+            except Exception as e:
+                logger.warning(
+                    f"Database initialization failed, falling back to file-based storage: {e}"
+                )
+                self.database_manager = None
+
+            # Initialize core services
+            self.workspace_manager = WorkspaceManager(settings, self.database_manager)
+            self.indexing_manager = IndexingManager(settings)
+            self.graph_operations = GraphOperations(settings)
+
+            # Initialize GraphRAG integration with provider
+            try:
+                from .providers.factory import LLMProviderFactory
+                from .providers.registry import register_providers
+
+                # Register providers first
+                register_providers()
+                provider = LLMProviderFactory.create_provider(settings)
+                self.graphrag_integration = GraphRAGIntegration(settings, provider)
+                logger.info("GraphRAG integration initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize GraphRAG integration: {e}")
+                self.graphrag_integration = None
+
+            self.system_operations = SystemOperations(settings)
+
+            # Initialize middleware
+            self.security_middleware = get_security_middleware()
+            # Note: Using None for performance_middleware in sync init to avoid API mismatch
+            # The auth middleware expects a metrics recorder with record_request method
+            self.performance_middleware = None
+
+            self.initialized = True
+            logger.info("Core services initialized successfully (synchronous)")
+        finally:
+            self._initializing = False
 
     async def initialize(self) -> None:
         """Initialize all services."""
+        if self.initialized:
+            return
+
         logger.info(f"Initializing services for {settings.app_name} v{settings.app_version}")
 
         # Initialize database manager (using SQLite)
@@ -77,7 +148,8 @@ class ServiceContainer:
             from .database.simple_connection import get_simple_database_manager
 
             self.database_manager = get_simple_database_manager(settings)
-            self.database_manager.initialize()
+            if self.database_manager:
+                self.database_manager.initialize()
             logger.info("SQLite database manager initialized successfully")
         except Exception as e:
             logger.warning(
@@ -87,6 +159,12 @@ class ServiceContainer:
 
         # Initialize core services
         self.workspace_manager = WorkspaceManager(settings, self.database_manager)
+
+        # Initialize workspace cleanup service
+        from .workspace.cleanup import get_cleanup_service
+
+        self.workspace_cleanup_service = get_cleanup_service(settings, self.workspace_manager)
+
         self.indexing_manager = IndexingManager(settings)
         self.graph_operations = GraphOperations(settings)
 
@@ -115,13 +193,18 @@ class ServiceContainer:
         await self.indexing_manager.start()
         logger.info("Indexing manager started successfully")
 
+        # Start workspace cleanup service
+        if self.workspace_cleanup_service:
+            await self.workspace_cleanup_service.start()
+            logger.info("Workspace cleanup service started successfully")
+
         # Initialize advanced features
         await self._initialize_advanced_features()
 
         # Initialize performance components
         await self._initialize_performance_components()
 
-    async def _initialize_advanced_features(self):
+    async def _initialize_advanced_features(self) -> None:
         """Initialize Phase 11 advanced features."""
         try:
             # Initialize distributed tracing
@@ -160,11 +243,12 @@ class ServiceContainer:
                 )
 
                 # Use simple authentication service
-                from .auth.jwt_auth import AuthenticationService
-
                 if self.database_manager:
-                    self.auth_service = AuthenticationService(jwt_config, self.database_manager)
-                    get_api_key_manager(self.auth_service.rbac)
+                    from .auth.jwt_auth import AuthenticationService as JWTAuthService
+
+                    self.auth_service = JWTAuthService(jwt_config, self.database_manager)
+                    if self.auth_service and hasattr(self.auth_service, "rbac"):
+                        get_api_key_manager(self.auth_service.rbac)
                     logger.info("Authentication service initialized with database support")
                 else:
                     logger.warning("Database manager not available for authentication")
@@ -175,7 +259,7 @@ class ServiceContainer:
             logger.error(f"Failed to initialize advanced features: {e}")
             # Continue without advanced features
 
-    async def _initialize_performance_components(self):
+    async def _initialize_performance_components(self) -> None:
         """Initialize performance monitoring components."""
         try:
             # Initialize connection pool with database manager
@@ -243,6 +327,12 @@ class ServiceContainer:
             await self.indexing_manager.stop()
             logger.info("Indexing manager stopped")
 
+    async def _shutdown_workspace_cleanup(self) -> None:
+        """Shutdown workspace cleanup service."""
+        if self.workspace_cleanup_service:
+            await self.workspace_cleanup_service.stop()
+            logger.info("Workspace cleanup service stopped")
+
     async def shutdown(self) -> None:
         """Shutdown all services."""
         logger.info("Shutting down services")
@@ -251,6 +341,7 @@ class ServiceContainer:
         await self._shutdown_performance_components()
         await self._shutdown_advanced_features()
         await self._shutdown_indexing_manager()
+        await self._shutdown_workspace_cleanup()
 
         logger.info("All services shut down successfully")
 
@@ -268,5 +359,6 @@ async def lifespan(app: FastAPI):
 
 
 def get_service_container() -> ServiceContainer:
-    """Get the global service container."""
+    """Get the global service container, ensuring it's initialized."""
+    service_container.ensure_initialized()
     return service_container

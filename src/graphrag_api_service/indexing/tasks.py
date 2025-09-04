@@ -191,7 +191,8 @@ class IndexingTask:
             "similar_to",
         ]
         logger.info(
-            f"Relationship extraction completed: {job.progress.relationships_extracted} relationships"
+            f"Relationship extraction completed: "
+            f"{job.progress.relationships_extracted} relationships"
         )
 
     async def _run_community_detection(self, job: IndexingJob) -> None:

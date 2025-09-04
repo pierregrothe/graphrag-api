@@ -5,13 +5,12 @@
 
 """Tests for the logging configuration module."""
 
+import logging
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.append(str(Path(__file__).parent.parent))
-
-import logging
-from unittest.mock import patch
 
 from src.graphrag_api_service.logging_config import get_logger, setup_logging
 

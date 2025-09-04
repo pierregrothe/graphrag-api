@@ -198,3 +198,43 @@ class OllamaGraphRAGLLM(GraphRAGLLM):
                     "error": str(e),
                 },
             )
+
+    def get_model_info(self) -> dict[str, Any]:
+        """Get information about the current Ollama model configuration.
+
+        Returns:
+            Dictionary containing model information
+        """
+        # Extract model info from model name
+        model_parts = self.llm_model.split(":")
+        model_name = model_parts[0]
+        model_version = model_parts[1] if len(model_parts) > 1 else "latest"
+
+        # Estimate max tokens based on common Ollama models
+        max_tokens_map = {
+            "gemma": 8192,
+            "llama": 4096,
+            "mistral": 8192,
+            "codellama": 16384,
+            "phi": 2048,
+        }
+
+        max_tokens = 4096  # Default
+        for model_prefix, tokens in max_tokens_map.items():
+            if model_name.startswith(model_prefix):
+                max_tokens = tokens
+                break
+
+        return {
+            "name": self.llm_model,
+            "version": model_version,
+            "max_tokens": max_tokens,
+            "provider": self.provider_name,
+            "embedding_model": self.embedding_model,
+            "embedding_dimensions": 768,  # nomic-embed-text dimensions
+            "supports_streaming": True,
+            "supports_function_calling": False,  # Most Ollama models don't support function calling
+            "context_window": max_tokens * 2,  # Estimate context window
+            "base_url": self.base_url,
+            "model_family": model_name,
+        }

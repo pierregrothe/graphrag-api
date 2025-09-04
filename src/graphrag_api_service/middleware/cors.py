@@ -5,6 +5,8 @@
 
 """CORS middleware configuration for GraphRAG API Service."""
 
+from typing import Any
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,7 +15,7 @@ from ..logging_config import get_logger
 logger = get_logger(__name__)
 
 
-def setup_cors_middleware(app: FastAPI, security_middleware) -> None:
+def setup_cors_middleware(app: FastAPI, security_middleware: Any) -> None:
     """Set up CORS middleware for the FastAPI application.
 
     Args:

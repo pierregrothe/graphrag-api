@@ -31,7 +31,7 @@ class SecurityConfig(BaseModel):
     requests_per_minute: int = 100
     burst_limit: int = 20
 
-    def __init__(self, **data):
+    def __init__(self, **data: Any) -> None:
         super().__init__(**data)
         # Disable rate limiting in testing mode
         if os.getenv("TESTING") == "true" or os.getenv("RATE_LIMITING_ENABLED") == "false":
@@ -166,7 +166,10 @@ class RequestValidator:
             if size_mb > self.config.max_request_size_mb:
                 raise HTTPException(
                     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                    detail=f"Request too large: {size_mb:.1f}MB (max: {self.config.max_request_size_mb}MB)",
+                    detail=(
+                        f"Request too large: {size_mb:.1f}MB "
+                        f"(max: {self.config.max_request_size_mb}MB)"
+                    ),
                 )
 
     def validate_headers(self, request: Request) -> None:
@@ -228,7 +231,7 @@ class RequestValidator:
 class AuditLogger:
     """Audit logging for security events."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the audit logger."""
         self._audit_log: list[AuditLogEntry] = []
 

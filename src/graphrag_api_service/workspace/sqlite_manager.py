@@ -117,6 +117,7 @@ class SQLiteWorkspaceManager:
                 last_error=None,
                 workspace_path=str(workspace_dir),
                 config_file_path=str(config_file_path),
+                expires_at=None,
             )
 
             logger.info(f"Created workspace: {workspace.config.name} (ID: {workspace.id})")
@@ -171,7 +172,7 @@ class SQLiteWorkspaceManager:
         db_workspaces = self.db.list_workspaces(limit=limit, offset=offset)
         return [self._db_to_api_model(ws) for ws in db_workspaces]
 
-    def update_workspace(self, workspace_id: str, **updates) -> Workspace | None:
+    def update_workspace(self, workspace_id: str, **updates: Any) -> Workspace | None:
         """Update workspace.
 
         Args:
@@ -260,6 +261,7 @@ class SQLiteWorkspaceManager:
             last_error=config_data.get("last_error"),
             workspace_path=config_data.get("workspace_path"),
             config_file_path=config_data.get("config_file_path"),
+            expires_at=None,
         )
 
     def _generate_graphrag_config(self, config: WorkspaceConfig, config_file_path: Path) -> None:

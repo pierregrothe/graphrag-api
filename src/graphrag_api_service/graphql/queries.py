@@ -501,6 +501,7 @@ class Query:
             name=settings.app_name,
             version=settings.app_version,
             status="healthy",
+            provider=settings.llm_provider,
             interfaces=ApplicationInterfaces(
                 rest_api="/api",
                 graphql="/graphql/playground",

@@ -297,7 +297,8 @@ class GraphRAGIntegration:
             entities_count, relationships_count = self._analyze_indexing_results(output_dir)
 
             logger.info(
-                f"Indexing completed: {files_count} files, {entities_count} entities, {relationships_count} relationships"
+                f"Indexing completed: {files_count} files, {entities_count} entities, "
+                f"{relationships_count} relationships"
             )
 
             return {

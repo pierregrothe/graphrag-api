@@ -5,8 +5,13 @@
 
 """Pytest configuration and shared fixtures for all tests."""
 
+import os
 import sys
 from pathlib import Path
+
+# Set testing environment variables
+os.environ["TESTING"] = "true"
+os.environ["RATE_LIMITING_ENABLED"] = "false"
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))

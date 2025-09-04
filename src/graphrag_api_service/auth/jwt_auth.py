@@ -8,7 +8,7 @@
 import logging
 import warnings
 from datetime import UTC, datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 import jwt
@@ -16,7 +16,7 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel
 
 from ..database.simple_connection import SimpleDatabaseManager
-from ..exceptions import AuthenticationError, ValidationError
+from ..exceptions import AuthenticationError
 from ..security import get_security_logger
 
 # Suppress bcrypt version warning
@@ -54,15 +54,14 @@ class RefreshTokenData(BaseModel):
     expires_at: datetime
     is_revoked: bool = False
     created_at: datetime
-    last_used_at: Optional[datetime] = None
-    device_info: Optional[str] = None
+    last_used_at: datetime | None = None
+    device_info: str | None = None
 
 
 class TokenResponse(BaseModel):
     """Token response model."""
 
     access_token: str
-    refresh_token: str
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int
@@ -89,7 +88,14 @@ class JWTConfig:
             refresh_token_expire_days: Refresh token expiration in days
             issuer: Token issuer
             audience: Token audience
+
+        Raises:
+            ValueError: If secret key is too weak
         """
+        # Validate secret key strength
+        if len(secret_key) < 32:
+            raise ValueError("Secret key must be at least 32 characters long for security")
+
         self.secret_key = secret_key
         self.algorithm = algorithm
         self.access_token_expire_minutes = access_token_expire_minutes
@@ -109,7 +115,7 @@ class JWTConfig:
 class JWTManager:
     """JWT token management with refresh token rotation."""
 
-    def __init__(self, config: JWTConfig, db_manager: SimpleDatabaseManager = None):
+    def __init__(self, config: JWTConfig, db_manager: SimpleDatabaseManager | None = None):
         """Initialize JWT manager.
 
         Args:
@@ -118,12 +124,18 @@ class JWTManager:
         """
         self.config = config
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        self.db_manager = db_manager or SimpleDatabaseManager()
+        if db_manager is None:
+            from ..config import get_settings
+
+            settings = get_settings()
+            self.db_manager = SimpleDatabaseManager(settings)
+        else:
+            self.db_manager = db_manager
         self.security_logger = get_security_logger()
 
         # Token blacklist for revoked tokens (in-memory for now)
-        self._token_blacklist = set()
-        self._refresh_tokens = {}  # token_id -> RefreshTokenData
+        self._token_blacklist: set[str] = set()
+        self._refresh_tokens: dict[str, RefreshTokenData] = {}  # token_id -> RefreshTokenData
 
     def create_access_token(self, token_data: TokenData) -> str:
         """Create an access token.
@@ -152,7 +164,7 @@ class JWTManager:
 
         return jwt.encode(payload, self.config.secret_key, algorithm=self.config.algorithm)
 
-    def create_refresh_token(self, user_id: str, device_info: Optional[str] = None) -> str:
+    def create_refresh_token(self, user_id: str, device_info: str | None = None) -> str:
         """Create a refresh token with rotation support.
 
         Args:
@@ -171,7 +183,7 @@ class JWTManager:
             user_id=user_id,
             expires_at=expire,
             created_at=datetime.now(UTC),
-            device_info=device_info
+            device_info=device_info,
         )
         self._refresh_tokens[token_id] = refresh_data
 
@@ -187,7 +199,9 @@ class JWTManager:
 
         return jwt.encode(payload, self.config.secret_key, algorithm=self.config.algorithm)
 
-    async def refresh_access_token(self, refresh_token: str, device_info: Optional[str] = None) -> TokenResponse:
+    async def refresh_access_token(
+        self, refresh_token: str, device_info: str | None = None
+    ) -> TokenResponse:
         """Refresh access token using refresh token with rotation.
 
         Args:
@@ -207,7 +221,7 @@ class JWTManager:
                 self.config.secret_key,
                 algorithms=[self.config.algorithm],
                 audience=self.config.audience,
-                issuer=self.config.issuer
+                issuer=self.config.issuer,
             )
 
             # Check token type
@@ -229,13 +243,13 @@ class JWTManager:
             if refresh_data.expires_at < datetime.now(UTC):
                 raise AuthenticationError("Refresh token expired")
 
-            # Revoke old refresh token (rotation)
-            refresh_data.is_revoked = True
-
-            # Get user data for new tokens
+            # Get user data for new tokens BEFORE revoking old token
             user_data = await self._get_user_data(user_id)
             if not user_data:
                 raise AuthenticationError("User not found")
+
+            # Only revoke old refresh token after successful validation (rotation)
+            refresh_data.is_revoked = True
 
             # Create new token pair
             token_data = TokenData(
@@ -245,7 +259,7 @@ class JWTManager:
                 roles=user_data.get("roles", []),
                 permissions=user_data.get("permissions", []),
                 tenant_id=user_data.get("tenant_id"),
-                expires_at=datetime.now(UTC) + self.config.get_access_token_expiry()
+                expires_at=datetime.now(UTC) + self.config.get_access_token_expiry(),
             )
 
             new_access_token = self.create_access_token(token_data)
@@ -253,25 +267,21 @@ class JWTManager:
 
             # Log successful token refresh
             self.security_logger.authentication_attempt(
-                success=True,
-                user_id=user_id,
-                method="refresh_token"
+                success=True, user_id=user_id, method="refresh_token"
             )
 
             return TokenResponse(
                 access_token=new_access_token,
                 refresh_token=new_refresh_token,
                 token_type="bearer",
-                expires_in=self.config.access_token_expire_minutes * 60
+                expires_in=self.config.access_token_expire_minutes * 60,
             )
 
         except jwt.InvalidTokenError as e:
             self.security_logger.authentication_attempt(
-                success=False,
-                method="refresh_token",
-                failure_reason=str(e)
+                success=False, method="refresh_token", failure_reason=str(e)
             )
-            raise AuthenticationError(f"Invalid refresh token: {str(e)}")
+            raise AuthenticationError(f"Invalid refresh token: {str(e)}") from e
 
     def verify_token(self, token: str) -> dict[str, Any]:
         """Verify and decode a JWT token.
@@ -322,7 +332,7 @@ class JWTManager:
                 self.config.secret_key,
                 algorithms=[self.config.algorithm],
                 audience=self.config.audience,
-                issuer=self.config.issuer
+                issuer=self.config.issuer,
             )
 
             token_id = payload.get("jti")
@@ -350,7 +360,7 @@ class JWTManager:
                 self.config.secret_key,
                 algorithms=[self.config.algorithm],
                 audience=self.config.audience,
-                issuer=self.config.issuer
+                issuer=self.config.issuer,
             )
 
             # Add token ID to blacklist
@@ -376,7 +386,7 @@ class JWTManager:
                 self.config.secret_key,
                 algorithms=[self.config.algorithm],
                 audience=self.config.audience,
-                issuer=self.config.issuer
+                issuer=self.config.issuer,
             )
 
             token_id = payload.get("jti", token)
@@ -385,7 +395,7 @@ class JWTManager:
         except jwt.InvalidTokenError:
             return True  # Invalid tokens are considered blacklisted
 
-    async def _get_user_data(self, user_id: str) -> Optional[dict]:
+    async def _get_user_data(self, user_id: str) -> dict[str, Any] | None:
         """Get user data from database.
 
         Args:
@@ -403,7 +413,7 @@ class JWTManager:
                 "email": f"user_{user_id}@example.com",
                 "roles": ["user"],
                 "permissions": ["read:workspaces"],
-                "tenant_id": None
+                "tenant_id": None,
             }
         except Exception as e:
             logger.error(f"Failed to get user data for {user_id}: {e}")
@@ -436,7 +446,7 @@ class JWTManager:
 class RoleBasedAccessControl:
     """Role-based access control system."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize RBAC system."""
         self.roles: dict[str, list[str]] = {
             "admin": [

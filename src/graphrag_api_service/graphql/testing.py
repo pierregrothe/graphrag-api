@@ -102,7 +102,7 @@ class GraphQLValidator:
 
         return issues
 
-    def _calculate_query_depth(self, document) -> int:
+    def _calculate_query_depth(self, document: Any) -> int:
         """Calculate the maximum depth of a GraphQL query.
 
         Args:
@@ -120,7 +120,7 @@ class GraphQLValidator:
 
         return max_depth
 
-    def _calculate_selection_depth(self, selection_set, current_depth: int) -> int:
+    def _calculate_selection_depth(self, selection_set: Any, current_depth: int) -> int:
         """Calculate depth of a selection set.
 
         Args:
@@ -327,7 +327,7 @@ class GraphQLTestRunner:
 class GraphQLTestSuiteBuilder:
     """Builds comprehensive test suites for GraphQL APIs."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the test suite builder."""
         self.test_cases: list[GraphQLTestCase] = []
 
