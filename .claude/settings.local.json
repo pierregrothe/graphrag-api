@@ -32,7 +32,8 @@
       "Bash(dir:*)",
       "Bash(move:*)",
       "Bash(poetry run isort:*)",
-      "Bash(poetry run pylint:*)"
+      "Bash(poetry run pylint:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

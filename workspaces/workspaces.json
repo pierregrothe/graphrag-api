@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_at": "2025-09-02T19:55:52.362582+00:00",
+  "updated_at": "2025-09-04T12:46:19.583506+00:00",
   "workspaces": [
     {
       "id": "b2d41f7a-ef82-45c3-8677-af9286298094",
@@ -9361,6 +9361,58 @@
       "last_error": null,
       "workspace_path": "workspaces\\test-workspace-deb0a8bf",
       "config_file_path": "workspaces\\test-workspace-deb0a8bf\\settings.yaml"
+    },
+    {
+      "id": "ddc826a7-1ad3-4401-8a46-bdc518aef5b7",
+      "config": {
+        "name": "test-workspace-3d94acda",
+        "description": "Integration test workspace",
+        "data_path": "C:\\Users\\pierre\\AppData\\Local\\Temp\\tmp29719eos",
+        "output_path": null,
+        "chunk_size": 1200,
+        "chunk_overlap": 100,
+        "llm_model_override": null,
+        "embedding_model_override": null,
+        "max_entities": 1000,
+        "max_relationships": 2000,
+        "community_levels": 4
+      },
+      "status": "created",
+      "created_at": "2025-09-04 12:45:32.275465+00:00",
+      "updated_at": "2025-09-04 12:45:32.275465+00:00",
+      "files_processed": 0,
+      "entities_extracted": 0,
+      "relationships_extracted": 0,
+      "communities_created": 0,
+      "last_error": null,
+      "workspace_path": "workspaces\\test-workspace-3d94acda",
+      "config_file_path": "workspaces\\test-workspace-3d94acda\\settings.yaml"
+    },
+    {
+      "id": "edeb0485-08c7-4d30-901d-a3e46f06fccc",
+      "config": {
+        "name": "test-workspace-d496d73a",
+        "description": "Test workspace",
+        "data_path": "C:\\Users\\pierre\\AppData\\Local\\Temp\\tmpt3g1gd6d",
+        "output_path": null,
+        "chunk_size": 1200,
+        "chunk_overlap": 100,
+        "llm_model_override": null,
+        "embedding_model_override": null,
+        "max_entities": 1000,
+        "max_relationships": 2000,
+        "community_levels": 4
+      },
+      "status": "created",
+      "created_at": "2025-09-04 12:46:19.578058+00:00",
+      "updated_at": "2025-09-04 12:46:19.578058+00:00",
+      "files_processed": 0,
+      "entities_extracted": 0,
+      "relationships_extracted": 0,
+      "communities_created": 0,
+      "last_error": null,
+      "workspace_path": "workspaces\\test-workspace-d496d73a",
+      "config_file_path": "workspaces\\test-workspace-d496d73a\\settings.yaml"
     }
   ]
 }
