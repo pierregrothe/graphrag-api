@@ -44,14 +44,91 @@ FROM python:3.12-slim as production
 # Build argument for version
 ARG VERSION=dev
 
-# Set environment variables
+# Set Python environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
-    ENVIRONMENT=production \
+    ENVIRONMENT=production
+
+# Application Configuration
+ENV APP_NAME="GraphRAG API Service" \
+    APP_VERSION=${VERSION} \
+    DEBUG=false \
     HOST=0.0.0.0 \
-    PORT=8001 \
-    APP_VERSION=${VERSION}
+    PORT=8001
+
+# GraphRAG Configuration
+ENV GRAPHRAG_CONFIG_PATH="" \
+    GRAPHRAG_DATA_PATH="/app/data"
+
+# LLM Provider Configuration
+ENV LLM_PROVIDER="ollama" \
+    OLLAMA_BASE_URL="http://localhost:11434" \
+    OLLAMA_LLM_MODEL="gemma:4b" \
+    OLLAMA_EMBEDDING_MODEL="nomic-embed-text"
+
+# Google Gemini Configuration (optional)
+ENV GOOGLE_API_KEY="" \
+    GOOGLE_PROJECT_ID="" \
+    GOOGLE_LOCATION="us-central1" \
+    GEMINI_MODEL="gemini-2.5-flash" \
+    GEMINI_EMBEDDING_MODEL="text-embedding-004" \
+    GOOGLE_CLOUD_USE_VERTEX_AI=false \
+    VERTEX_AI_LOCATION="us-central1"
+
+# Logging Configuration
+ENV LOG_LEVEL="INFO" \
+    LOG_FORMAT="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Database Configuration
+ENV DATABASE_URL="" \
+    REDIS_URL=""
+
+# Authentication & Security
+ENV AUTH_MODE="api_key" \
+    AUTH_ENABLED=true \
+    DEFAULT_ADMIN_API_KEY="grag_ak_default_admin_change_this_immediately" \
+    DEFAULT_ADMIN_USERNAME="admin" \
+    DEFAULT_ADMIN_EMAIL="admin@localhost" \
+    DEFAULT_ADMIN_PASSWORD="admin123" \
+    AUTO_CREATE_ADMIN=true
+
+# API Key Configuration
+ENV API_KEY_PREFIX="grag_ak_" \
+    API_KEY_LENGTH=32 \
+    API_KEY_EXPIRY_DAYS=365 \
+    API_KEY_ALLOW_QUERY_PARAM=false \
+    API_KEY_RATE_LIMIT=100
+
+# JWT Configuration (Advanced)
+ENV JWT_SECRET_KEY="" \
+    JWT_ALGORITHM="HS256" \
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30 \
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS=7 \
+    JWT_ISSUER="graphrag-api" \
+    JWT_AUDIENCE="graphrag-users"
+
+# Performance Settings
+ENV CONNECTION_POOL_SIZE=10 \
+    CONNECTION_POOL_MAX_OVERFLOW=20 \
+    CACHE_TTL=3600 \
+    MAX_WORKERS=4
+
+# Monitoring & Observability
+ENV ENABLE_METRICS=true \
+    ENABLE_TRACING=false \
+    PROMETHEUS_PORT=9090
+
+# Rate Limiting
+ENV RATE_LIMIT_ENABLED=true \
+    RATE_LIMIT_REQUESTS=100 \
+    RATE_LIMIT_PERIOD=60
+
+# CORS Settings (JSON format)
+ENV CORS_ORIGINS='["http://localhost:3000", "http://localhost:8001"]' \
+    CORS_ALLOW_CREDENTIALS=true \
+    CORS_ALLOW_METHODS='["GET", "POST", "PUT", "DELETE", "OPTIONS"]' \
+    CORS_ALLOW_HEADERS='["*"]'
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
