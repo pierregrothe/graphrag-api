@@ -3,12 +3,14 @@
 ## Security Scanning Policies
 
 ### Pull Request Requirements
+
 - **Critical Vulnerabilities**: Block merge
 - **High Vulnerabilities**: Require approval from security team
 - **Medium Vulnerabilities**: Warning only
 - **Low Vulnerabilities**: Informational
 
 ### Dependency Vulnerability Thresholds
+
 ```yaml
 blocking:
   - severity: CRITICAL
@@ -26,11 +28,13 @@ warnings:
 ```
 
 ### Secret Detection Policy
+
 - **Any detected secret**: Block merge immediately
 - **False positives**: Add to `.gitleaksignore`
 - **Remediation**: Rotate exposed secrets immediately
 
 ### SAST Findings Policy
+
 | Severity | New Code | Existing Code | Action |
 |----------|----------|---------------|---------|
 | Critical | 0 tolerance | Fix in 7 days | Block |
@@ -39,11 +43,13 @@ warnings:
 | Low | Track only | Technical debt | Info |
 
 ### Security Score Requirements
+
 - **Production (main)**: Minimum score 80/100
 - **Development (develop)**: Minimum score 70/100
 - **Feature branches**: Minimum score 60/100
 
 ### Compliance Requirements
+
 - **OWASP Top 10**: Full coverage required
 - **CWE Top 25**: 90% coverage required
 - **PCI DSS**: Required for payment processing
@@ -52,6 +58,7 @@ warnings:
 ## Security Tool Configuration
 
 ### Required Security Tools
+
 1. **Dependency Scanning**
    - pip-audit (Python)
    - npm audit (JavaScript)
@@ -75,6 +82,7 @@ warnings:
 ### Tool-Specific Settings
 
 #### Semgrep Rules
+
 ```yaml
 rules:
   - p/security-audit
@@ -87,6 +95,7 @@ custom_rules:
 ```
 
 #### Bandit Configuration
+
 ```ini
 [bandit]
 exclude = /test,/tests,/migrations
@@ -96,6 +105,7 @@ confidence = medium
 ```
 
 #### CodeQL Queries
+
 ```yaml
 queries:
   - security-extended
@@ -107,6 +117,7 @@ custom:
 ## Incident Response
 
 ### Security Vulnerability Process
+
 1. **Detection**: Automated scanning or manual discovery
 2. **Triage**: Assess severity and impact
 3. **Remediation**: Fix according to SLA
@@ -114,12 +125,14 @@ custom:
 5. **Documentation**: Update security log
 
 ### SLA by Severity
+
 - **Critical**: Fix within 24 hours
 - **High**: Fix within 7 days
 - **Medium**: Fix within 30 days
 - **Low**: Track as technical debt
 
 ### Escalation Path
+
 1. Development Team Lead
 2. Security Team
 3. CTO/CISO
@@ -128,6 +141,7 @@ custom:
 ## Exceptions and Waivers
 
 ### Exception Process
+
 1. Document the risk
 2. Provide business justification
 3. Define compensating controls
@@ -135,6 +149,7 @@ custom:
 5. Obtain approval from security team
 
 ### Waiver Template
+
 ```markdown
 **Risk ID**: SEC-2024-001
 **Tool**: Semgrep
@@ -149,6 +164,7 @@ custom:
 ## Monitoring and Metrics
 
 ### Key Security Metrics
+
 - Mean Time to Remediate (MTTR)
 - Vulnerability Discovery Rate
 - False Positive Rate
@@ -156,6 +172,7 @@ custom:
 - Dependency Update Lag
 
 ### Dashboard Requirements
+
 - Real-time security score
 - Open vulnerability count by severity
 - Remediation velocity
@@ -165,12 +182,14 @@ custom:
 ## Continuous Improvement
 
 ### Quarterly Reviews
+
 - Review false positive rates
 - Update tool configurations
 - Assess new security tools
 - Review and update policies
 
 ### Annual Assessments
+
 - Third-party penetration testing
 - Security architecture review
 - Compliance audit

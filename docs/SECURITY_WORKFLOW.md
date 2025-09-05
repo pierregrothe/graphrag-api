@@ -2,11 +2,13 @@
 
 ## Overview
 
-This guide explains how to test the security workflow locally before pushing code to GitHub, ensuring your changes pass all security checks in CI/CD.
+This guide explains how to test the security workflow locally before pushing code to GitHub, ensuring your changes pass
+all security checks in CI/CD.
 
 ## Quick Start
 
 ### Fast Security Check (< 30 seconds)
+
 ```bash
 # Python
 python scripts/test_security_workflow.py --mode fast
@@ -16,6 +18,7 @@ python scripts/test_security_workflow.py --mode fast
 ```
 
 ### PR Simulation (1-2 minutes)
+
 ```bash
 # Python
 python scripts/test_security_workflow.py --mode pr
@@ -25,6 +28,7 @@ python scripts/test_security_workflow.py --mode pr
 ```
 
 ### Comprehensive Analysis (2-3 minutes)
+
 ```bash
 # Python
 python scripts/test_security_workflow.py --mode comprehensive
@@ -36,35 +40,39 @@ python scripts/test_security_workflow.py --mode comprehensive
 ## Security Check Modes
 
 ### Fast Mode
+
 - **Purpose**: Quick pre-commit checks
 - **Duration**: < 30 seconds
 - **Checks**:
-  - Dependency vulnerabilities (cached)
-  - Secret detection (src/ only)
-  - Code quality (Black, Ruff)
+    - Dependency vulnerabilities (cached)
+    - Secret detection (src/ only)
+    - Code quality (Black, Ruff)
 - **Use When**: Before every commit
 
 ### PR Mode
+
 - **Purpose**: Simulate GitHub Actions PR workflow
 - **Duration**: 1-2 minutes
 - **Checks**:
-  - Dependency vulnerabilities (full scan)
-  - Secret detection
-  - SAST analysis (Bandit)
+    - Dependency vulnerabilities (full scan)
+    - Secret detection
+    - SAST analysis (Bandit)
 - **Use When**: Before pushing to remote
 
 ### Comprehensive Mode
+
 - **Purpose**: Full security analysis
 - **Duration**: 2-3 minutes
 - **Checks**:
-  - All PR mode checks
-  - Full security scanner
-  - Detailed vulnerability analysis
+    - All PR mode checks
+    - Full security scanner
+    - Detailed vulnerability analysis
 - **Use When**: Before merging to main
 
 ## Security Gates
 
 ### Passing Criteria
+
 - **Fast Mode**: Score ≥ 60/100, no critical issues
 - **PR Mode**: Score ≥ 70/100, no secrets
 - **Comprehensive Mode**: Score ≥ 80/100
@@ -72,6 +80,7 @@ python scripts/test_security_workflow.py --mode comprehensive
 ### Common Failures and Fixes
 
 #### 1. Vulnerable Dependencies
+
 ```bash
 # Check vulnerabilities
 poetry run pip-audit
@@ -84,6 +93,7 @@ poetry add package@latest
 ```
 
 #### 2. Hardcoded Secrets
+
 ```bash
 # Scan for secrets
 detect-secrets scan --all-files src/
@@ -95,6 +105,7 @@ echo "path/to/secret" >> .gitignore
 ```
 
 #### 3. Code Quality Issues
+
 ```bash
 # Auto-fix formatting
 poetry run black src/ tests/
@@ -107,6 +118,7 @@ poetry run mypy src/graphrag_api_service
 ```
 
 #### 4. Security Issues (Bandit)
+
 ```bash
 # Run Bandit scan
 poetry run bandit -r src/ -ll
@@ -120,6 +132,7 @@ poetry run bandit -r src/ -ll
 The security checks are integrated with pre-commit hooks:
 
 ### Installation
+
 ```bash
 # Install pre-commit
 pip install pre-commit
@@ -129,11 +142,13 @@ pre-commit install
 ```
 
 ### Configuration
+
 - **On Commit**: Fast security check
 - **On Push**: PR simulation
 - **Manual**: `pre-commit run --all-files`
 
 ### Bypass (Emergency Only)
+
 ```bash
 # Skip all hooks
 git commit --no-verify
@@ -145,17 +160,20 @@ SKIP=security-check-fast git commit
 ## GitHub Actions Integration
 
 ### Workflow Files
+
 - `.github/workflows/security.yml` - Daily comprehensive scan
 - `.github/workflows/security-best-practices.yml` - PR and push checks
 - `.github/workflows/ci-cd.yml` - Main CI/CD pipeline
 
 ### Security Policies
+
 - `.github/SECURITY_POLICIES.md` - Thresholds and requirements
 - `.github/pull_request_template.md` - PR security checklist
 
 ## Auto-Fix Capabilities
 
 ### Run with Auto-Fix
+
 ```bash
 # Python
 python scripts/test_security_workflow.py --mode fast --fix
@@ -165,6 +183,7 @@ python scripts/test_security_workflow.py --mode fast --fix
 ```
 
 ### What Can Be Fixed
+
 - ✅ Code formatting (Black)
 - ✅ Import sorting (Ruff)
 - ✅ Simple linting issues (Ruff)
@@ -175,6 +194,7 @@ python scripts/test_security_workflow.py --mode fast --fix
 ## Security Score Calculation
 
 ### Score Components
+
 - **Base Score**: 100 points
 - **Per Vulnerability**: -10 points
 - **Per Secret**: -5 points
@@ -183,6 +203,7 @@ python scripts/test_security_workflow.py --mode fast --fix
 - **Per Low Issue**: -5 points
 
 ### Grade System
+
 - **A**: 90-100 (Excellent)
 - **B**: 80-89 (Good)
 - **C**: 70-79 (Acceptable)
@@ -192,6 +213,7 @@ python scripts/test_security_workflow.py --mode fast --fix
 ## Troubleshooting
 
 ### Timeout Issues
+
 ```bash
 # Increase timeout for slow systems
 python scripts/test_security_workflow.py --mode fast --timeout 120
@@ -200,18 +222,21 @@ python scripts/test_security_workflow.py --mode fast --timeout 120
 ### False Positives
 
 #### Bandit
+
 ```python
 # Add inline suppression
 result = conn.execute(query, values)  # nosec B608 - Query uses parameterized values
 ```
 
 #### Semgrep
+
 ```python
 # Add inline suppression
 # nosemgrep: sqlalchemy-execute-raw-query
 ```
 
 #### Secrets
+
 ```bash
 # Create baseline
 detect-secrets scan --baseline .secrets.baseline
@@ -221,6 +246,7 @@ detect-secrets audit .secrets.baseline
 ```
 
 ### Cache Issues
+
 ```bash
 # Clear pip cache
 pip cache purge
@@ -235,18 +261,21 @@ rm -rf .pytest_cache/
 ## Best Practices
 
 ### Daily Workflow
+
 1. Run fast check before commits
 2. Run PR mode before pushing
 3. Review security report
 4. Fix issues before pushing
 
 ### Weekly Maintenance
+
 1. Run comprehensive scan
 2. Update dependencies
 3. Review new CVEs
 4. Update security baseline
 
 ### Monthly Review
+
 1. Review false positives
 2. Update suppression rules
 3. Review security policies
@@ -270,12 +299,14 @@ poetry update
 ## Support
 
 ### Getting Help
+
 - Run with `--verbose` for detailed output
 - Check `SECURITY_SCAN_REPORT.md` for details
 - Review GitHub Actions logs
 - Open an issue if needed
 
 ### Useful Commands
+
 ```bash
 # Show all options
 python scripts/test_security_workflow.py --help
@@ -290,6 +321,7 @@ python scripts/run_security_scan.py --verbose > security_analysis.txt
 ## Compliance
 
 This workflow helps maintain compliance with:
+
 - OWASP Top 10
 - CWE/SANS Top 25
 - PCI DSS (if handling payment data)

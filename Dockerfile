@@ -23,10 +23,17 @@ RUN apt-get update && apt-get install -y \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt /tmp/requirements.txt
+# Install Poetry
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install -r /tmp/requirements.txt
+    pip install poetry==1.8.5
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock /tmp/
+
+# Export requirements from Poetry and install
+RUN cd /tmp && \
+    poetry export -f requirements.txt --output requirements.txt --without-hashes && \
+    pip install -r requirements.txt
 
 # Production stage
 FROM python:3.12-slim as production
@@ -37,7 +44,7 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     ENVIRONMENT=production \
     HOST=0.0.0.0 \
-    PORT=8000
+    PORT=8001
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -75,7 +82,7 @@ RUN chmod +x /app/docker-entrypoint.sh /app/healthcheck.sh
 USER graphrag
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -85,4 +92,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # Default command
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "src.graphrag_api_service.main:app"]
+CMD ["uvicorn", "src.graphrag_api_service.main:app", "--host", "0.0.0.0", "--port", "8001"]
