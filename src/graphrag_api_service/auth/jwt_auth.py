@@ -273,7 +273,7 @@ class JWTManager:
             return TokenResponse(
                 access_token=new_access_token,
                 refresh_token=new_refresh_token,
-                token_type="bearer",
+                token_type="bearer",  # nosec B106 - Standard OAuth2 token type, not a password
                 expires_in=self.config.access_token_expire_minutes * 60,
             )
 

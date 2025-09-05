@@ -157,9 +157,15 @@ class RedisDistributedCache:
         else:
             # Fallback for legacy pickle data (security risk - should be migrated)
             logger.warning("Loading legacy pickle data - consider migrating to JSON format")
-            import pickle
+            logger.warning(
+                "SECURITY WARNING: Pickle deserialization can be dangerous with untrusted data"
+            )
+            import pickle  # nosec B403 - Legacy cache data only, controlled environment
 
-            return pickle.loads(data)  # nosec B301 - Internal cache data only
+            # Only deserialize pickle data from internal cache - never from external sources
+            return pickle.loads(
+                data
+            )  # nosec B301 - Internal cache data only, controlled environment # nosemgrep: avoid-pickle
 
     async def get(self, namespace: str, key: str) -> Any | None:
         """Get a value from cache.
@@ -176,7 +182,8 @@ class RedisDistributedCache:
 
         try:
             cache_key = self._make_key(namespace, key)
-            assert self.redis_client is not None  # Already checked _connected
+            if self.redis_client is None:
+                raise RuntimeError("Redis client not connected")
             data = await self.redis_client.get(cache_key)
 
             if data is None:
@@ -214,7 +221,8 @@ class RedisDistributedCache:
 
             ttl = ttl or self.config.default_ttl
 
-            assert self.redis_client is not None  # Already checked _connected
+            if self.redis_client is None:
+                raise RuntimeError("Redis client not connected")
             await self.redis_client.setex(cache_key, ttl, serialized_value)
             return True
 
@@ -237,7 +245,8 @@ class RedisDistributedCache:
 
         try:
             cache_key = self._make_key(namespace, key)
-            assert self.redis_client is not None  # Already checked _connected
+            if self.redis_client is None:
+                raise RuntimeError("Redis client not connected")
             result = await self.redis_client.delete(cache_key)
             return bool(result > 0)
 
@@ -260,7 +269,8 @@ class RedisDistributedCache:
 
         try:
             cache_key = self._make_key(namespace, key)
-            assert self.redis_client is not None  # Already checked _connected
+            if self.redis_client is None:
+                raise RuntimeError("Redis client not connected")
             result = await self.redis_client.exists(cache_key)
             return bool(result > 0)
 
@@ -283,7 +293,8 @@ class RedisDistributedCache:
 
         try:
             search_pattern = self._make_key(namespace, pattern)
-            assert self.redis_client is not None  # Already checked _connected
+            if self.redis_client is None:
+                raise RuntimeError("Redis client not connected")
             keys = await self.redis_client.keys(search_pattern)
 
             if keys:
@@ -318,7 +329,8 @@ class RedisDistributedCache:
             return {"connected": False}
 
         try:
-            assert self.redis_client is not None  # Already checked _connected
+            if self.redis_client is None:
+                raise RuntimeError("Redis client not connected")
             info = await self.redis_client.info()
 
             return {

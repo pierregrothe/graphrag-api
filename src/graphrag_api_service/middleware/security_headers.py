@@ -29,9 +29,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Add security headers to response."""
-        try:
-            response = await call_next(request)
+        response = await call_next(request)
 
+        try:
             if self.security_config.enable_security:
                 # Add basic security headers from config
                 headers = self.security_config.get_security_headers()
@@ -41,18 +41,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 # Add comprehensive security headers
                 self._add_comprehensive_security_headers(response, request)
 
-            return cast(Response, response)
-
         except Exception as e:
             logger.error(f"Security headers middleware error: {e}")
-            # Don't block requests on middleware errors
-            response = await call_next(request)
-            # Still try to add basic security headers
+            # Don't block response on header addition errors
             try:
                 self._add_basic_security_headers(response)
-            except Exception:
-                pass
-            return cast(Response, response)
+            except Exception as inner_e:
+                logger.warning(f"Failed to add basic security headers: {inner_e}")
+
+        return cast(Response, response)
 
     def _add_comprehensive_security_headers(self, response: Response, request: Request) -> None:
         """Add comprehensive security headers to the response."""

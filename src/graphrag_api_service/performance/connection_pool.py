@@ -473,9 +473,13 @@ class ConnectionPool:
                 query_str += " WHERE " + " AND ".join(conditions)
 
             if params:
-                result = await session.execute(text(query_str), params)
+                result = await session.execute(
+                    text(query_str), params
+                )  # nosec B608 - Query uses parameterized values from _build_sql_filters # nosemgrep: avoid-sqlalchemy-text
             else:
-                result = await session.execute(text(query_str))
+                result = await session.execute(
+                    text(query_str)
+                )  # nosec B608 - Query built from validated table name and no user input # nosemgrep: avoid-sqlalchemy-text
             rows = result.fetchall()
             columns = result.keys()
 

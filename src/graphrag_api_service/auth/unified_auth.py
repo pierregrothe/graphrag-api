@@ -25,7 +25,7 @@ class AuthMethod(str, Enum):
     """Authentication methods."""
 
     JWT = "jwt"
-    API_KEY = "api_key"
+    API_KEY = "api_key"  # pragma: allowlist secret
     NONE = "none"
 
 

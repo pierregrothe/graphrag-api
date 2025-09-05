@@ -14,7 +14,7 @@ uvicorn = {extras = ["standard"], version = "^0.35.0"}
 pydantic = "^2.10.0"
 pydantic-settings = "^2.7.0"
 email-validator = "^2.1.0"
-python-multipart = "^0.0.12"
+python-multipart = "^0.0.18"
 ollama = "^0.5.3"
 google-cloud-aiplatform = "^1.111.0"
 google-generativeai = "^0.8.5"

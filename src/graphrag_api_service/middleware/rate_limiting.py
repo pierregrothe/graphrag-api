@@ -137,7 +137,7 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
         # Include user agent for additional uniqueness
         user_agent_hash = str(hash(request.headers.get("User-Agent", "")))[:8]
 
-        return f"{real_ip}:{user_agent_hash}"
+        return f"{real_ip}:{user_agent_hash}"  # nosemgrep: directly-returned-format-string
 
     def _log_rate_limit_violation(self, request: Request, client_id: str, retry_after: int) -> None:
         """Log rate limit violation for security monitoring."""

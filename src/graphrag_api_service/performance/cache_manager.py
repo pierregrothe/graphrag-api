@@ -10,7 +10,7 @@ import gzip  # Moved from inside set method
 import hashlib
 import json
 import logging
-import pickle
+import pickle  # nosec B403 - Used only for internal cache serialization, not external data
 import time
 from typing import Any
 
@@ -179,7 +179,7 @@ class CacheManager:
 
         try:
             # Serialize and optionally compress data
-            serialized_data = pickle.dumps(data)
+            serialized_data = pickle.dumps(data)  # nosemgrep: avoid-pickle
             compressed = False
 
             if self.config.compression_enabled and len(serialized_data) > 1024:

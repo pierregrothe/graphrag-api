@@ -41,7 +41,7 @@ class APIKeyScope(str, Enum):
     WRITE_USERS = "write:users"
 
     # API key management
-    MANAGE_API_KEYS = "manage:api_keys"
+    MANAGE_API_KEYS = "manage:api_keys"  # pragma: allowlist secret
 
     # Master admin scopes
     MASTER_ADMIN = "master:admin"
@@ -320,12 +320,16 @@ class APIKeyManager:
 
         # Check if key has expired
         if api_key.expires_at and datetime.now(UTC) > api_key.expires_at:
-            logger.warning("API key %s has expired", api_key.name)
+            logger.warning(
+                "API key has expired (key_id: %s)", key_id[:8] + "..."
+            )  # Log only partial key ID for security # nosemgrep: python-logger-credential-disclosure
             return None
 
         # Check rate limit
         if not await self._check_rate_limit(key_id, api_key.rate_limit_config.requests_per_minute):
-            logger.warning("Rate limit exceeded for API key: %s", api_key.name)
+            logger.warning(
+                "Rate limit exceeded for API key (key_id: %s)", key_id[:8] + "..."
+            )  # Log only partial key ID for security # nosemgrep: python-logger-credential-disclosure
             return None
 
         # Update usage statistics
@@ -376,15 +380,19 @@ class APIKeyManager:
 
         # Check if user owns the key or is admin
         if api_key.user_id != user_id and not self._is_admin_user(user_permissions):
-            logger.warning(
-                "User %s attempted to revoke API key %s without permission",
-                user_id,
-                key_id,
+            logger.warning(  # nosemgrep: python-logger-credential-disclosure
+                "User %s attempted to revoke API key without permission (key_id: %s)",
+                user_id[:8] + "..." if len(user_id) > 8 else user_id,  # Sanitize user ID
+                key_id[:8] + "...",  # Sanitize key ID
             )
             return False
 
         api_key.is_active = False
-        logger.info("Revoked API key: %s by user: %s", api_key.name, user_id)
+        logger.info(
+            "Revoked API key by user: %s (key_id: %s)",
+            user_id[:8] + "..." if len(user_id) > 8 else user_id,
+            key_id[:8] + "...",
+        )  # Sanitize both IDs # nosemgrep: python-logger-credential-disclosure
 
         return True
 
@@ -476,7 +484,7 @@ class APIKeyPermissions:
 
     # Admin permissions
     MANAGE_USERS = "manage:users"
-    MANAGE_API_KEYS = "manage:api_keys"
+    MANAGE_API_KEYS = "manage:api_keys"  # pragma: allowlist secret
     MANAGE_SYSTEM = "manage:system"
 
     # GraphQL permissions

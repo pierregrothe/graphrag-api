@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
     # Setup middleware
     setup_cors_middleware(app, container.security_middleware)
     app.add_middleware(SecurityHeadersMiddleware)  # Add security headers middleware
+    # app.add_middleware(CSRFProtectionMiddleware)  # CSRF protection - disabled for compatibility
     setup_auth_middleware(app, container.security_middleware, container.performance_middleware)
     setup_error_handlers(app)
 

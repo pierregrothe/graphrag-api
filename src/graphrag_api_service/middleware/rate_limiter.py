@@ -75,16 +75,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Get client identifier from request."""
         # Try to get authenticated user ID
         if hasattr(request.state, "user") and request.state.user:
-            return f"user:{request.state.user.id}"
+            return f"user:{request.state.user.id}"  # nosemgrep: directly-returned-format-string
 
         # Fall back to IP address
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
-            return f"ip:{forwarded.split(',')[0].strip()}"
+            return f"ip:{forwarded.split(',')[0].strip()}"  # nosemgrep: directly-returned-format-string
 
         client = request.client
         if client:
-            return f"ip:{client.host}"
+            return f"ip:{client.host}"  # nosemgrep: directly-returned-format-string
 
         return "ip:unknown"
 

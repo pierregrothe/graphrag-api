@@ -23,7 +23,7 @@ class RateLimitStrategy(str, Enum):
 
     FIXED_WINDOW = "fixed_window"
     SLIDING_WINDOW = "sliding_window"
-    TOKEN_BUCKET = "token_bucket"
+    TOKEN_BUCKET = "token_bucket"  # nosec B105 - Rate limiting algorithm name, not a password
 
 
 class RateLimitConfig(BaseModel):

@@ -209,7 +209,8 @@ class BenchmarkSuite:
             raise ValueError("No load test scenarios defined.")
 
         total_weight = sum(scenario.weight for scenario in self.scenarios)
-        random_value = random.uniform(0, total_weight)
+        # Using random for load testing scenario selection - not cryptographic use
+        random_value = random.uniform(0, total_weight)  # nosec B311 - Load testing only
 
         cumulative_weight = 0.0
         for scenario in self.scenarios:

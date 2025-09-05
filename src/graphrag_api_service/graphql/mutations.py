@@ -582,7 +582,9 @@ class Mutation:
             # Use secure temporary directory with proper permissions
             temp_dir = tempfile.mkdtemp(prefix="graphrag_", suffix="_data")
             root_directory = temp_dir
-            os.chmod(temp_dir, 0o700)  # Restrict access to owner only
+            os.chmod(
+                temp_dir, 0o700
+            )  # Restrict access to owner only - secure for temporary GraphRAG data # nosemgrep: insecure-file-permissions
 
         config_file = None
 

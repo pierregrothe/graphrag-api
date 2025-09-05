@@ -249,10 +249,12 @@ class SQLiteManager:
 
         # Use parameterized query with explicit field validation
         # Note: set_clauses are built from whitelisted allowed_fields, preventing SQL injection
-        query = f"UPDATE workspaces SET {', '.join(set_clauses)}, updated_at = ? WHERE id = ?"  # nosec B608 - Fields are whitelisted
+        query = f"UPDATE workspaces SET {', '.join(set_clauses)}, updated_at = ? WHERE id = ?"  # nosec B608 - Fields are whitelisted and parameterized # nosemgrep: sqlalchemy-execute-raw-query
 
         with sqlite3.connect(self.db_path) as conn:
-            result = conn.execute(query, values)
+            result = conn.execute(
+                query, values
+            )  # nosec B608 - Query uses parameterized values, fields are whitelisted # nosemgrep: sqlalchemy-execute-raw-query
             conn.commit()
             return result.rowcount > 0
 
@@ -550,10 +552,12 @@ class SQLiteManager:
         values.append(datetime.now(UTC).isoformat())
         values.append(user_id)
 
-        query = f"UPDATE users SET {', '.join(set_clauses)}, updated_at = ? WHERE user_id = ?"  # nosec B608 - Fields are whitelisted
+        query = f"UPDATE users SET {', '.join(set_clauses)}, updated_at = ? WHERE user_id = ?"  # nosec B608 - Fields are whitelisted and parameterized # nosemgrep: sqlalchemy-execute-raw-query
 
         with sqlite3.connect(self.db_path) as conn:
-            result = conn.execute(query, values)
+            result = conn.execute(
+                query, values
+            )  # nosec B608 - Query uses parameterized values, fields are whitelisted # nosemgrep: sqlalchemy-execute-raw-query
             conn.commit()
             return result.rowcount > 0
 

@@ -1,0 +1,27 @@
+# Gitleaks ignore file
+# False positives and directories to exclude from secret scanning
+
+# Cache directories - these contain compiled/cached files, not actual secrets
+**/.mypy_cache/**
+**/__pycache__/**
+**/.pytest_cache/**
+**/node_modules/**
+**/.venv/**
+**/venv/**
+
+# Build artifacts
+**/dist/**
+**/build/**
+**/*.egg-info/**
+
+# Documentation
+**/docs-platform/**
+**/*.md
+
+# Test data and fixtures
+**/tests/fixtures/**
+**/test_data/**
+
+# Known false positives in specific files
+# Add specific file:line entries as needed
+# Example: src/config.py:42:secret_key

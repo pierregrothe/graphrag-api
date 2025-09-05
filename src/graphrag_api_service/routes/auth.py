@@ -34,6 +34,7 @@ from ..exceptions import (
     ResourceNotFoundError,
     ValidationError,
 )
+from ..middleware.csrf_protection import get_csrf_token_endpoint
 from ..models.user import UserCreate
 from ..models.user import UserLogin as UserLoginModel
 from ..repositories.user_repository import UserRepository
@@ -885,3 +886,22 @@ async def batch_api_key_operations(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/csrf-token", summary="Get CSRF Token", tags=["Security"])
+async def get_csrf_token(
+    request: Request,
+    current_user: AuthenticatedUser = Depends(require_key_management),
+) -> dict[str, Any]:
+    """Get CSRF token for authenticated users.
+
+    This endpoint provides CSRF tokens for frontend applications to include
+    in state-changing requests (POST, PUT, PATCH, DELETE).
+
+    Returns:
+        dict: CSRF token information including token value, header name, and expiration
+
+    Raises:
+        HTTPException: If user is not authenticated
+    """
+    return get_csrf_token_endpoint(request)

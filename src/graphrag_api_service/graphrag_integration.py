@@ -6,7 +6,7 @@
 """GraphRAG core integration module for query and indexing operations."""
 
 import asyncio
-import subprocess
+import subprocess  # nosec B404 - Required for GraphRAG CLI integration, input is controlled
 import sys
 from pathlib import Path
 from typing import Any

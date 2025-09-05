@@ -58,11 +58,25 @@ class DatabaseAuthenticationService:
             user = result.scalar_one_or_none()
 
             if not user:
-                logger.warning("Authentication failed: user not found - %s", credentials.username)
+                logger.warning(
+                    "Authentication failed: user not found - %s",
+                    (
+                        credentials.username[:8] + "..."
+                        if len(credentials.username) > 8
+                        else credentials.username
+                    ),
+                )  # Sanitize username # nosemgrep: python-logger-credential-disclosure
                 return None
 
             if not self.jwt_manager.verify_password(credentials.password, user.password_hash):
-                logger.warning("Authentication failed: invalid password - %s", credentials.username)
+                logger.warning(
+                    "Authentication failed: invalid password for user - %s",
+                    (
+                        credentials.username[:8] + "..."
+                        if len(credentials.username) > 8
+                        else credentials.username
+                    ),
+                )  # Don't log password, sanitize username # nosemgrep: python-logger-credential-disclosure
                 return None
 
             # Update last login time
@@ -212,7 +226,10 @@ class DatabaseAuthenticationService:
             user.updated_at = datetime.now(UTC)
             await session.commit()
 
-            logger.info("Updated password for user: %s", user.username)
+            logger.info(
+                "Updated password for user: %s",
+                user.username[:8] + "..." if len(user.username) > 8 else user.username,
+            )  # Sanitize username in logs # nosemgrep: python-logger-credential-disclosure
             return True
 
     async def deactivate_user(self, user_id: str) -> bool:
@@ -306,10 +323,13 @@ class DatabaseAuthenticationService:
                 if not all([user_id, username, email, exp_str]):
                     return None
 
-                # Type assert after validation - we know these are not None
-                assert isinstance(user_id, str)
-                assert isinstance(username, str)
-                assert isinstance(email, str)
+                # Type validation after null check - ensure proper types
+                if (
+                    not isinstance(user_id, str)
+                    or not isinstance(username, str)
+                    or not isinstance(email, str)
+                ):
+                    return None
 
                 # Convert exp timestamp to datetime
                 if isinstance(exp_str, int | float):

@@ -435,6 +435,25 @@ secrets/
 credentials/
 private/
 
+# Security scan reports and artifacts
+.secrets.baseline
+.secrets.baseline.json
+bandit_report*.json
+SECURITY_SCAN_REPORT.md
+security_report*.json
+vulnerability_report*.json
+audit_report*.json
+
+# Git error logs
+git-error.txt
+git-error*.log
+
+# Pre-commit and test output files
+pre-commit-output.txt
+commit-output.txt
+test-output.txt
+*-output.txt
+
 # GraphRAG specific outputs
 *.parquet
 *.feather
