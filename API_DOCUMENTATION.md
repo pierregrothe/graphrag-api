@@ -80,9 +80,9 @@ Content-Type: application/json
 
 ```json
 {
-  "access_token": "eyJ...",
-  "token_type": "bearer",
-  "expires_in": 3600
+    "access_token": "eyJ...",
+    "token_type": "bearer",
+    "expires_in": 3600
 }
 ```
 
@@ -118,11 +118,11 @@ Returns basic health status.
 
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2025-09-02T12:00:00Z",
-  "uptime": 3600.5,
-  "version": "0.1.0",
-  "environment": "production"
+    "status": "healthy",
+    "timestamp": "2025-09-02T12:00:00Z",
+    "uptime": 3600.5,
+    "version": "0.1.0",
+    "environment": "production"
 }
 ```
 
@@ -175,19 +175,19 @@ GET /api/workspaces
 
 ```json
 {
-  "workspaces": [
-    {
-      "id": "uuid",
-      "name": "My Workspace",
-      "description": "Workspace description",
-      "status": "active",
-      "created_at": "2025-09-02T12:00:00Z",
-      "updated_at": "2025-09-02T12:00:00Z"
-    }
-  ],
-  "total": 1,
-  "limit": 10,
-  "offset": 0
+    "workspaces": [
+        {
+            "id": "uuid",
+            "name": "My Workspace",
+            "description": "Workspace description",
+            "status": "active",
+            "created_at": "2025-09-02T12:00:00Z",
+            "updated_at": "2025-09-02T12:00:00Z"
+        }
+    ],
+    "total": 1,
+    "limit": 10,
+    "offset": 0
 }
 ```
 
@@ -253,17 +253,17 @@ Content-Type: application/json
 
 ```json
 {
-  "response": "The main topic is...",
-  "sources": [
-    {
-      "document": "doc1.txt",
-      "relevance": 0.95
+    "response": "The main topic is...",
+    "sources": [
+        {
+            "document": "doc1.txt",
+            "relevance": 0.95
+        }
+    ],
+    "metadata": {
+        "processing_time": 1.23,
+        "tokens_used": 450
     }
-  ],
-  "metadata": {
-    "processing_time": 1.23,
-    "tokens_used": 450
-  }
 }
 ```
 
@@ -307,24 +307,24 @@ POST /graphql
 
 ```graphql
 type Query {
-  workspace(id: ID!): Workspace
-  workspaces(limit: Int, offset: Int): WorkspaceList
-  queryGraph(input: QueryInput!): QueryResponse
-  systemInfo: SystemInfo
-  healthCheck: HealthStatus
+    workspace(id: ID!): Workspace
+    workspaces(limit: Int, offset: Int): WorkspaceList
+    queryGraph(input: QueryInput!): QueryResponse
+    systemInfo: SystemInfo
+    healthCheck: HealthStatus
 }
 
 type Mutation {
-  createWorkspace(input: CreateWorkspaceInput!): Workspace
-  updateWorkspace(id: ID!, input: UpdateWorkspaceInput!): Workspace
-  deleteWorkspace(id: ID!): DeleteResponse
-  indexDocuments(input: IndexInput!): IndexResponse
-  clearCache(namespace: String): ClearCacheResponse
+    createWorkspace(input: CreateWorkspaceInput!): Workspace
+    updateWorkspace(id: ID!, input: UpdateWorkspaceInput!): Workspace
+    deleteWorkspace(id: ID!): DeleteResponse
+    indexDocuments(input: IndexInput!): IndexResponse
+    clearCache(namespace: String): ClearCacheResponse
 }
 
 type Subscription {
-  indexingProgress(jobId: ID!): IndexingProgress
-  queryProgress(queryId: ID!): QueryProgress
+    indexingProgress(jobId: ID!): IndexingProgress
+    queryProgress(queryId: ID!): QueryProgress
 }
 ```
 
@@ -334,17 +334,17 @@ type Subscription {
 
 ```graphql
 query GetWorkspace($id: ID!) {
-  workspace(id: $id) {
-    id
-    name
-    description
-    status
-    statistics {
-      documentCount
-      entityCount
-      relationshipCount
+    workspace(id: $id) {
+        id
+        name
+        description
+        status
+        statistics {
+            documentCount
+            entityCount
+            relationshipCount
+        }
     }
-  }
 }
 ```
 
@@ -352,11 +352,11 @@ query GetWorkspace($id: ID!) {
 
 ```graphql
 mutation CreateWorkspace($input: CreateWorkspaceInput!) {
-  createWorkspace(input: $input) {
-    id
-    name
-    status
-  }
+    createWorkspace(input: $input) {
+        id
+        name
+        status
+    }
 }
 ```
 
@@ -364,12 +364,12 @@ mutation CreateWorkspace($input: CreateWorkspaceInput!) {
 
 ```graphql
 subscription IndexingProgress($jobId: ID!) {
-  indexingProgress(jobId: $jobId) {
-    progress
-    currentStep
-    totalSteps
-    message
-  }
+    indexingProgress(jobId: $jobId) {
+        progress
+        currentStep
+        totalSteps
+        message
+    }
 }
 ```
 
@@ -378,20 +378,22 @@ subscription IndexingProgress($jobId: ID!) {
 ### Connection
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8001/ws');
+const ws = new WebSocket("ws://localhost:8001/ws")
 
 ws.onopen = () => {
-  ws.send(JSON.stringify({
-    type: 'subscribe',
-    channel: 'indexing',
-    jobId: 'job-123'
-  }));
-};
+    ws.send(
+        JSON.stringify({
+            type: "subscribe",
+            channel: "indexing",
+            jobId: "job-123",
+        })
+    )
+}
 
 ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log('Progress:', data.progress);
-};
+    const data = JSON.parse(event.data)
+    console.log("Progress:", data.progress)
+}
 ```
 
 ## Error Handling
@@ -400,16 +402,16 @@ ws.onmessage = (event) => {
 
 ```json
 {
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input parameters",
-    "details": {
-      "field": "workspace_id",
-      "reason": "Workspace not found"
-    },
-    "timestamp": "2025-09-02T12:00:00Z",
-    "request_id": "req-123"
-  }
+    "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Invalid input parameters",
+        "details": {
+            "field": "workspace_id",
+            "reason": "Workspace not found"
+        },
+        "timestamp": "2025-09-02T12:00:00Z",
+        "request_id": "req-123"
+    }
 }
 ```
 
@@ -457,11 +459,11 @@ Retry-After: 60
 
 ```json
 {
-  "error": {
-    "code": "RATE_LIMIT_EXCEEDED",
-    "message": "Rate limit exceeded",
-    "retry_after": 60
-  }
+    "error": {
+        "code": "RATE_LIMIT_EXCEEDED",
+        "message": "Rate limit exceeded",
+        "retry_after": 60
+    }
 }
 ```
 
@@ -564,26 +566,26 @@ print(response.text)
 ### JavaScript/TypeScript
 
 ```typescript
-import { GraphRAGClient } from '@graphrag/client';
+import { GraphRAGClient } from "@graphrag/client"
 
 const client = new GraphRAGClient({
-  baseUrl: 'http://localhost:8001',
-  apiKey: 'your-api-key'
-});
+    baseUrl: "http://localhost:8001",
+    apiKey: "your-api-key",
+})
 
 // Create workspace
 const workspace = await client.createWorkspace({
-  name: 'My Workspace',
-  description: 'Test workspace'
-});
+    name: "My Workspace",
+    description: "Test workspace",
+})
 
 // Query
 const response = await client.query({
-  workspaceId: workspace.id,
-  query: 'What is the main topic?',
-  queryType: 'global'
-});
-console.log(response.text);
+    workspaceId: workspace.id,
+    query: "What is the main topic?",
+    queryType: "global",
+})
+console.log(response.text)
 ```
 
 ## Testing

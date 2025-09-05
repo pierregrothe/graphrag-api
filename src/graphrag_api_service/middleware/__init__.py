@@ -8,9 +8,11 @@
 from .auth import setup_auth_middleware
 from .cors import setup_cors_middleware
 from .error_handlers import setup_error_handlers
+from .security_headers import SecurityHeadersMiddleware
 
 __all__ = [
     "setup_cors_middleware",
     "setup_auth_middleware",
     "setup_error_handlers",
+    "SecurityHeadersMiddleware",
 ]

@@ -10,7 +10,12 @@ from fastapi import FastAPI
 from .config import API_PREFIX, GRAPHQL_PREFIX, settings
 from .dependencies import get_service_container, lifespan
 from .logging_config import get_logger, setup_logging
-from .middleware import setup_auth_middleware, setup_cors_middleware, setup_error_handlers
+from .middleware import (
+    SecurityHeadersMiddleware,
+    setup_auth_middleware,
+    setup_cors_middleware,
+    setup_error_handlers,
+)
 
 # Setup logging
 setup_logging()
@@ -37,6 +42,7 @@ def create_app() -> FastAPI:
 
     # Setup middleware
     setup_cors_middleware(app, container.security_middleware)
+    app.add_middleware(SecurityHeadersMiddleware)  # Add security headers middleware
     setup_auth_middleware(app, container.security_middleware, container.performance_middleware)
     setup_error_handlers(app)
 

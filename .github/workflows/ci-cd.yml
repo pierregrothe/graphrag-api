@@ -51,13 +51,13 @@ jobs:
 
       - name: Run MyPy
         env:
-          JWT_SECRET_KEY: 'test-secret-key-for-ci-only'
+          JWT_SECRET_KEY: 'test-secret-key-for-ci-only-12345678'
           DEBUG: 'true'
         run: poetry run mypy src/graphrag_api_service
 
       - name: Check security with Bandit
         env:
-          JWT_SECRET_KEY: 'test-secret-key-for-ci-only'
+          JWT_SECRET_KEY: 'test-secret-key-for-ci-only-12345678'
           DEBUG: 'true'
         run: poetry run bandit -r src/ -ll
 
@@ -92,7 +92,7 @@ jobs:
 
       - name: Run tests with coverage
         env:
-          JWT_SECRET_KEY: 'test-secret-key-for-ci-only'
+          JWT_SECRET_KEY: 'test-secret-key-for-ci-only-12345678'
           DEBUG: 'true'
           GRAPHRAG_LLM_PROVIDER: 'ollama'
           OLLAMA_BASE_URL: 'http://localhost:11434'

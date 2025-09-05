@@ -126,59 +126,59 @@ REQUEST_TIMEOUT=300
 
 ```yaml
 # docker-compose.prod.yml
-version: '3.8'
+version: "3.8"
 
 services:
-  graphrag-api:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://graphrag_user:${POSTGRES_PASSWORD}@postgres:5432/graphrag_prod
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - postgres
-      - redis
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    graphrag-api:
+        build:
+            context: .
+            dockerfile: Dockerfile.prod
+        ports:
+            - "8000:8000"
+        environment:
+            - DATABASE_URL=postgresql://graphrag_user:${POSTGRES_PASSWORD}@postgres:5432/graphrag_prod
+            - REDIS_URL=redis://redis:6379/0
+        depends_on:
+            - postgres
+            - redis
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
 
-  postgres:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=graphrag_prod
-      - POSTGRES_USER=graphrag_user
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+    postgres:
+        image: postgres:15
+        environment:
+            - POSTGRES_DB=graphrag_prod
+            - POSTGRES_USER=graphrag_user
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
+    redis:
+        image: redis:7-alpine
+        volumes:
+            - redis_data:/data
+        restart: unless-stopped
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/ssl/certs
-    depends_on:
-      - graphrag-api
-    restart: unless-stopped
+    nginx:
+        image: nginx:alpine
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./nginx.conf:/etc/nginx/nginx.conf
+            - ./ssl:/etc/ssl/certs
+        depends_on:
+            - graphrag-api
+        restart: unless-stopped
 
 volumes:
-  postgres_data:
-  redis_data:
+    postgres_data:
+    redis_data:
 ```
 
 ### 5. Load Balancer Configuration
@@ -231,22 +231,22 @@ server {
 ```yaml
 # prometheus.yml
 global:
-  scrape_interval: 15s
+    scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'graphrag-api'
-    static_configs:
-      - targets: ['graphrag-api:8000']
-    metrics_path: '/metrics'
-    scrape_interval: 10s
+    - job_name: "graphrag-api"
+      static_configs:
+          - targets: ["graphrag-api:8000"]
+      metrics_path: "/metrics"
+      scrape_interval: 10s
 
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['postgres-exporter:9187']
+    - job_name: "postgres"
+      static_configs:
+          - targets: ["postgres-exporter:9187"]
 
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
+    - job_name: "redis"
+      static_configs:
+          - targets: ["redis-exporter:9121"]
 ```
 
 ### 7. Deployment Commands
@@ -326,22 +326,22 @@ curl https://your-domain.com/api/system/metrics
 ### Common Production Issues
 
 1. **Database Connection Pool Exhaustion**
-   - Increase `DATABASE_POOL_SIZE` and `DATABASE_MAX_OVERFLOW`
-   - Monitor connection usage in metrics
+    - Increase `DATABASE_POOL_SIZE` and `DATABASE_MAX_OVERFLOW`
+    - Monitor connection usage in metrics
 
 2. **Redis Memory Issues**
-   - Configure `maxmemory` and `maxmemory-policy`
-   - Monitor Redis memory usage
+    - Configure `maxmemory` and `maxmemory-policy`
+    - Monitor Redis memory usage
 
 3. **High CPU Usage**
-   - Scale horizontally with more API instances
-   - Optimize database queries
-   - Enable query caching
+    - Scale horizontally with more API instances
+    - Optimize database queries
+    - Enable query caching
 
 4. **SSL Certificate Issues**
-   - Verify certificate validity and renewal
-   - Check nginx configuration
-   - Monitor certificate expiration
+    - Verify certificate validity and renewal
+    - Check nginx configuration
+    - Monitor certificate expiration
 
 ## Maintenance
 

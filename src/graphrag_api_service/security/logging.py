@@ -3,10 +3,13 @@ Security logging module for GraphRAG API Service.
 
 This module provides structured security logging for authentication events,
 authorization failures, suspicious activities, and security violations.
+Enhanced with comprehensive security monitoring and alerting capabilities.
 """
 
 import json
 import logging
+import time
+from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
@@ -18,6 +21,7 @@ class SecurityLogger:
 
     Provides methods for logging security-related events with consistent
     formatting and metadata for security monitoring and analysis.
+    Enhanced with real-time threat detection and alerting.
     """
 
     def __init__(self, logger_name: str = "graphrag.security"):
@@ -30,6 +34,18 @@ class SecurityLogger:
             formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
+
+        # Security monitoring state
+        self.failed_attempts: dict[str, list[float]] = defaultdict(list)
+        self.suspicious_ips: set[str] = set()
+        self.blocked_ips: set[str] = set()
+        self.security_alerts: list[dict[str, Any]] = []
+
+        # Thresholds for security monitoring
+        self.max_failed_attempts = 5
+        self.failed_attempts_window = 300  # 5 minutes
+        self.suspicious_threshold = 10
+        self.critical_threshold = 20
 
     def _log_security_event(
         self,
@@ -94,7 +110,7 @@ class SecurityLogger:
         request: Request | None = None,
         failure_reason: str | None = None,
     ) -> None:
-        """Log authentication attempt.
+        """Log authentication attempt with enhanced threat detection.
 
         Parameters
         ----------
@@ -111,6 +127,11 @@ class SecurityLogger:
         """
         level = "info" if success else "warning"
         message = f"Authentication {'succeeded' if success else 'failed'}"
+
+        # Enhanced threat detection for failed attempts
+        if not success and request:
+            client_ip = getattr(request.client, "host", "unknown")
+            self._track_failed_attempt(client_ip, request)
 
         self._log_security_event(
             event_type="authentication",
@@ -355,6 +376,175 @@ class SecurityLogger:
             workspace_id=workspace_id,
             action=action,
             success=success,
+        )
+
+    def _track_failed_attempt(self, client_ip: str, request: Request) -> None:
+        """Track failed authentication attempts for threat detection."""
+        current_time = time.time()
+
+        # Add failed attempt
+        self.failed_attempts[client_ip].append(current_time)
+
+        # Clean up old attempts (outside window)
+        cutoff_time = current_time - self.failed_attempts_window
+        self.failed_attempts[client_ip] = [
+            t for t in self.failed_attempts[client_ip] if t > cutoff_time
+        ]
+
+        # Check for suspicious activity
+        attempt_count = len(self.failed_attempts[client_ip])
+
+        if attempt_count >= self.critical_threshold:
+            self._generate_security_alert(
+                "critical_threat_detected",
+                f"Critical threat: {attempt_count} failed attempts from {client_ip}",
+                client_ip,
+                request,
+                severity="critical",
+            )
+            self.blocked_ips.add(client_ip)
+
+        elif attempt_count >= self.suspicious_threshold:
+            self._generate_security_alert(
+                "suspicious_activity",
+                f"Suspicious activity: {attempt_count} failed attempts from {client_ip}",
+                client_ip,
+                request,
+                severity="high",
+            )
+            self.suspicious_ips.add(client_ip)
+
+        elif attempt_count >= self.max_failed_attempts:
+            self._generate_security_alert(
+                "multiple_failed_attempts",
+                f"Multiple failed attempts: {attempt_count} from {client_ip}",
+                client_ip,
+                request,
+                severity="medium",
+            )
+
+    def _generate_security_alert(
+        self,
+        alert_type: str,
+        message: str,
+        client_ip: str,
+        request: Request | None = None,
+        severity: str = "medium",
+    ) -> None:
+        """Generate a security alert for monitoring systems."""
+        alert = {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "alert_type": alert_type,
+            "message": message,
+            "client_ip": client_ip,
+            "severity": severity,
+            "user_agent": request.headers.get("User-Agent") if request else None,
+            "path": request.url.path if request else None,
+        }
+
+        self.security_alerts.append(alert)
+
+        # Keep only recent alerts (last 1000)
+        if len(self.security_alerts) > 1000:
+            self.security_alerts = self.security_alerts[-1000:]
+
+        # Log the alert
+        level = "critical" if severity == "critical" else "error"
+        self._log_security_event(
+            event_type="security_alert",
+            level=level,
+            message=message,
+            request=request,
+            alert_type=alert_type,
+            severity=severity,
+            client_ip=client_ip,
+        )
+
+    def get_security_status(self) -> dict[str, Any]:
+        """Get current security status and statistics."""
+        current_time = time.time()
+        cutoff_time = current_time - 3600  # Last hour
+
+        # Count recent failed attempts
+        recent_failures = 0
+        active_threats = 0
+
+        for ip, attempts in self.failed_attempts.items():
+            recent_attempts = [t for t in attempts if t > cutoff_time]
+            recent_failures += len(recent_attempts)
+
+            if len(recent_attempts) >= self.suspicious_threshold:
+                active_threats += 1
+
+        # Count recent alerts
+        recent_alerts = [
+            alert
+            for alert in self.security_alerts
+            if datetime.fromisoformat(alert["timestamp"].replace("Z", "+00:00")).timestamp()
+            > cutoff_time
+        ]
+
+        return {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "failed_attempts_last_hour": recent_failures,
+            "active_threats": active_threats,
+            "suspicious_ips": len(self.suspicious_ips),
+            "blocked_ips": len(self.blocked_ips),
+            "recent_alerts": len(recent_alerts),
+            "alert_breakdown": (
+                {
+                    alert["severity"]: len(
+                        [a for a in recent_alerts if a["severity"] == alert["severity"]]
+                    )
+                    for alert in recent_alerts
+                }
+                if recent_alerts
+                else {}
+            ),
+            "top_threat_ips": sorted(
+                [(ip, len(attempts)) for ip, attempts in self.failed_attempts.items()],
+                key=lambda x: x[1],
+                reverse=True,
+            )[:10],
+        }
+
+    def is_ip_blocked(self, client_ip: str) -> bool:
+        """Check if an IP address is blocked."""
+        return client_ip in self.blocked_ips
+
+    def is_ip_suspicious(self, client_ip: str) -> bool:
+        """Check if an IP address is marked as suspicious."""
+        return client_ip in self.suspicious_ips
+
+    def unblock_ip(self, client_ip: str) -> bool:
+        """Unblock an IP address (admin function)."""
+        if client_ip in self.blocked_ips:
+            self.blocked_ips.remove(client_ip)
+            self.suspicious_ips.discard(client_ip)
+            self.failed_attempts.pop(client_ip, None)
+
+            self._log_security_event(
+                event_type="admin_action",
+                level="info",
+                message=f"IP address unblocked: {client_ip}",
+                admin_action="unblock_ip",
+                target_ip=client_ip,
+            )
+            return True
+        return False
+
+    def reset_security_state(self) -> None:
+        """Reset all security monitoring state (admin function)."""
+        self.failed_attempts.clear()
+        self.suspicious_ips.clear()
+        self.blocked_ips.clear()
+        self.security_alerts.clear()
+
+        self._log_security_event(
+            event_type="admin_action",
+            level="warning",
+            message="Security monitoring state reset",
+            admin_action="reset_security_state",
         )
 
 

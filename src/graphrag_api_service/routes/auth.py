@@ -26,6 +26,7 @@ from ..auth.rate_limiting import RateLimitConfig as AuthRateLimitConfig
 from ..auth.rate_limiting import RateLimiter
 from ..auth.unified_auth import AuthenticatedUser, require_key_management
 from ..config import get_settings
+from ..database.sqlite_models import SQLiteManager
 from ..exceptions import (
     AuthenticationError,
     QuotaExceededError,
@@ -33,7 +34,11 @@ from ..exceptions import (
     ResourceNotFoundError,
     ValidationError,
 )
+from ..models.user import UserCreate, UserPasswordUpdate, UserUpdate
+from ..models.user import UserLogin as UserLoginModel
+from ..repositories.user_repository import UserRepository
 from ..security import get_security_logger
+from ..services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer(auto_error=False)
@@ -145,6 +150,41 @@ async def get_api_key_manager() -> APIKeyManager:
     return APIKeyManager()
 
 
+# Service Layer Dependencies
+_db_manager_instance: SQLiteManager | None = None
+_user_repository_instance: UserRepository | None = None
+_auth_service_instance: AuthService | None = None
+
+
+async def get_db_manager() -> SQLiteManager:
+    """Get database manager singleton instance."""
+    global _db_manager_instance
+    if _db_manager_instance is None:
+        settings = get_settings()
+        _db_manager_instance = SQLiteManager(settings.database_path)
+    return _db_manager_instance
+
+
+async def get_user_repository() -> UserRepository:
+    """Get user repository singleton instance."""
+    global _user_repository_instance
+    if _user_repository_instance is None:
+        db_manager = await get_db_manager()
+        _user_repository_instance = UserRepository(db_manager)
+    return _user_repository_instance
+
+
+async def get_auth_service() -> AuthService:
+    """Get authentication service singleton instance."""
+    global _auth_service_instance
+    if _auth_service_instance is None:
+        user_repository = await get_user_repository()
+        jwt_manager = await get_jwt_manager()
+        db_manager = await get_db_manager()
+        _auth_service_instance = AuthService(user_repository, jwt_manager, db_manager)
+    return _auth_service_instance
+
+
 # Enhanced Authentication Helper Functions
 
 
@@ -170,32 +210,26 @@ async def _validate_password_strength(password: str) -> None:
         )
 
 
-async def _user_exists(email: str, username: str) -> bool:
+async def _user_exists(email: str, username: str, user_repository: UserRepository) -> bool:
     """Check if user already exists in database."""
-    # TODO: Implement actual database check
-    # For now, simulate with some basic logic
-    # from ..database.simple_connection import get_simple_database_manager
-    # settings = get_settings()
-    # db_manager = get_simple_database_manager(settings)  # TODO: Implement actual database check
-
-    # Simulate database check - in production this would be a real query
-    return False  # Always allow registration for now
+    return await user_repository.user_exists(email, username)
 
 
-async def _create_user_in_database(user_data: UserRegistration, password_hash: str) -> str:
+async def _create_user_in_database(user_data: UserRegistration, auth_service: AuthService) -> str:
     """Create user in database and return user ID."""
-    # TODO: Implement actual database insertion
-    # For now, generate a proper user ID
-    import uuid
+    # Convert UserRegistration to UserCreate model
+    user_create = UserCreate(
+        username=user_data.username,
+        email=user_data.email,
+        password=user_data.password,
+        full_name=user_data.full_name,
+        roles=["user"],
+        permissions=["read:workspaces", "create:workspaces"],
+    )
 
-    user_id = str(uuid.uuid4())
-
-    # In production, this would insert into database:
-    # INSERT INTO users (id, username, email, password_hash, full_name, created_at)
-    # VALUES (user_id, user_data.username, user_data.email, password_hash,
-    #         user_data.full_name, NOW())
-
-    return user_id
+    # Register user through auth service
+    registration_result = await auth_service.register_user(user_create)
+    return registration_result["user"]["user_id"]
 
 
 async def _check_login_rate_limit(request: Request, email: str) -> None:
@@ -258,37 +292,11 @@ async def _check_register_rate_limit(request: Request, email: str) -> None:
         ) from e
 
 
-async def _authenticate_user_credentials(email: str, password: str) -> dict[str, Any] | None:
+async def _authenticate_user_credentials(
+    email: str, password: str, auth_service: AuthService
+) -> dict[str, Any] | None:
     """Authenticate user credentials against database."""
-    # TODO: Implement actual database authentication
-    # For now, simulate authentication with basic password checking for testing
-
-    # In production, this would:
-    # 1. Query database for user by email
-    # 2. Verify password hash using bcrypt
-    # 3. Return user data if valid, None if invalid
-
-    # For testing: only accept specific valid passwords
-    valid_passwords = {
-        "test@example.com": "SecurePass123!",
-        "admin@example.com": "AdminPass123!",
-    }
-
-    # Check if email exists and password matches
-    if email in valid_passwords and password == valid_passwords[email]:
-        # Simulate user data for demo
-        return {
-            "user_id": f"user_{email.split('@')[0]}",
-            "username": email.split("@")[0],
-            "email": email,
-            "roles": ["user"],
-            "permissions": ["read:workspaces", "write:workspaces"],
-            "tenant_id": None,
-        }
-
-    # Invalid credentials - simulate timing attack protection
-    await _simulate_password_verification()
-    return None
+    return await auth_service.authenticate_user(email, password)
 
 
 async def _simulate_password_verification() -> None:
@@ -307,11 +315,9 @@ async def _simulate_password_verification() -> None:
     pwd_context.verify(dummy_password, dummy_hash)
 
 
-async def _update_last_login(user_id: str) -> None:
+async def _update_last_login(user_id: str, user_repository: UserRepository) -> None:
     """Update user's last login timestamp."""
-    # TODO: Implement actual database update
-    # UPDATE users SET last_login_at = NOW() WHERE id = user_id
-    pass
+    await user_repository.update_last_login(user_id)
 
 
 async def get_current_user(
@@ -352,7 +358,7 @@ async def get_current_user(
 async def register_user(
     request: Request,
     user_data: UserRegistration,
-    jwt_manager: JWTManager = Depends(get_jwt_manager),
+    auth_service: AuthService = Depends(get_auth_service),
 ) -> UserProfile:
     """Register a new user account.
 
@@ -363,32 +369,33 @@ async def register_user(
         # Apply rate limiting for registration attempts
         await _check_register_rate_limit(request, user_data.email)
 
-        # Enhanced password validation
-        await _validate_password_strength(user_data.password)
-
-        # Check if user already exists (simulate database check)
-        if await _user_exists(user_data.email, user_data.username):
-            raise ValidationError("User with this email or username already exists")
-
-        # Hash password securely
-        password_hash = jwt_manager.pwd_context.hash(user_data.password)
-
-        # Create user with proper database integration
-        user_id = await _create_user_in_database(user_data, password_hash)
-
-        # Log successful registration with enhanced security logging
-        security_logger.authentication_attempt(
-            success=True, user_id=user_id, method="registration", request=request
-        )
-
-        return UserProfile(
-            user_id=user_id,
+        # Convert to UserCreate model and register through auth service
+        user_create = UserCreate(
             username=user_data.username,
             email=user_data.email,
+            password=user_data.password,
             full_name=user_data.full_name,
             roles=["user"],
             permissions=["read:workspaces", "create:workspaces"],
-            created_at=datetime.now(UTC),
+        )
+
+        # Register user through auth service (handles all validation and creation)
+        registration_result = await auth_service.register_user(user_create)
+        user_info = registration_result["user"]
+
+        # Log successful registration with enhanced security logging
+        security_logger.authentication_attempt(
+            success=True, user_id=user_info["user_id"], method="registration", request=request
+        )
+
+        return UserProfile(
+            user_id=user_info["user_id"],
+            username=user_info["username"],
+            email=user_info["email"],
+            full_name=user_info["full_name"],
+            roles=user_info["roles"],
+            permissions=user_info["permissions"],
+            created_at=user_info["created_at"],
             last_login_at=None,
         )
 
@@ -403,7 +410,9 @@ async def register_user(
 
 @router.post("/login")
 async def login_user(
-    request: Request, credentials: UserLogin, jwt_manager: JWTManager = Depends(get_jwt_manager)
+    request: Request,
+    credentials: UserLogin,
+    auth_service: AuthService = Depends(get_auth_service),
 ) -> dict[str, Any]:
     """Authenticate user and return JWT tokens.
 
@@ -414,55 +423,18 @@ async def login_user(
         # Apply rate limiting for login attempts
         await _check_login_rate_limit(request, credentials.email)
 
-        # Authenticate user against database with timing attack protection
-        user_data = await _authenticate_user_credentials(credentials.email, credentials.password)
+        # Convert to UserLogin model and authenticate through auth service
+        user_login = UserLoginModel(email=credentials.email, password=credentials.password)
 
-        if not user_data:
-            # Log failed authentication attempt
-            security_logger.authentication_attempt(
-                success=False, method="login", request=request, failure_reason="Invalid credentials"
-            )
-            # Use timing-safe comparison to prevent timing attacks
-            await _simulate_password_verification()
-            raise AuthenticationError("Invalid email or password")
-
-        # Create comprehensive token data
-        token_data = TokenData(
-            user_id=user_data["user_id"],
-            username=user_data["username"],
-            email=user_data["email"],
-            roles=user_data.get("roles", ["user"]),
-            permissions=user_data.get("permissions", ["read:workspaces", "write:workspaces"]),
-            expires_at=datetime.now(UTC),
-            tenant_id=user_data.get("tenant_id"),
-        )
-
-        # Create tokens with enhanced security
-        access_token = jwt_manager.create_access_token(token_data)
-        refresh_token = jwt_manager.create_refresh_token(
-            user_data["user_id"], device_info=request.headers.get("user-agent")
-        )
-
-        # Update last login timestamp
-        await _update_last_login(user_data["user_id"])
+        # Login user through auth service (handles authentication, token creation, and session management)
+        login_result = await auth_service.login_user(user_login, request.headers.get("user-agent"))
 
         # Log successful login with enhanced details
         security_logger.authentication_attempt(
-            success=True, user_id=user_data["user_id"], method="login", request=request
+            success=True, user_id=login_result["user"]["user_id"], method="login", request=request
         )
 
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-            "expires_in": jwt_manager.config.access_token_expire_minutes * 60,
-            "user": {
-                "user_id": user_data["user_id"],
-                "username": token_data.username,
-                "email": token_data.email,
-                "roles": token_data.roles,
-            },
-        }
+        return login_result
 
     except HTTPException:
         # Re-raise HTTP exceptions (like rate limiting 429) as-is
@@ -510,7 +482,7 @@ async def refresh_token(
 @router.post("/logout")
 async def logout_user(
     request: Request,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
     jwt_manager: JWTManager = Depends(get_jwt_manager),
 ) -> dict[str, str]:
     """Logout user and revoke tokens.
@@ -528,7 +500,7 @@ async def logout_user(
 
             # Log successful logout
             security_logger.authentication_attempt(
-                success=True, user_id=current_user.user_id, method="logout", request=request
+                success=True, user_id=current_user["sub"], method="logout", request=request
             )
 
         return {"message": "Successfully logged out"}
@@ -539,19 +511,19 @@ async def logout_user(
 
 @router.get("/profile", response_model=UserProfile)
 async def get_user_profile(
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ) -> UserProfile:
     """Get current user profile information.
 
     Returns detailed profile information for the authenticated user.
     """
     return UserProfile(
-        user_id=current_user.user_id,
-        username=current_user.username,
-        email=current_user.email,
-        full_name=getattr(current_user, "full_name", None),
-        roles=current_user.roles,
-        permissions=current_user.permissions,
+        user_id=current_user["sub"],  # JWT uses "sub" for user ID
+        username=current_user.get("username", ""),
+        email=current_user.get("email", ""),
+        full_name=current_user.get("full_name"),
+        roles=current_user.get("roles", ["user"]),
+        permissions=current_user.get("permissions", ["read:workspaces"]),
         created_at=datetime.now(UTC),  # Would come from database
         last_login_at=datetime.now(UTC),  # Would come from database
     )

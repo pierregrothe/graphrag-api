@@ -12,6 +12,7 @@ A **production-ready, enterprise-grade FastAPI service** for GraphRAG (Graph Ret
 ## ✨ Key Features
 
 ### 🔐 **Enterprise Security**
+
 - **Zero Critical Vulnerabilities**: Comprehensive security audit passed
 - **Path Traversal Protection**: Advanced input validation and containment checking
 - **JWT Authentication**: Secure token-based authentication with RBAC
@@ -19,12 +20,14 @@ A **production-ready, enterprise-grade FastAPI service** for GraphRAG (Graph Ret
 - **Security Middleware**: Rate limiting, CORS, security headers
 
 ### 📊 **Dual API Architecture**
+
 - **GraphQL API**: Modern, flexible query language with real-time subscriptions
 - **REST API**: Traditional endpoints with comprehensive OpenAPI documentation
 - **100% Feature Parity**: All operations available through both interfaces
 - **Interactive Playgrounds**: Built-in GraphQL Playground and Swagger UI
 
 ### 🏗️ **Production Architecture**
+
 - **Multi-Workspace Support**: Isolated environments for different projects
 - **Performance Monitoring**: Real-time metrics with Prometheus integration
 - **Distributed Caching**: Redis-based caching with intelligent invalidation
@@ -32,12 +35,14 @@ A **production-ready, enterprise-grade FastAPI service** for GraphRAG (Graph Ret
 - **Containerized Deployment**: Docker and Docker Compose support
 
 ### 🎯 **GraphRAG Integration**
+
 - **Microsoft GraphRAG**: Complete integration with the GraphRAG framework
 - **Knowledge Graph Operations**: Entity and relationship querying with advanced analytics
 - **Indexing Management**: Background job processing with progress tracking
 - **Advanced Query Engine**: Multi-hop queries, community detection, centrality analysis
 
 ### 🔄 **Workspace Lifecycle Management**
+
 - **Automatic Cleanup**: Configurable TTL-based workspace expiration
 - **Usage Tracking**: Comprehensive metrics for access patterns and resource utilization
 - **Idle Detection**: Smart cleanup based on workspace activity patterns
@@ -300,6 +305,7 @@ export ENVIRONMENT=production
 ## 🔐 Security Features
 
 ### Path Traversal Protection
+
 Our service implements comprehensive path traversal protection:
 
 ```python
@@ -313,6 +319,7 @@ def validate_workspace_path(workspace_id: str, settings) -> str:
 ```
 
 ### Authentication & Authorization
+
 - **JWT Tokens**: Secure, stateless authentication with singleton token management
 - **API Keys**: Service-to-service authentication with granular scopes
 - **Role-Based Access Control (RBAC)**: Granular permissions and workspace isolation
@@ -320,6 +327,7 @@ def validate_workspace_path(workspace_id: str, settings) -> str:
 - **Session Management**: Secure session handling with automatic cleanup
 
 ### Recent Security Enhancements (2025)
+
 - **🔒 Caching Security**: Migrated from pickle to JSON serialization, eliminating deserialization vulnerabilities
 - **🛡️ JWT Token Management**: Implemented singleton pattern for consistent token blacklist across requests
 - **⚡ Authentication Exception Handling**: Enhanced error handling with proper HTTP status code mapping
@@ -327,12 +335,14 @@ def validate_workspace_path(workspace_id: str, settings) -> str:
 - **🚨 Security Logging**: Enhanced security event logging with detailed audit trails
 
 ### Security Headers
+
 - Content Security Policy (CSP)
 - X-Frame-Options
 - X-Content-Type-Options
 - Strict-Transport-Security
 
 ### Security Audit Results
+
 - **✅ Zero Critical Vulnerabilities**: All security issues resolved
 - **✅ 100% Test Coverage**: Comprehensive authentication and security testing
 - **✅ Production Ready**: Enterprise-grade security controls implemented
@@ -341,41 +351,41 @@ def validate_workspace_path(workspace_id: str, settings) -> str:
 
 ### REST API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Service health check |
-| `/api/workspaces` | GET, POST | Workspace management |
-| `/api/workspaces/{id}` | GET, PUT, DELETE | Individual workspace operations |
-| `/api/workspaces/{id}/cleanup` | POST | Force cleanup specific workspace |
-| `/api/workspaces/cleanup/stats` | GET | Get cleanup service statistics |
-| `/api/workspaces/cleanup/run` | POST | Trigger manual cleanup cycle |
-| `/api/graph/entities` | GET | Query graph entities |
-| `/api/graph/relationships` | GET | Query graph relationships |
-| `/api/graph/communities` | GET | Query graph communities |
-| `/api/indexing/jobs` | GET, POST | Indexing job management |
-| `/api/system/status` | GET | System status and metrics |
+| Endpoint                        | Method           | Description                      |
+| ------------------------------- | ---------------- | -------------------------------- |
+| `/health`                       | GET              | Service health check             |
+| `/api/workspaces`               | GET, POST        | Workspace management             |
+| `/api/workspaces/{id}`          | GET, PUT, DELETE | Individual workspace operations  |
+| `/api/workspaces/{id}/cleanup`  | POST             | Force cleanup specific workspace |
+| `/api/workspaces/cleanup/stats` | GET              | Get cleanup service statistics   |
+| `/api/workspaces/cleanup/run`   | POST             | Trigger manual cleanup cycle     |
+| `/api/graph/entities`           | GET              | Query graph entities             |
+| `/api/graph/relationships`      | GET              | Query graph relationships        |
+| `/api/graph/communities`        | GET              | Query graph communities          |
+| `/api/indexing/jobs`            | GET, POST        | Indexing job management          |
+| `/api/system/status`            | GET              | System status and metrics        |
 
 ### GraphQL Schema
 
 ```graphql
 type Query {
-  workspaces(limit: Int, offset: Int): WorkspaceConnection
-  entities(workspaceId: String!, limit: Int): EntityConnection
-  relationships(workspaceId: String!, limit: Int): RelationshipConnection
-  communities(workspaceId: String!): [Community]
-  systemHealth: SystemHealth
+    workspaces(limit: Int, offset: Int): WorkspaceConnection
+    entities(workspaceId: String!, limit: Int): EntityConnection
+    relationships(workspaceId: String!, limit: Int): RelationshipConnection
+    communities(workspaceId: String!): [Community]
+    systemHealth: SystemHealth
 }
 
 type Mutation {
-  createWorkspace(input: WorkspaceCreateInput!): Workspace
-  updateWorkspace(id: String!, input: WorkspaceUpdateInput!): Workspace
-  deleteWorkspace(id: String!): Boolean
-  startIndexing(input: IndexingJobInput!): IndexingJob
+    createWorkspace(input: WorkspaceCreateInput!): Workspace
+    updateWorkspace(id: String!, input: WorkspaceUpdateInput!): Workspace
+    deleteWorkspace(id: String!): Boolean
+    startIndexing(input: IndexingJobInput!): IndexingJob
 }
 
 type Subscription {
-  indexingProgress(jobId: String!): IndexingProgress
-  systemMetrics: SystemMetrics
+    indexingProgress(jobId: String!): IndexingProgress
+    systemMetrics: SystemMetrics
 }
 ```
 
@@ -399,25 +409,25 @@ The service is organized into focused, loosely-coupled modules:
 ### Docker Compose (Development)
 
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
-  graphrag-api:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - DEBUG=true
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - redis
-    volumes:
-      - ./data:/app/data
-      - ./workspaces:/app/workspaces
+    graphrag-api:
+        build: .
+        ports:
+            - "8000:8000"
+        environment:
+            - DEBUG=true
+            - REDIS_URL=redis://redis:6379/0
+        depends_on:
+            - redis
+        volumes:
+            - ./data:/app/data
+            - ./workspaces:/app/workspaces
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    redis:
+        image: redis:7-alpine
+        ports:
+            - "6379:6379"
 ```
 
 ### Production Deployment
@@ -439,6 +449,7 @@ docker run -d \
 ## 📈 Performance Monitoring
 
 ### Metrics Available
+
 - Request latency and throughput
 - Database query performance
 - Cache hit/miss rates
@@ -446,6 +457,7 @@ docker run -d \
 - GraphRAG operation metrics
 
 ### Health Checks
+
 - `/health` - Basic service health
 - `/health/detailed` - Comprehensive system status
 - `/metrics` - Prometheus metrics endpoint
