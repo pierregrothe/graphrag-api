@@ -573,6 +573,7 @@ entity_generator = graph_ops.generate_entities(
 ### Common Issues
 
 1. **Memory Issues with Large Graphs**
+
    ```python
    # Reduce batch sizes
    config.batch_size = 50
@@ -580,6 +581,7 @@ entity_generator = graph_ops.generate_entities(
    ```
 
 2. **Slow Community Detection**
+
    ```python
    # Use faster algorithms for large graphs
    communities = await graph_ops.detect_communities(
@@ -589,6 +591,7 @@ entity_generator = graph_ops.generate_entities(
    ```
 
 3. **Query Timeouts**
+
    ```python
    # Increase timeouts for complex queries
    config.centrality_calculation_timeout = 600

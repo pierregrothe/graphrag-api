@@ -149,6 +149,15 @@ def main() -> int:
         if fix_result:
             print_success("Import ordering fixed successfully")
 
+        # Auto-fix markdown formatting
+        print_info("Running markdown formatter...")
+        fix_result = run_command(
+            "npm run fix:md",
+            "Markdown auto-formatting"
+        )
+        if fix_result:
+            print_success("Markdown formatting fixed successfully")
+
         print_info("Auto-fix complete. Now running validation checks...")
 
     # ===== CODE QUALITY CHECKS =====
@@ -214,6 +223,21 @@ def main() -> int:
     else:
         results["Unit Tests"] = "FAILED"
         all_passed = False
+
+    # ===== MARKDOWN CHECKS =====
+    print_header("MARKDOWN CHECKS")
+
+    # Markdown linting and formatting check
+    if run_command(
+        "npm run check:md",
+        "Markdown linting and formatting"
+    ):
+        results["Markdown"] = "PASSED"
+    else:
+        results["Markdown"] = "FAILED"
+        all_passed = False
+        if not args.fix:
+            print_warning("Run 'npm run fix:md' to fix markdown issues")
 
     # ===== ADDITIONAL CHECKS (Not in CI but useful locally) =====
     print_header("ADDITIONAL LOCAL CHECKS")

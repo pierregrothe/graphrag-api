@@ -64,15 +64,18 @@ powershell -ExecutionPolicy Bypass -File scripts\run_ci_checks.ps1
 The project includes GitHub Actions CI that runs on push and PR. Run these checks locally before pushing:
 
 **Code Quality:**
+
 - `poetry run black --check src/ tests/` - Black formatting check
 - `poetry run ruff check src/ tests/` - Ruff linting
 - `poetry run mypy src/graphrag_api_service` - Type checking
 - `poetry run bandit -r src/ -ll` - Security scanning
 
 **Testing:**
+
 - `poetry run pytest tests/unit/ --cov=src/graphrag_api_service --cov-report=term-missing -v` - Unit tests with coverage
 
 **Quick CI Check Script:**
+
 ```bash
 # Run all CI checks locally with auto-fix (default)
 python scripts/run_ci_checks.py
@@ -91,9 +94,11 @@ powershell -ExecutionPolicy Bypass -File scripts\run_ci_checks.ps1 -NoFix
 ```
 
 The CI check scripts will automatically:
+
 - Format code with Black
 - Fix linting issues with Ruff
 - Sort imports with isort
+- Format and lint markdown files
 - Then validate all checks pass
 
 ### Project Structure

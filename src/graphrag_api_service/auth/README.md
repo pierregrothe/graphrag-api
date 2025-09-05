@@ -97,6 +97,7 @@ except JWTError:
 ```
 
 **Key Features:**
+
 - Secure token generation with configurable algorithms
 - Automatic expiration handling
 - Refresh token support
@@ -131,6 +132,7 @@ except ValueError:
 ```
 
 **Key Features:**
+
 - Secure key generation with prefixes
 - Permission-based access control
 - Expiration date management
@@ -169,6 +171,7 @@ if authenticated_user:
 ```
 
 **Key Features:**
+
 - Secure password hashing with bcrypt
 - User role management
 - Account activation/deactivation
@@ -204,6 +207,7 @@ if rbac.has_permission(user_roles, "write:workspaces"):
 ```
 
 **Permission Patterns:**
+
 - `read:workspaces` - Read workspace data
 - `write:workspaces` - Create/update workspaces
 - `delete:workspaces` - Delete workspaces
@@ -334,6 +338,7 @@ AUTH_RATE_LIMIT_WINDOW=60
 ### Security Best Practices
 
 1. **Secret Key Management**
+
    ```bash
    # Generate secure keys
    JWT_SECRET_KEY=$(openssl rand -hex 32)
@@ -357,18 +362,21 @@ AUTH_RATE_LIMIT_WINDOW=60
 ## 🛡️ Security Features
 
 ### Token Security
+
 - **Secure Generation**: Cryptographically secure random tokens
 - **Expiration Handling**: Automatic token expiration
 - **Blacklisting**: Revoked token tracking
 - **Refresh Rotation**: Secure token refresh mechanism
 
 ### Password Security
+
 - **bcrypt Hashing**: Industry-standard password hashing
 - **Salt Generation**: Unique salt per password
 - **Timing Attack Protection**: Constant-time comparisons
 - **Password Policies**: Configurable complexity requirements
 
 ### API Key Security
+
 - **Prefix Identification**: Easy key identification
 - **Secure Storage**: Hashed key storage
 - **Permission Scoping**: Granular permission control
@@ -491,6 +499,7 @@ def test_insufficient_permissions(client, user_auth_headers):
 ## 📊 Monitoring & Metrics
 
 The authentication module provides metrics for:
+
 - Authentication success/failure rates
 - Token generation and validation counts
 - API key usage statistics

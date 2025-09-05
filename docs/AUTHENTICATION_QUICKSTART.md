@@ -116,6 +116,7 @@ curl "http://localhost:8001/api/endpoint?api_key=your_api_key_here"
 ```
 
 **Note**: Query parameter method must be enabled in .env:
+
 ```env
 API_KEY_ALLOW_QUERY_PARAM=true
 ```
@@ -314,6 +315,7 @@ spec:
 ### Problem: 401 Unauthorized
 
 **Solution**: Check that:
+
 1. Authentication is enabled in .env
 2. API key is correct (check for typos)
 3. API key hasn't expired

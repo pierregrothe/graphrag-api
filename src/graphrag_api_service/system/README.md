@@ -85,6 +85,7 @@ print(f"Cache: {cache_health['status']}")
 ```
 
 **Health Check Categories:**
+
 - **Database Connectivity**: Connection pool status, query performance
 - **Cache Systems**: Redis connectivity, memory usage, hit rates
 - **External Services**: LLM providers, vector stores, APIs

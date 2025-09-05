@@ -73,9 +73,9 @@ curl http://localhost:8001/health
 
 4. **Access the API:**
 
-- API Documentation: http://localhost:8001/docs
-- GraphQL Playground: http://localhost:8001/graphql
-- Health Check: http://localhost:8001/health
+- API Documentation: <http://localhost:8001/docs>
+- GraphQL Playground: <http://localhost:8001/graphql>
+- Health Check: <http://localhost:8001/health>
 
 ### Development without Docker
 
@@ -101,7 +101,7 @@ poetry run uvicorn src.graphrag_api_service.main:app --reload --port 8001
 
 1. **Install Google Cloud CLI:**
 
-Download from: https://cloud.google.com/sdk/docs/install
+Download from: <https://cloud.google.com/sdk/docs/install>
 
 2. **Authenticate and set project:**
 
@@ -210,7 +210,7 @@ gcloud run services logs read graphrag-api --region=us-central1
 | `AUTH_ENABLED` | Enable authentication | false | Development |
 | `JWT_SECRET_KEY` | JWT signing key | (required) | Production |
 | `GOOGLE_API_KEY` | Google Cloud API key | (required for Gemini) | Production |
-| `OLLAMA_BASE_URL` | Ollama server URL | http://localhost:11434 | Development |
+| `OLLAMA_BASE_URL` | Ollama server URL | <http://localhost:11434> | Development |
 
 ### Provider-Specific Settings
 
@@ -255,9 +255,10 @@ GEMINI_MODEL=gemini-1.5-flash
 
 #### 1. Ollama Connection Failed (Local)
 
-**Error:** "Cannot connect to Ollama at http://localhost:11434"
+**Error:** "Cannot connect to Ollama at <http://localhost:11434>"
 
 **Solution:**
+
 ```bash
 # Check if Ollama is running
 docker ps | grep ollama
@@ -274,6 +275,7 @@ docker-compose -f docker-compose.simple.yml restart ollama
 **Error:** "Memory limit exceeded"
 
 **Solution:**
+
 ```bash
 # Increase memory allocation
 gcloud run services update graphrag-api \
@@ -286,6 +288,7 @@ gcloud run services update graphrag-api \
 **Error:** "Database is locked"
 
 **Solution:**
+
 - SQLite has limited concurrency
 - For production with multiple users, consider PostgreSQL
 - Ensure only one process writes to the database
@@ -295,6 +298,7 @@ gcloud run services update graphrag-api \
 **Error:** "JWT signature verification failed"
 
 **Solution:**
+
 ```bash
 # Update JWT secret in Cloud Run
 echo -n "new-secret-key" | gcloud secrets versions add graphrag-jwt-secret --data-file=-
@@ -369,13 +373,14 @@ docker cp graphrag-api:/app/data/backup.db ./backup.db
 - SQLite on Cloud Run uses `/tmp` (ephemeral storage)
 - Data is lost when instance scales to zero
 - For persistence, use:
-  - Cloud SQL for relational data
-  - Firestore for NoSQL data
-  - Cloud Storage for file-based data
+    - Cloud SQL for relational data
+    - Firestore for NoSQL data
+    - Cloud Storage for file-based data
 
 ## Support
 
 For issues or questions:
+
 1. Check the [documentation](../README.md)
 2. Review [common issues](#troubleshooting)
 3. Open an issue on GitHub

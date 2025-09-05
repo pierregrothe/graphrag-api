@@ -13,6 +13,7 @@ https://api.graphrag.example.com
 ## Authentication
 
 The API uses JWT (JSON Web Tokens) for authentication. After successful login, you'll receive:
+
 - **Access Token**: Short-lived token for API requests (30 minutes)
 - **Refresh Token**: Long-lived token for obtaining new access tokens (7 days)
 
@@ -33,6 +34,7 @@ Register a new user account.
 **Endpoint:** `POST /auth/register`
 
 **Request Body:**
+
 ```json
 {
   "username": "johndoe",
@@ -43,6 +45,7 @@ Register a new user account.
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "user_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -57,6 +60,7 @@ Register a new user account.
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: User already exists or validation failed
 - `422 Unprocessable Entity`: Invalid input data
 
@@ -67,6 +71,7 @@ Authenticate and receive access tokens.
 **Endpoint:** `POST /auth/login`
 
 **Request Body:**
+
 ```json
 {
   "email": "john.doe@example.com",
@@ -75,6 +80,7 @@ Authenticate and receive access tokens.
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -91,6 +97,7 @@ Authenticate and receive access tokens.
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: Invalid credentials
 - `429 Too Many Requests`: Rate limit exceeded
 
@@ -101,11 +108,13 @@ Retrieve the current user's profile information.
 **Endpoint:** `GET /auth/profile`
 
 **Headers:**
+
 ```http
 Authorization: Bearer <access_token>
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "user_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -120,6 +129,7 @@ Authorization: Bearer <access_token>
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: Invalid or expired token
 
 ### 4. Refresh Access Token
@@ -129,6 +139,7 @@ Obtain a new access token using a refresh token.
 **Endpoint:** `POST /auth/refresh`
 
 **Request Body:**
+
 ```json
 {
   "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -136,6 +147,7 @@ Obtain a new access token using a refresh token.
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -145,6 +157,7 @@ Obtain a new access token using a refresh token.
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: Invalid or expired refresh token
 
 ### 5. User Logout
@@ -154,11 +167,13 @@ Invalidate the current session and tokens.
 **Endpoint:** `POST /auth/logout`
 
 **Headers:**
+
 ```http
 Authorization: Bearer <access_token>
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "message": "Successfully logged out"
@@ -166,11 +181,13 @@ Authorization: Bearer <access_token>
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: Invalid or expired token
 
 ## Password Requirements
 
 Passwords must meet the following criteria:
+
 - Minimum 8 characters
 - At least one uppercase letter
 - At least one lowercase letter
@@ -186,6 +203,7 @@ The API implements rate limiting to prevent abuse:
 - **General auth endpoints**: 100 requests per hour per IP
 
 Rate limit headers are included in responses:
+
 ```http
 X-RateLimit-Limit: 5
 X-RateLimit-Remaining: 3
@@ -198,6 +216,7 @@ X-RateLimit-Window: 300
 ### Security Headers
 
 All responses include comprehensive security headers:
+
 - `X-Frame-Options: DENY`
 - `X-Content-Type-Options: nosniff`
 - `X-XSS-Protection: 1; mode=block`
@@ -207,6 +226,7 @@ All responses include comprehensive security headers:
 ### CORS Configuration
 
 CORS is configured based on environment:
+
 - **Production**: Restricted to configured origins
 - **Development**: Allows localhost origins
 - **Testing**: Allows all origins
@@ -402,6 +422,7 @@ pytest tests/test_auth* -v
 ### Support
 
 For additional support or questions:
+
 - Check the troubleshooting guide
 - Review error messages and codes
 - Contact support with specific error details

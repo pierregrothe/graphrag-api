@@ -82,6 +82,7 @@ workspaces = await cache.get_many(["workspace:1", "workspace:2"])
 ```
 
 **Key Features:**
+
 - **Automatic Serialization**: JSON, pickle, and custom serializers
 - **Compression**: Automatic compression for large values
 - **Connection Pooling**: Efficient connection management
@@ -116,6 +117,7 @@ entities = await get_entities("workspace-123")  # Second call: cache hit
 ### Cache Strategies
 
 #### 1. Cache-Aside Pattern
+
 ```python
 async def get_workspace(workspace_id: str):
     # Try cache first
@@ -132,6 +134,7 @@ async def get_workspace(workspace_id: str):
 ```
 
 #### 2. Write-Through Pattern
+
 ```python
 async def update_workspace(workspace_id: str, data: dict):
     # Update database
@@ -144,6 +147,7 @@ async def update_workspace(workspace_id: str, data: dict):
 ```
 
 #### 3. Write-Behind Pattern
+
 ```python
 from asyncio import create_task
 
@@ -222,6 +226,7 @@ config = RedisCacheConfig(
 ## 🎯 Cache Key Strategies
 
 ### Hierarchical Keys
+
 ```python
 # Workspace-based hierarchy
 workspace_key = f"workspace:{workspace_id}"
@@ -234,6 +239,7 @@ search_key = f"search:{search_term}:{workspace_id}:{limit}:{offset}"
 ```
 
 ### Cache Tags
+
 ```python
 # Tag-based invalidation
 await cache.set_with_tags(
@@ -251,6 +257,7 @@ await cache.invalidate_by_tags(["entities"])       # Clear all entity caches
 ## 📊 Performance Optimization
 
 ### Connection Pooling
+
 ```python
 # Efficient connection management
 cache_config = RedisCacheConfig(
@@ -262,6 +269,7 @@ cache_config = RedisCacheConfig(
 ```
 
 ### Pipeline Operations
+
 ```python
 # Batch operations for better performance
 async def cache_multiple_workspaces(workspaces: list):
@@ -274,6 +282,7 @@ async def cache_multiple_workspaces(workspaces: list):
 ```
 
 ### Compression
+
 ```python
 # Automatic compression for large objects
 large_data = {"entities": [...], "relationships": [...]}  # > 1KB
@@ -288,6 +297,7 @@ retrieved_data = await cache.get("large_dataset")
 ## 🔍 Monitoring & Metrics
 
 ### Cache Statistics
+
 ```python
 # Get cache statistics
 stats = await cache.get_stats()
@@ -298,6 +308,7 @@ print(f"Memory usage: {stats['memory_usage_mb']} MB")
 ```
 
 ### Performance Metrics
+
 - **Hit Rate**: Percentage of cache hits vs total requests
 - **Miss Rate**: Percentage of cache misses vs total requests
 - **Latency**: Average response time for cache operations
@@ -306,6 +317,7 @@ print(f"Memory usage: {stats['memory_usage_mb']} MB")
 - **Connection Pool**: Active/idle connection statistics
 
 ### Health Checks
+
 ```python
 # Cache health check
 async def check_cache_health():
@@ -323,6 +335,7 @@ async def check_cache_health():
 ## 🛡️ Security Features
 
 ### Data Encryption
+
 ```python
 # Enable encryption for sensitive data
 cache_config = RedisCacheConfig(
@@ -336,6 +349,7 @@ await cache.set("user:sensitive", {"ssn": "123-45-6789"}, ttl=1800)
 ```
 
 ### Access Control
+
 ```python
 # Redis AUTH and ACL support
 cache_config = RedisCacheConfig(
@@ -348,6 +362,7 @@ cache_config = RedisCacheConfig(
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```python
 import pytest
 from graphrag_api_service.caching.redis_cache import RedisCacheConfig, get_redis_cache
@@ -378,6 +393,7 @@ async def test_ttl_expiration(cache):
 ```
 
 ### Integration Tests
+
 ```python
 async def test_cache_with_database(cache, db_session):
     workspace_id = "test-workspace"
@@ -411,6 +427,7 @@ async def test_cache_with_database(cache, db_session):
 ### Common Issues
 
 1. **Connection Timeouts**
+
    ```python
    # Increase timeout values
    config = RedisCacheConfig(
@@ -420,6 +437,7 @@ async def test_cache_with_database(cache, db_session):
    ```
 
 2. **Memory Pressure**
+
    ```bash
    # Monitor Redis memory
    redis-cli info memory
@@ -429,6 +447,7 @@ async def test_cache_with_database(cache, db_session):
    ```
 
 3. **High Miss Rate**
+
    ```python
    # Analyze cache patterns
    stats = await cache.get_stats()

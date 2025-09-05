@@ -68,6 +68,10 @@ if ($Fix) {
     Run-Check "poetry run isort src/ tests/ --profile black" "Import sorting" | Out-Null
     Write-Host "[SUCCESS] Import ordering fixed successfully" -ForegroundColor Green
 
+    Write-Host "[INFO] Running markdown formatter..." -ForegroundColor Cyan
+    Run-Check "npm run fix:md" "Markdown auto-formatting" | Out-Null
+    Write-Host "[SUCCESS] Markdown formatting fixed successfully" -ForegroundColor Green
+
     Write-Host "[INFO] Auto-fix complete. Now running validation checks..." -ForegroundColor Cyan
 }
 
@@ -104,6 +108,16 @@ Write-Host "`n===== UNIT TESTS =====" -ForegroundColor Blue
 # Run unit tests with coverage
 if (-not (Run-Check "poetry run pytest tests/unit/ --cov=src/graphrag_api_service --cov-report=term-missing -v" "Unit tests with coverage")) {
     $failed = $true
+}
+
+Write-Host "`n===== MARKDOWN CHECKS =====" -ForegroundColor Blue
+
+# Markdown linting and formatting
+if (-not (Run-Check "npm run check:md" "Markdown linting and formatting")) {
+    $failed = $true
+    if (-not $Fix) {
+        Write-Host "Run 'npm run fix:md' to fix markdown issues" -ForegroundColor Yellow
+    }
 }
 
 Write-Host "`n===== ADDITIONAL LOCAL CHECKS =====" -ForegroundColor Blue

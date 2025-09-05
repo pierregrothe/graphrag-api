@@ -109,6 +109,7 @@ workspaces = await workspace_manager.list_user_workspaces(
 ```
 
 **Key Features:**
+
 - **Multi-tenant Isolation**: Complete data and resource isolation between workspaces
 - **Flexible Configuration**: Per-workspace LLM and processing settings
 - **Access Control**: Role-based permissions and ownership management

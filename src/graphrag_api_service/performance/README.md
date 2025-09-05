@@ -613,6 +613,7 @@ class CapacityPlanner:
 ### Common Performance Issues
 
 1. **High Response Times**
+
    ```python
    # Diagnosis
    async def diagnose_slow_responses():
@@ -629,6 +630,7 @@ class CapacityPlanner:
    ```
 
 2. **Memory Leaks**
+
    ```python
    # Memory leak detection
    async def detect_memory_leaks():
@@ -645,6 +647,7 @@ class CapacityPlanner:
    ```
 
 3. **Database Connection Issues**
+
    ```python
    # Connection pool monitoring
    async def monitor_connection_pool():

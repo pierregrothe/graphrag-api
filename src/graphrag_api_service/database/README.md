@@ -84,6 +84,7 @@ success = db_manager.delete_workspace(workspace_id)
 ```
 
 **Security Features:**
+
 - **SQL Injection Protection**: Parameterized queries with explicit field mapping
 - **Input Validation**: Comprehensive data validation before database operations
 - **Access Control**: Role-based access to database operations
@@ -302,6 +303,7 @@ async def init_database():
 ## 📊 Data Models Reference
 
 ### User Model
+
 ```python
 class User(Base):
     id: str                    # UUID primary key
@@ -319,6 +321,7 @@ class User(Base):
 ```
 
 ### Workspace Model
+
 ```python
 class Workspace(Base):
     id: str                   # UUID primary key
@@ -339,6 +342,7 @@ class Workspace(Base):
 ```
 
 ### API Key Model
+
 ```python
 class ApiKey(Base):
     id: str                   # UUID primary key
@@ -359,6 +363,7 @@ class ApiKey(Base):
 ```
 
 ### Indexing Job Model
+
 ```python
 class IndexingJob(Base):
     id: str                   # UUID primary key
@@ -381,6 +386,7 @@ class IndexingJob(Base):
 ## 🔄 Database Migrations
 
 ### Migration System
+
 ```python
 from alembic import command
 from alembic.config import Config
@@ -397,6 +403,7 @@ def create_migration(message: str):
 ```
 
 ### Migration Example
+
 ```python
 """Add workspace status column
 
@@ -424,6 +431,7 @@ def downgrade():
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```python
 import pytest
 from graphrag_api_service.database.sqlite_models import SQLiteManager
@@ -458,6 +466,7 @@ def test_sql_injection_protection(db_manager):
 ```
 
 ### Integration Tests
+
 ```python
 async def test_database_transaction(db_session):
     # Test transaction rollback
@@ -491,6 +500,7 @@ async def test_database_transaction(db_session):
 ## 📈 Performance Optimization
 
 ### Query Optimization
+
 ```python
 # Use indexes for frequently queried columns
 class Workspace(Base):
@@ -512,6 +522,7 @@ def get_user_workspaces(user_id: str):
 ```
 
 ### Connection Pool Tuning
+
 ```python
 # Optimize connection pool settings
 DATABASE_CONFIG = {
@@ -528,6 +539,7 @@ DATABASE_CONFIG = {
 ### Common Issues
 
 1. **Database Locked Error**
+
    ```python
    # Enable WAL mode for better concurrency
    with sqlite3.connect(db_path) as conn:
@@ -535,6 +547,7 @@ DATABASE_CONFIG = {
    ```
 
 2. **Connection Pool Exhaustion**
+
    ```python
    # Monitor connection usage
    engine = create_engine(DATABASE_URL, echo=True)
@@ -543,6 +556,7 @@ DATABASE_CONFIG = {
    ```
 
 3. **Slow Queries**
+
    ```sql
    -- Analyze query performance
    EXPLAIN QUERY PLAN SELECT * FROM workspaces WHERE owner_id = ?;

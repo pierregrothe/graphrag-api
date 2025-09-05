@@ -7,6 +7,7 @@ This guide helps you migrate from the enterprise PostgreSQL-based architecture t
 ## Architecture Changes
 
 ### Before (Complex)
+
 - PostgreSQL database with async SQLAlchemy
 - Redis for distributed caching
 - Kubernetes deployment manifests
@@ -14,6 +15,7 @@ This guide helps you migrate from the enterprise PostgreSQL-based architecture t
 - Multiple service dependencies
 
 ### After (Simple)
+
 - SQLite database (zero configuration)
 - In-memory caching
 - Docker Compose for local, Cloud Run for production
@@ -37,6 +39,7 @@ pg_dump -h localhost -U graphrag -d graphrag -t queries > queries_backup.sql
 ### 2. Update Environment Variables
 
 #### Old `.env` (PostgreSQL)
+
 ```env
 DATABASE_URL=postgresql://user:pass@localhost/graphrag
 DATABASE_POOL_SIZE=10
@@ -45,6 +48,7 @@ REDIS_ENABLED=true
 ```
 
 #### New `.env` (SQLite)
+
 ```env
 DATABASE_TYPE=sqlite
 DATABASE_PATH=data/graphrag.db
@@ -69,6 +73,7 @@ docker-compose -f docker-compose.simple.yml up -d
 #### Database Connection
 
 **Before:**
+
 ```python
 from src.graphrag_api_service.database.connection import DatabaseManager
 from src.graphrag_api_service.workspace.database_manager import DatabaseWorkspaceManager
@@ -79,6 +84,7 @@ workspace_manager = DatabaseWorkspaceManager(settings, db_manager.async_session_
 ```
 
 **After:**
+
 ```python
 from src.graphrag_api_service.database.simple_connection import get_simple_database_manager
 
@@ -89,6 +95,7 @@ workspace_manager = db_manager.get_workspace_manager()
 #### Cache Usage
 
 **Before:**
+
 ```python
 from src.graphrag_api_service.cache.redis_cache import RedisCache
 
@@ -97,6 +104,7 @@ await cache.set("key", "value", ttl=300)
 ```
 
 **After:**
+
 ```python
 from src.graphrag_api_service.cache.simple_cache import get_cache_manager
 
@@ -201,6 +209,7 @@ google-generativeai = "^0.3.0"
 ```
 
 Run:
+
 ```bash
 poetry lock --no-update
 poetry install
@@ -230,14 +239,16 @@ poetry install
 
 ## When to Use Each Architecture
 
-### Use Simple Architecture When:
+### Use Simple Architecture When
+
 - 1-5 concurrent users
 - Quick prototyping needed
 - Limited resources
 - Serverless deployment preferred
 - Minimal ops overhead desired
 
-### Keep Complex Architecture When:
+### Keep Complex Architecture When
+
 - 10+ concurrent users
 - High availability required
 - Complex RBAC needed
@@ -260,6 +271,7 @@ If you need to rollback to the complex architecture:
 **Issue**: "database is locked" errors
 
 **Solution**: SQLite has limited write concurrency. For high-write scenarios, consider:
+
 - Batching writes
 - Using WAL mode (already enabled)
 - Limiting to 1-2 concurrent writers
@@ -269,6 +281,7 @@ If you need to rollback to the complex architecture:
 **Issue**: Cache lost on restart
 
 **Solution**: This is expected behavior. For persistent cache:
+
 - Increase cache TTL
 - Implement cache warming on startup
 - Store critical data in SQLite
@@ -278,6 +291,7 @@ If you need to rollback to the complex architecture:
 **Issue**: SQLite data lost when scaling to zero
 
 **Solution**:
+
 - Use Cloud SQL for persistent data
 - Or accept ephemeral nature for demo/dev
 - Or set minimum instances to 1
@@ -285,6 +299,7 @@ If you need to rollback to the complex architecture:
 ## Support
 
 For migration assistance:
+
 1. Check [Deployment Guide](DEPLOYMENT_GUIDE.md)
 2. Review [README-SIMPLE.md](../README-SIMPLE.md)
 3. Open GitHub issue for specific problems

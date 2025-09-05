@@ -11,12 +11,14 @@ The GraphRAG API service uses a dual configuration system to separate concerns b
 **Purpose**: Application-level settings that control the behavior of the GraphRAG API service during runtime.
 
 **Scope**:
+
 - API behavior settings
 - GraphRAG processing parameters
 - Default values for application features
 - Cross-cutting concerns like logging levels
 
 **Key Settings**:
+
 ```python
 # API Configuration
 app_name: str = "GraphRAG API"
@@ -42,6 +44,7 @@ query_timeout: int = 300
 **Purpose**: Infrastructure and deployment-specific settings that vary between environments (development, staging, production).
 
 **Scope**:
+
 - Database connection settings
 - External service configurations
 - Security settings (secrets, keys)
@@ -49,6 +52,7 @@ query_timeout: int = 300
 - Resource limits and scaling parameters
 
 **Key Settings**:
+
 ```python
 # Database Configuration
 database:
@@ -164,6 +168,7 @@ If migrating from a single configuration file:
 ### Example Migration
 
 **Before** (single config):
+
 ```python
 # config.py
 class Settings(BaseSettings):
@@ -173,6 +178,7 @@ class Settings(BaseSettings):
 ```
 
 **After** (separated):
+
 ```python
 # config.py (runtime)
 class Settings(BaseSettings):

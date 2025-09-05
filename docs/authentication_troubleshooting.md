@@ -7,16 +7,19 @@
 #### 1. "Invalid email or password"
 
 **Symptoms:**
+
 - Login returns 401 Unauthorized
 - Error message: "Invalid email or password"
 
 **Possible Causes:**
+
 - Incorrect credentials
 - User account doesn't exist
 - Password doesn't meet requirements
 - Account is deactivated
 
 **Solutions:**
+
 ```bash
 # Check if user exists in database
 python -c "
@@ -40,16 +43,19 @@ asyncio.run(check_user())
 #### 2. "Token expired" or "Invalid token"
 
 **Symptoms:**
+
 - API requests return 401 Unauthorized
 - Error message mentions token expiration
 
 **Possible Causes:**
+
 - Access token has expired (30 minutes default)
 - Token was blacklisted
 - JWT secret key changed
 - Token format is incorrect
 
 **Solutions:**
+
 ```python
 # Use refresh token to get new access token
 import requests
@@ -68,15 +74,18 @@ else:
 #### 3. "Rate limit exceeded"
 
 **Symptoms:**
+
 - HTTP 429 Too Many Requests
 - Headers show rate limit information
 
 **Possible Causes:**
+
 - Too many requests in short time period
 - Brute force attack detection
 - Misconfigured rate limits
 
 **Solutions:**
+
 ```python
 # Check rate limit status
 response = requests.post('http://localhost:8000/auth/login', json={
@@ -96,10 +105,12 @@ print(f"Retry after: {response.headers.get('Retry-After')} seconds")
 #### 1. "Database not initialized"
 
 **Symptoms:**
+
 - Application fails to start
 - Database connection errors
 
 **Solutions:**
+
 ```bash
 # Initialize database manually
 python -c "
@@ -118,10 +129,12 @@ asyncio.run(init_db())
 #### 2. "Database locked" or "Database is busy"
 
 **Symptoms:**
+
 - SQLite database lock errors
 - Timeout errors during database operations
 
 **Solutions:**
+
 ```bash
 # Check for long-running transactions
 lsof data/graphrag.db
@@ -135,15 +148,18 @@ lsof data/graphrag.db
 #### 1. "JWT decode error"
 
 **Symptoms:**
+
 - Token validation fails
 - JWT decode errors in logs
 
 **Possible Causes:**
+
 - JWT_SECRET_KEY not set or changed
 - Algorithm mismatch
 - Token format corruption
 
 **Solutions:**
+
 ```bash
 # Check JWT configuration
 python -c "
@@ -162,10 +178,12 @@ python -c "import secrets; print(f'New secret key: {secrets.token_urlsafe(32)}')
 #### 2. "CORS error"
 
 **Symptoms:**
+
 - Browser console shows CORS errors
 - Preflight requests fail
 
 **Solutions:**
+
 ```python
 # Check CORS configuration
 import os
@@ -181,11 +199,13 @@ print(f"Environment: {os.getenv('ENVIRONMENT', 'Not set')}")
 #### 1. "Suspicious activity detected"
 
 **Symptoms:**
+
 - Security alerts in logs
 - IP addresses blocked
 - Multiple failed login attempts
 
 **Solutions:**
+
 ```python
 # Check security status
 from src.graphrag_api_service.security.logging import get_security_logger
@@ -204,10 +224,12 @@ security_logger.unblock_ip('192.168.1.100')
 #### 2. "Password validation failed"
 
 **Symptoms:**
+
 - Registration fails with password errors
 - Password requirements not met
 
 **Solutions:**
+
 ```python
 # Test password strength
 from src.graphrag_api_service.utils.security import PasswordValidator
@@ -400,10 +422,12 @@ if __name__ == "__main__":
 ### 1. Slow Authentication
 
 **Symptoms:**
+
 - Login/registration takes too long
 - Database queries are slow
 
 **Solutions:**
+
 ```sql
 -- Add database indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -417,10 +441,12 @@ EXPLAIN QUERY PLAN SELECT * FROM users WHERE email = 'user@example.com';
 ### 2. High Memory Usage
 
 **Symptoms:**
+
 - Application memory usage grows over time
 - Out of memory errors
 
 **Solutions:**
+
 ```python
 # Check for connection leaks
 import gc
@@ -463,6 +489,7 @@ logging.getLogger("graphrag.security").addHandler(handler)
 ### 2. Collect Diagnostic Information
 
 When reporting issues, include:
+
 - Error messages and stack traces
 - Configuration settings (without secrets)
 - Database schema version
@@ -480,6 +507,7 @@ pytest tests/test_auth_integration.py::TestAuthenticationFlow::test_complete_log
 ### 4. Contact Support
 
 When contacting support, provide:
+
 - Detailed error description
 - Steps to reproduce
 - Diagnostic script output

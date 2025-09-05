@@ -146,6 +146,7 @@ REGISTER_RATE_WINDOW=7200
 ### 2. Security Considerations
 
 #### JWT Secret Key
+
 - Use a cryptographically secure random key
 - Minimum 256 bits (32 characters)
 - Never commit to version control
@@ -157,11 +158,13 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
 #### Database Security
+
 - Use proper file permissions (600) for database file
 - Regular backups
 - Consider encryption at rest for sensitive data
 
 #### HTTPS Configuration
+
 - Always use HTTPS in production
 - Configure proper SSL/TLS certificates
 - Enable HSTS headers
@@ -237,6 +240,7 @@ curl -I http://localhost:8000/auth/profile
 ```
 
 Should return headers like:
+
 ```
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
@@ -281,6 +285,7 @@ print(f"Active users: {user_count[0][0]}")
 ### 3. Log Monitoring
 
 Monitor authentication logs for:
+
 - Failed login attempts
 - Rate limit violations
 - Security violations
@@ -296,6 +301,7 @@ tail -f logs/security.log | grep "authentication_failed"
 ### Common Issues
 
 #### 1. "Database not initialized"
+
 ```bash
 # Solution: Initialize database manually
 python -c "
@@ -312,16 +318,19 @@ asyncio.run(init_db())
 ```
 
 #### 2. "JWT decode error"
+
 - Check JWT_SECRET_KEY is set correctly
 - Verify token hasn't expired
 - Ensure algorithm matches configuration
 
 #### 3. "Rate limit exceeded"
+
 - Check rate limit configuration
 - Wait for rate limit window to reset
 - Consider adjusting limits for your use case
 
 #### 4. "CORS error"
+
 - Verify CORS_ALLOWED_ORIGINS includes your frontend URL
 - Check protocol (http vs https)
 - Ensure no trailing slashes in origins
@@ -380,6 +389,7 @@ CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
 ### 2. Caching
 
 Consider implementing caching for:
+
 - User profile data
 - JWT token validation
 - Rate limit counters

@@ -30,6 +30,14 @@ repos:
 
 
 
+    # Markdown linting - DISABLED (needs configuration)
+    # - repo: https://github.com/igorshubovych/markdownlint-cli
+    #   rev: v0.45.0
+    #   hooks:
+    #       - id: markdownlint
+    #         args: ["--fix"]
+    #         files: \.md$
+
     # Local hooks matching GitHub Actions CI workflow
     - repo: local
       hooks:
@@ -68,6 +76,14 @@ repos:
             types: [python]
             pass_filenames: false
             files: ^src/
+
+          # Markdown formatting and linting check - DISABLED (needs configuration)
+          # - id: markdown-check
+          #   name: Markdown linting and formatting
+          #   entry: npm run check:md
+          #   language: system
+          #   types: [markdown]
+          #   pass_filenames: false
 
           # Unit tests (on pre-push only, matches GitHub Actions)
           - id: pytest-unit
