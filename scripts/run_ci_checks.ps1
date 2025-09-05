@@ -1,9 +1,25 @@
 # PowerShell script to run CI checks locally
 # Matches GitHub Actions workflow
 
+param(
+    [switch]$NoFix = $false,
+    [switch]$Fix = $true
+)
+
+# If NoFix is specified, disable Fix
+if ($NoFix) {
+    $Fix = $false
+}
+
 Write-Host "`n=====================================" -ForegroundColor Blue
 Write-Host "Running Local CI Checks" -ForegroundColor Blue
 Write-Host "=====================================`n" -ForegroundColor Blue
+
+if ($Fix) {
+    Write-Host "[INFO] Auto-fix mode: ENABLED (use -NoFix to disable)" -ForegroundColor Cyan
+} else {
+    Write-Host "[INFO] Auto-fix mode: DISABLED (use -Fix to enable)" -ForegroundColor Cyan
+}
 
 # Set environment variables
 $env:JWT_SECRET_KEY = "test-secret-key-for-ci-only-12345678"
@@ -36,18 +52,41 @@ function Run-Check {
     }
 }
 
+# Auto-fix issues if enabled
+if ($Fix) {
+    Write-Host "`n===== AUTO-FIXING ISSUES =====" -ForegroundColor Blue
+
+    Write-Host "[INFO] Running Black to auto-format code..." -ForegroundColor Cyan
+    Run-Check "poetry run black src/ tests/" "Black auto-formatting" | Out-Null
+    Write-Host "[SUCCESS] Black formatting applied successfully" -ForegroundColor Green
+
+    Write-Host "[INFO] Running Ruff to auto-fix linting issues..." -ForegroundColor Cyan
+    Run-Check "poetry run ruff check --fix src/ tests/" "Ruff auto-fix" | Out-Null
+    Write-Host "[SUCCESS] Ruff fixes applied successfully" -ForegroundColor Green
+
+    Write-Host "[INFO] Running isort to fix import ordering..." -ForegroundColor Cyan
+    Run-Check "poetry run isort src/ tests/ --profile black" "Import sorting" | Out-Null
+    Write-Host "[SUCCESS] Import ordering fixed successfully" -ForegroundColor Green
+
+    Write-Host "[INFO] Auto-fix complete. Now running validation checks..." -ForegroundColor Cyan
+}
+
 Write-Host "`n===== CODE QUALITY CHECKS =====" -ForegroundColor Blue
 
 # Black formatting check
 if (-not (Run-Check "poetry run black --check src/ tests/" "Black formatting check")) {
     $failed = $true
-    Write-Host "Run 'poetry run black src/ tests/' to fix formatting" -ForegroundColor Yellow
+    if (-not $Fix) {
+        Write-Host "Run 'poetry run black src/ tests/' to fix formatting" -ForegroundColor Yellow
+    }
 }
 
 # Ruff linting
 if (-not (Run-Check "poetry run ruff check src/ tests/" "Ruff linting")) {
     $failed = $true
-    Write-Host "Run 'poetry run ruff check --fix src/ tests/' to fix issues" -ForegroundColor Yellow
+    if (-not $Fix) {
+        Write-Host "Run 'poetry run ruff check --fix src/ tests/' to fix issues" -ForegroundColor Yellow
+    }
 }
 
 # MyPy type checking
@@ -77,8 +116,13 @@ if (-not (Run-Check "pre-commit run --all-files" "Pre-commit hooks")) {
 Write-Host "`n===== SUMMARY =====" -ForegroundColor Blue
 
 if ($failed) {
-    Write-Host "`n[FAILED] Some checks failed. Please fix the issues before pushing." -ForegroundColor Red
-    Write-Host "Tip: Run 'poetry run black src/ tests/' and 'poetry run ruff check --fix src/ tests/' to auto-fix many issues" -ForegroundColor Yellow
+    Write-Host "`n[FAILED] Some checks failed." -ForegroundColor Red
+    if (-not $Fix) {
+        Write-Host "Tip: Run this script with -Fix flag to auto-fix many issues" -ForegroundColor Yellow
+        Write-Host "Example: .\scripts\run_ci_checks.ps1 -Fix" -ForegroundColor Yellow
+    } else {
+        Write-Host "Some issues could not be auto-fixed. Manual intervention required." -ForegroundColor Yellow
+    }
     exit 1
 } else {
     Write-Host "`n[SUCCESS] All CI checks passed! Ready to commit and push." -ForegroundColor Green

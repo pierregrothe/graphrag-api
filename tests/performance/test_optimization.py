@@ -26,8 +26,14 @@ from src.graphrag_api_service.performance.connection_pool import (
     ConnectionPool,
     ConnectionPoolConfig,
 )
-from src.graphrag_api_service.performance.memory_optimizer import MemoryConfig, MemoryOptimizer
-from src.graphrag_api_service.performance.monitoring import AlertConfig, PerformanceMonitor
+from src.graphrag_api_service.performance.memory_optimizer import (
+    MemoryConfig,
+    MemoryOptimizer,
+)
+from src.graphrag_api_service.performance.monitoring import (
+    AlertConfig,
+    PerformanceMonitor,
+)
 
 
 class TestCacheManager:

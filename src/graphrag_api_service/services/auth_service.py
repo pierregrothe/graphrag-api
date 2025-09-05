@@ -15,7 +15,11 @@ from ..exceptions import AuthenticationError, ValidationError
 from ..models.user import User, UserCreate, UserLogin, UserPasswordUpdate, UserUpdate
 from ..repositories.user_repository import UserRepository
 from ..services.interfaces import AuthenticationServiceProtocol, BaseService
-from ..utils.security import InputSanitizer, PasswordValidator, validate_password_strength
+from ..utils.security import (
+    InputSanitizer,
+    PasswordValidator,
+    validate_password_strength,
+)
 
 logger = logging.getLogger(__name__)
 

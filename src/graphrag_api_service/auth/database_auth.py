@@ -13,7 +13,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from ..database.models import Role, User
-from .jwt_auth import JWTConfig, JWTManager, RoleBasedAccessControl, TokenData, UserCredentials
+from .jwt_auth import (
+    JWTConfig,
+    JWTManager,
+    RoleBasedAccessControl,
+    TokenData,
+    UserCredentials,
+)
 
 logger = logging.getLogger(__name__)
 

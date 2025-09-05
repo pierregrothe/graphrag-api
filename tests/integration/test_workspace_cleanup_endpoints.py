@@ -12,7 +12,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.graphrag_api_service.main import create_app
-from src.graphrag_api_service.workspace.models import Workspace, WorkspaceConfig, WorkspaceStatus
+from src.graphrag_api_service.workspace.models import (
+    Workspace,
+    WorkspaceConfig,
+    WorkspaceStatus,
+)
 
 
 @pytest.fixture

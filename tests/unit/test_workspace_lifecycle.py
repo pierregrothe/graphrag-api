@@ -13,7 +13,11 @@ import pytest
 
 from src.graphrag_api_service.config import Settings
 from src.graphrag_api_service.workspace.cleanup import WorkspaceCleanupService
-from src.graphrag_api_service.workspace.models import Workspace, WorkspaceConfig, WorkspaceStatus
+from src.graphrag_api_service.workspace.models import (
+    Workspace,
+    WorkspaceConfig,
+    WorkspaceStatus,
+)
 
 
 @pytest.fixture

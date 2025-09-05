@@ -13,7 +13,14 @@ from typing import Any
 import strawberry
 from strawberry.types import Info
 
-from .types import Community, Entity, IndexingStatus, PerformanceMetrics, Relationship, SystemStatus
+from .types import (
+    Community,
+    Entity,
+    IndexingStatus,
+    PerformanceMetrics,
+    Relationship,
+    SystemStatus,
+)
 
 logger = logging.getLogger(__name__)
 

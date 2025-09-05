@@ -16,7 +16,10 @@ from src.graphrag_api_service.auth.master_key import (
     MasterKeyInfo,
     MasterKeyValidator,
 )
-from src.graphrag_api_service.config import generate_master_api_key, validate_master_key_format
+from src.graphrag_api_service.config import (
+    generate_master_api_key,
+    validate_master_key_format,
+)
 from src.graphrag_api_service.exceptions import ConfigurationError
 
 

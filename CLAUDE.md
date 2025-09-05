@@ -74,9 +74,27 @@ The project includes GitHub Actions CI that runs on push and PR. Run these check
 
 **Quick CI Check Script:**
 ```bash
-# Run all CI checks locally
+# Run all CI checks locally with auto-fix (default)
 python scripts/run_ci_checks.py
+
+# Run checks with auto-fix explicitly enabled
+python scripts/run_ci_checks.py --fix
+
+# Run checks without auto-fix (validation only)
+python scripts/run_ci_checks.py --no-fix
+
+# PowerShell version with auto-fix
+powershell -ExecutionPolicy Bypass -File scripts\run_ci_checks.ps1
+
+# PowerShell without auto-fix
+powershell -ExecutionPolicy Bypass -File scripts\run_ci_checks.ps1 -NoFix
 ```
+
+The CI check scripts will automatically:
+- Format code with Black
+- Fix linting issues with Ruff
+- Sort imports with isort
+- Then validate all checks pass
 
 ### Project Structure
 

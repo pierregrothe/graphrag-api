@@ -7,6 +7,7 @@ Author: Pierre Grothé
 Creation Date: 2025-09-05
 """
 
+import argparse
 import os
 import subprocess
 import sys
@@ -86,10 +87,22 @@ def run_command(command: str, description: str, env_vars: dict = None) -> bool:
 
 def main() -> int:
     """Run all CI checks."""
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Run CI checks locally")
+    parser.add_argument("--fix", action="store_true", help="Auto-fix issues when possible")
+    parser.add_argument("--no-fix", dest="fix", action="store_false", help="Don't auto-fix issues")
+    parser.set_defaults(fix=True)
+    args = parser.parse_args()
+
     # Change to project root
     project_root = Path(__file__).parent.parent
     os.chdir(project_root)
     print_info(f"Working directory: {project_root}")
+
+    if args.fix:
+        print_info("Auto-fix mode: ENABLED (use --no-fix to disable)")
+    else:
+        print_info("Auto-fix mode: DISABLED (use --fix to enable)")
 
     # Track overall success
     all_passed = True
@@ -105,19 +118,54 @@ def main() -> int:
         "OLLAMA_EMBEDDING_MODEL": "nomic-embed-text"
     }
 
+    # ===== AUTO-FIX ISSUES FIRST (if enabled) =====
+    if args.fix:
+        print_header("AUTO-FIXING ISSUES")
+
+        # Auto-fix with Black
+        print_info("Running Black to auto-format code...")
+        fix_result = run_command(
+            "poetry run black src/ tests/",
+            "Black auto-formatting"
+        )
+        if fix_result:
+            print_success("Black formatting applied successfully")
+
+        # Auto-fix with Ruff
+        print_info("Running Ruff to auto-fix linting issues...")
+        fix_result = run_command(
+            "poetry run ruff check --fix src/ tests/",
+            "Ruff auto-fix"
+        )
+        if fix_result:
+            print_success("Ruff fixes applied successfully")
+
+        # Auto-fix imports with isort (if needed)
+        print_info("Running isort to fix import ordering...")
+        fix_result = run_command(
+            "poetry run isort src/ tests/ --profile black",
+            "Import sorting"
+        )
+        if fix_result:
+            print_success("Import ordering fixed successfully")
+
+        print_info("Auto-fix complete. Now running validation checks...")
+
     # ===== CODE QUALITY CHECKS =====
     print_header("CODE QUALITY CHECKS")
 
     # Black formatting check
+    black_command = "poetry run black --check src/ tests/" if not args.fix else "poetry run black --check src/ tests/"
     if run_command(
-        "poetry run black --check src/ tests/",
+        black_command,
         "Black formatting check"
     ):
         results["Black"] = "PASSED"
     else:
         results["Black"] = "FAILED"
         all_passed = False
-        print_warning("Run 'poetry run black src/ tests/' to fix formatting")
+        if not args.fix:
+            print_warning("Run 'poetry run black src/ tests/' to fix formatting")
 
     # Ruff linting
     if run_command(
@@ -128,7 +176,8 @@ def main() -> int:
     else:
         results["Ruff"] = "FAILED"
         all_passed = False
-        print_warning("Run 'poetry run ruff check --fix src/ tests/' to fix issues")
+        if not args.fix:
+            print_warning("Run 'poetry run ruff check --fix src/ tests/' to fix issues")
 
     # MyPy type checking
     if run_command(
@@ -177,7 +226,10 @@ def main() -> int:
         results["Pre-commit"] = "PASSED"
     else:
         results["Pre-commit"] = "FAILED"
-        print_warning("Some pre-commit hooks failed but may have auto-fixed issues")
+        if args.fix:
+            print_warning("Pre-commit hooks auto-fixed some issues. Run again to verify.")
+        else:
+            print_warning("Some pre-commit hooks failed. Use --fix to auto-fix issues.")
 
     # ===== SUMMARY =====
     print_header("SUMMARY")
@@ -193,8 +245,12 @@ def main() -> int:
         print_success("All CI checks passed! Ready to commit and push.")
         return 0
     else:
-        print_error("Some checks failed. Please fix the issues before pushing.")
-        print_info("Tip: Run 'poetry run black src/ tests/' and 'poetry run ruff check --fix src/ tests/' to auto-fix many issues")
+        print_error("Some checks failed.")
+        if not args.fix:
+            print_info("Tip: Run this script with --fix flag to auto-fix many issues")
+            print_info("Example: python scripts/run_ci_checks.py --fix")
+        else:
+            print_info("Some issues could not be auto-fixed. Manual intervention required.")
         return 1
 
 

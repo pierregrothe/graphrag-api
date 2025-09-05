@@ -13,7 +13,11 @@ import jwt
 import pytest
 from fastapi import HTTPException
 
-from src.graphrag_api_service.auth.api_keys import APIKeyManager, APIKeyRequest, APIKeyScope
+from src.graphrag_api_service.auth.api_keys import (
+    APIKeyManager,
+    APIKeyRequest,
+    APIKeyScope,
+)
 from src.graphrag_api_service.auth.jwt_auth import JWTConfig, JWTManager, TokenData
 from src.graphrag_api_service.auth.rate_limiting import RateLimitConfig, RateLimiter
 from src.graphrag_api_service.auth.unified_auth import UnifiedAuthenticator

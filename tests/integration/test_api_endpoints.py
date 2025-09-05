@@ -136,7 +136,10 @@ class TestGraphOperationEndpoints:
     @pytest.fixture
     def mock_authenticated_user(self):
         """Mock authenticated user for testing."""
-        from src.graphrag_api_service.auth.unified_auth import AuthenticatedUser, AuthMethod
+        from src.graphrag_api_service.auth.unified_auth import (
+            AuthenticatedUser,
+            AuthMethod,
+        )
 
         return AuthenticatedUser(
             user_id="test-user",

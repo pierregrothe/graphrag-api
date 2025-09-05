@@ -13,7 +13,11 @@ from fastapi import FastAPI
 
 from .auth.api_keys import get_api_key_manager
 from .auth.jwt_auth import JWTConfig
-from .caching.redis_cache import RedisCacheConfig, get_redis_cache, initialize_redis_cache
+from .caching.redis_cache import (
+    RedisCacheConfig,
+    get_redis_cache,
+    initialize_redis_cache,
+)
 from .config import settings
 from .graph import GraphOperations
 from .graphql.subscriptions import get_subscription_manager

@@ -15,7 +15,10 @@ from fastapi.testclient import TestClient
 
 from src.graphrag_api_service.auth.unified_auth import AuthenticatedUser, AuthMethod
 from src.graphrag_api_service.config import Settings
-from src.graphrag_api_service.graph.operations import GraphOperations, GraphOperationsError
+from src.graphrag_api_service.graph.operations import (
+    GraphOperations,
+    GraphOperationsError,
+)
 from src.graphrag_api_service.main import app
 
 

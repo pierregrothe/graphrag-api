@@ -11,7 +11,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.graphrag_api_service.main import app
-from src.graphrag_api_service.system.operations import SystemOperations, SystemOperationsError
+from src.graphrag_api_service.system.operations import (
+    SystemOperations,
+    SystemOperationsError,
+)
 
 
 class TestSystemOperations:

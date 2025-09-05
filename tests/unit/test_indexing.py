@@ -22,7 +22,11 @@ from src.graphrag_api_service.indexing.models import (
     IndexingStage,
 )
 from src.graphrag_api_service.indexing.tasks import IndexingTask
-from src.graphrag_api_service.workspace.models import Workspace, WorkspaceConfig, WorkspaceStatus
+from src.graphrag_api_service.workspace.models import (
+    Workspace,
+    WorkspaceConfig,
+    WorkspaceStatus,
+)
 
 
 class TestIndexingModels:

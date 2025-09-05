@@ -17,7 +17,11 @@ from tests.fixtures.data import (
     sample_workspace_config,
     test_data_path,
 )
-from tests.fixtures.mocks import mock_indexing_manager, mock_llm_provider, mock_workspace_manager
+from tests.fixtures.mocks import (
+    mock_indexing_manager,
+    mock_llm_provider,
+    mock_workspace_manager,
+)
 
 # Add src to path for imports (after imports to avoid E402)
 sys.path.insert(0, str(Path(__file__).parent.parent))
