@@ -239,6 +239,19 @@ def main() -> int:
         if not args.fix:
             print_warning("Run 'npm run fix:md' to fix markdown issues")
 
+    # ===== SECURITY CHECKS =====
+    print_header("SECURITY CHECKS")
+
+    # Run basic security scan
+    if run_command(
+        "python scripts/run_security_scan.py",
+        "Security vulnerability scan"
+    ):
+        results["Security"] = "PASSED"
+    else:
+        results["Security"] = "WARNING"
+        print_warning("Security scan found issues. Run 'python scripts/run_security_scan.py' for details")
+
     # ===== ADDITIONAL CHECKS (Not in CI but useful locally) =====
     print_header("ADDITIONAL LOCAL CHECKS")
 
