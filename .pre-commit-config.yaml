@@ -59,23 +59,23 @@ repos:
             files: ^(src|tests)/
             pass_filenames: true
 
-          # MyPy type checking (matches GitHub Actions)
-          - id: mypy-check
-            name: MyPy type checking
-            entry: poetry run mypy src/graphrag_api_service
-            language: system
-            types: [python]
-            pass_filenames: false
-            always_run: true
+          # MyPy type checking - DISABLED (slows down commits)
+          # - id: mypy-check
+          #   name: MyPy type checking
+          #   entry: poetry run mypy src/graphrag_api_service
+          #   language: system
+          #   types: [python]
+          #   pass_filenames: false
+          #   always_run: true
 
-          # Bandit security check (matches GitHub Actions)
-          - id: bandit-check
-            name: Bandit security scanning
-            entry: poetry run bandit -r src/ -ll -q
-            language: system
-            types: [python]
-            pass_filenames: false
-            files: ^src/
+          # Bandit security check - DISABLED (moved to manual checks)
+          # - id: bandit-check
+          #   name: Bandit security scanning
+          #   entry: poetry run bandit -r src/ -ll -q
+          #   language: system
+          #   types: [python]
+          #   pass_filenames: false
+          #   files: ^src/
 
           # Markdown formatting and linting check - DISABLED (needs configuration)
           # - id: markdown-check
@@ -85,13 +85,13 @@ repos:
           #   types: [markdown]
           #   pass_filenames: false
 
-          # Unit tests (on pre-push only, matches GitHub Actions)
-          - id: pytest-unit
-            name: Run unit tests
-            entry: poetry run pytest tests/unit/ -v
-            language: system
-            pass_filenames: false
-            stages: [pre-push]
+          # Unit tests - DISABLED (run manually or in CI)
+          # - id: pytest-unit
+          #   name: Run unit tests
+          #   entry: poetry run pytest tests/unit/ -v
+          #   language: system
+          #   pass_filenames: false
+          #   stages: [pre-push]
 
           # Security workflow simulation (fast mode for commits)
           # Temporarily disabled due to timeout issues
@@ -103,14 +103,14 @@ repos:
         #     stages: [commit]
         #     verbose: true
 
-          # Security workflow simulation (PR mode for push)
-          - id: security-check-pr
-            name: Security Check (PR Simulation)
-            entry: python scripts/test_security_workflow.py --mode pr
-            language: system
-            pass_filenames: false
-            stages: [pre-push]
-            verbose: true
+          # Security workflow simulation - DISABLED (too slow)
+          # - id: security-check-pr
+          #   name: Security Check (PR Simulation)
+          #   entry: python scripts/test_security_workflow.py --mode pr
+          #   language: system
+          #   pass_filenames: false
+          #   stages: [pre-push]
+          #   verbose: true
 
 # Configuration for specific tools
 default_language_version:
