@@ -56,7 +56,7 @@ if (-not (Run-Check "poetry run mypy src/graphrag_api_service" "MyPy type checki
 }
 
 # Bandit security check
-if (-not (Run-Check "poetry run bandit -r src/ -ll" "Bandit security check")) {
+if (-not (Run-Check "poetry run bandit -r src/ -ll -q" "Bandit security check")) {
     $failed = $true
 }
 

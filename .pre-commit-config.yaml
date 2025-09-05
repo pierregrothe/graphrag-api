@@ -63,7 +63,7 @@ repos:
           # Bandit security check (matches GitHub Actions)
           - id: bandit-check
             name: Bandit security scanning
-            entry: poetry run bandit -r src/ -ll
+            entry: poetry run bandit -r src/ -ll -q
             language: system
             types: [python]
             pass_filenames: false

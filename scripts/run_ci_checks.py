@@ -143,7 +143,7 @@ def main() -> int:
 
     # Bandit security check
     if run_command(
-        "poetry run bandit -r src/ -ll",
+        "poetry run bandit -r src/ -ll -q",
         "Bandit security check",
         test_env
     ):
