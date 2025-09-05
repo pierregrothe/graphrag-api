@@ -52,6 +52,30 @@ poetry add <package-name>
 
 # Add dev dependency
 poetry add --group dev <package-name>
+
+# Run CI checks locally (matches GitHub Actions)
+python scripts/run_ci_checks.py
+# or for PowerShell:
+powershell -ExecutionPolicy Bypass -File scripts\run_ci_checks.ps1
+```
+
+### CI/CD Pipeline Checks
+
+The project includes GitHub Actions CI that runs on push and PR. Run these checks locally before pushing:
+
+**Code Quality:**
+- `poetry run black --check src/ tests/` - Black formatting check
+- `poetry run ruff check src/ tests/` - Ruff linting
+- `poetry run mypy src/graphrag_api_service` - Type checking
+- `poetry run bandit -r src/ -ll` - Security scanning
+
+**Testing:**
+- `poetry run pytest tests/unit/ --cov=src/graphrag_api_service --cov-report=term-missing -v` - Unit tests with coverage
+
+**Quick CI Check Script:**
+```bash
+# Run all CI checks locally
+python scripts/run_ci_checks.py
 ```
 
 ### Project Structure

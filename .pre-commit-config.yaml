@@ -1,9 +1,9 @@
 # Pre-commit configuration for GraphRAG API Service
+# Matches GitHub Actions CI workflow (.github/workflows/ci-cd.yml)
 # See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
 
 repos:
-    # General code quality hooks
+    # Basic file checks (not in GitHub Actions but useful)
     - repo: https://github.com/pre-commit/pre-commit-hooks
       rev: v4.6.0
       hooks:
@@ -16,145 +16,66 @@ repos:
           - id: check-added-large-files
             args: ["--maxkb=1000"]
           - id: check-merge-conflict
-          - id: check-case-conflict
-          - id: check-docstring-first
-          - id: debug-statements
-          - id: name-tests-test
-            args: ["--pytest-test-first"]
-            exclude: "^tests/fixtures/"
 
-    # Python code formatting with black
+    # Python code formatting with black (matches GitHub Actions)
     - repo: https://github.com/psf/black
       rev: 24.10.0
       hooks:
           - id: black
             language_version: python3.12
             args: ["--line-length=100", "--target-version=py312"]
+            files: ^(src|tests)/
 
-    # Import sorting with isort - DISABLED (ruff handles this)
-    # - repo: https://github.com/pycqa/isort
-    #   rev: 5.13.2
-    #   hooks:
-    #       - id: isort
-    #         language_version: python3.12
-    #         args: ["--profile=black", "--line-length=100"]
 
-    # Python linting with flake8
-    - repo: https://github.com/pycqa/flake8
-      rev: 7.1.1
-      hooks:
-          - id: flake8
-            language_version: python3.12
-            args:
-                [
-                    "--max-line-length=100",
-                    "--extend-ignore=E203,W503,E501,E402,C901",
-                    "--max-complexity=20",
-                    "--per-file-ignores=scripts/run_auth_migration.py:E402,C901 src/graphrag_api_service/repositories/user_repository.py:C901 tests/test_auth_integration.py:E402 tests/test_auth_system.py:E402",
-                ]
 
-    # Type checking with mypy - DISABLED (use local poetry version instead)
-    # - repo: https://github.com/pre-commit/mirrors-mypy
-    #   rev: v1.13.0
-    #   hooks:
-    #       - id: mypy
-    #         language_version: python3.12
-    #         args:
-    #             [
-    #                 "--ignore-missing-imports",
-    #                 "--disallow-untyped-defs",
-    #                 "--check-untyped-defs",
-    #                 "--warn-return-any",
-    #                 "--warn-unused-ignores",
-    #             ]
-    #         additional_dependencies: [types-PyYAML, types-requests, types-redis, pydantic]
 
-    # Security scanning with bandit - DISABLED (run manually as needed)
-    # - repo: https://github.com/pycqa/bandit
-    #   rev: 1.7.10
-    #   hooks:
-    #       - id: bandit
-    #         language_version: python3.12
-    #         args: [
-    #                 "-r",
-    #                 "--format=custom",
-    #                 "--skip=B101,B601", # Skip assert_used and shell_injection_process_start
-    #                 "--exclude=tests/",
-    #             ]
 
-    # Dockerfile linting - DISABLED (run manually as needed)
-    # - repo: https://github.com/hadolint/hadolint
-    #   rev: v2.12.0
-    #   hooks:
-    #       - id: hadolint-docker
-    #         args: ["--ignore=DL3008,DL3009,DL3015"]
-
-    # YAML formatting - DISABLED (conflicts with existing formatting)
-    # - repo: https://github.com/pre-commit/mirrors-prettier
-    #   rev: v4.0.0-alpha.8
-    #   hooks:
-    #       - id: prettier
-    #         types: [yaml]
-    #         exclude: "^(.github/|docs-platform/)"
-
-    # Commit message formatting
-    - repo: https://github.com/commitizen-tools/commitizen
-      rev: v3.29.1
-      hooks:
-          - id: commitizen
-            stages: [commit-msg]
-
-    # Local hooks for project-specific checks
+    # Local hooks matching GitHub Actions CI workflow
     - repo: local
       hooks:
-          # Python formatting with black using poetry
-          - id: black-local
-            name: Format code with Black (poetry)
-            entry: poetry run black
+          # Black formatting check (matches GitHub Actions)
+          - id: black-check
+            name: Black formatting check (local)
+            entry: poetry run black --check
             language: system
             types: [python]
-            require_serial: true
+            files: ^(src|tests)/
+            pass_filenames: true
 
-          # Python linting with ruff using poetry
-          - id: ruff-local
-            name: Lint with Ruff (poetry)
+          # Ruff linting (matches GitHub Actions)
+          - id: ruff-check
+            name: Ruff linting
             entry: poetry run ruff check
             language: system
             types: [python]
-            require_serial: true
+            files: ^(src|tests)/
+            pass_filenames: true
 
-          # Type checking with mypy using poetry
-          - id: mypy-local
-            name: Type check with mypy (poetry)
-            entry: poetry run mypy
+          # MyPy type checking (matches GitHub Actions)
+          - id: mypy-check
+            name: MyPy type checking
+            entry: poetry run mypy src/graphrag_api_service
             language: system
             types: [python]
-            require_serial: true
             pass_filenames: false
-            args: ["src/graphrag_api_service"]
+            always_run: true
 
-          # Run critical tests
-          - id: pytest-critical
-            name: Run critical test suites
-            entry: poetry run pytest tests/test_main.py tests/test_config.py tests/test_workspace.py -v --tb=short
+          # Bandit security check (matches GitHub Actions)
+          - id: bandit-check
+            name: Bandit security scanning
+            entry: poetry run bandit -r src/ -ll
+            language: system
+            types: [python]
+            pass_filenames: false
+            files: ^src/
+
+          # Unit tests (on pre-push only, matches GitHub Actions)
+          - id: pytest-unit
+            name: Run unit tests
+            entry: poetry run pytest tests/unit/ -v
             language: system
             pass_filenames: false
             stages: [pre-push]
-
-          # Check for TODO/FIXME comments in production code - DISABLED
-          # - id: check-todos
-          #   name: Check for TODO/FIXME in production code
-          #   entry: bash -c 'if grep -r "TODO\|FIXME" src/ --exclude-dir=__pycache__ --exclude="*.pyc"; then echo "TODO/FIXME found in production code"; exit 1; fi'
-          #   language: system
-          #   pass_filenames: false
-
-          # Validate OpenAPI schema
-          - id: validate-openapi
-            name: Validate OpenAPI schema
-            entry: poetry run python -c "import sys; from src.graphrag_api_service.main import app; schema = app.openapi(); print('OpenAPI schema validation passed')"
-            language: system
-            pass_filenames: false
-            files: '^(src/.*\.py|pyproject\.toml)$'
 
 # Configuration for specific tools
 default_language_version:
