@@ -214,8 +214,12 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
             recent_violations = [t for t in violations if t > day_ago]
             hour_violations = [t for t in violations if t > hour_ago]
 
-            stats["violations_last_24h"] = cast(int, stats["violations_last_24h"]) + len(recent_violations)
-            stats["violations_last_hour"] = cast(int, stats["violations_last_hour"]) + len(hour_violations)
+            stats["violations_last_24h"] = cast(int, stats["violations_last_24h"]) + len(
+                recent_violations
+            )
+            stats["violations_last_hour"] = cast(int, stats["violations_last_hour"]) + len(
+                hour_violations
+            )
 
             if recent_violations:
                 client_violations[client_id] = len(recent_violations)
