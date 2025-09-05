@@ -462,7 +462,9 @@ class ConnectionPool:
                     raise ValueError(f"Invalid table name: {table_name}")
 
                 # Use parameterized query construction
-                query_str = f"SELECT * FROM {table_name}"  # nosec B608 - Table name from internal config
+                query_str = (
+                    f"SELECT * FROM {table_name}"  # nosec B608 - Table name from internal config
+                )
 
             # Add filters if provided
             conditions, params = self._build_sql_filters(filters)
