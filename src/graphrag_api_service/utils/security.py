@@ -9,8 +9,6 @@ import html
 import re
 import time
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
-from typing import Any, Dict
 
 from ..exceptions import ValidationError
 
@@ -245,7 +243,7 @@ class RateLimitHelper:
 
     def __init__(self):
         """Initialize rate limit helper."""
-        self._requests: Dict[str, list[float]] = defaultdict(list)
+        self._requests: dict[str, list[float]] = defaultdict(list)
         self._cleanup_interval = 300  # 5 minutes
         self._last_cleanup = time.time()
 

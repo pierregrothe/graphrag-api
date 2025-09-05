@@ -9,7 +9,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from ..auth.jwt_auth import JWTConfig, JWTManager, TokenData
+from ..auth.jwt_auth import JWTManager, TokenData
 from ..database.sqlite_models import SQLiteManager
 from ..exceptions import AuthenticationError, ValidationError
 from ..models.user import User, UserCreate, UserLogin, UserPasswordUpdate, UserUpdate
@@ -489,7 +489,7 @@ class AuthService(BaseService, AuthenticationServiceProtocol):
         """
         try:
             # Test database connectivity
-            test_user = await self.user_repository.get_user_by_id("health_check_test")
+            await self.user_repository.get_user_by_id("health_check_test")
 
             # Test JWT manager
             test_token_data = TokenData(

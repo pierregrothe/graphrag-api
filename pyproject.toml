@@ -140,6 +140,14 @@ markers = [
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+filterwarnings = [
+    # Suppress external dependency warnings
+    "ignore::UserWarning:google.rpc",
+    "ignore::DeprecationWarning:pkg_resources",
+    "ignore::DeprecationWarning:google",
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"

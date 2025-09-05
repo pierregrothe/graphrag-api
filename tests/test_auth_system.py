@@ -5,26 +5,22 @@
 
 """Comprehensive unit tests for the GraphRAG API authentication system."""
 
-import asyncio
 import os
 
 # Add src to path for imports
 import sys
 import tempfile
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from fastapi import HTTPException
-from passlib.context import CryptContext
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from src.graphrag_api_service.auth.jwt_auth import JWTConfig, JWTManager
 from src.graphrag_api_service.database.sqlite_models import SQLiteManager
-from src.graphrag_api_service.models.user import User, UserCreate, UserLogin, UserUpdate
+from src.graphrag_api_service.models.user import User, UserCreate, UserLogin
 from src.graphrag_api_service.repositories.user_repository import UserRepository
 from src.graphrag_api_service.services.auth_service import AuthService
 from src.graphrag_api_service.utils.security import PasswordValidator, RateLimitHelper
@@ -150,7 +146,7 @@ class TestRateLimitHelper:
         rate_limiter = RateLimitHelper()
 
         # Make requests up to limit
-        for i in range(5):
+        for _ in range(5):
             allowed, retry_after = rate_limiter.check_rate_limit("test_user_2", 5, 60)
             assert allowed is True
 
@@ -164,7 +160,7 @@ class TestRateLimitHelper:
         rate_limiter = RateLimitHelper()
 
         # Fill up the rate limit
-        for i in range(5):
+        for _ in range(5):
             rate_limiter.check_rate_limit("test_user_3", 5, 60)
 
         # Reset the rate limit
@@ -255,7 +251,7 @@ class TestUserRepository:
             permissions=["read:workspaces"],
         )
 
-        created_user = await user_repository.create_user(user_data)
+        await user_repository.create_user(user_data)
 
         # Retrieve the user
         retrieved_user = await user_repository.get_user_by_email("test2@example.com")

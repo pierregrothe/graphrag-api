@@ -347,11 +347,11 @@ async def auth_health_check():
         # Test database connection
         db_manager = await get_db_manager()
         await db_manager.execute_query("SELECT 1")
-        
+
         # Test JWT manager
         jwt_manager = await get_jwt_manager()
         test_token = jwt_manager.create_access_token({"sub": "health_check"})
-        
+
         return {
             "status": "healthy",
             "database": "connected",

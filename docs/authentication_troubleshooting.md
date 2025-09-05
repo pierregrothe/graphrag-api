@@ -222,7 +222,7 @@ print(f"Message: {message}")
 # Password requirements:
 # - Minimum 8 characters
 # - At least one uppercase letter
-# - At least one lowercase letter  
+# - At least one lowercase letter
 # - At least one number
 # - At least one special character
 ```
@@ -245,7 +245,7 @@ async def health_check():
     """Comprehensive health check for authentication system."""
     print("🏥 GraphRAG Authentication Health Check")
     print("=" * 50)
-    
+
     # Check database
     try:
         from src.graphrag_api_service.database.sqlite_models import SQLiteManager
@@ -255,7 +255,7 @@ async def health_check():
         print(f"✅ Database: Connected ({result[0][0]} users)")
     except Exception as e:
         print(f"❌ Database: {e}")
-    
+
     # Check JWT configuration
     try:
         from src.graphrag_api_service.config import get_settings
@@ -263,7 +263,7 @@ async def health_check():
         print(f"✅ JWT: Configured (algorithm: {settings.jwt_algorithm})")
     except Exception as e:
         print(f"❌ JWT: {e}")
-    
+
     # Check security logger
     try:
         from src.graphrag_api_service.security.logging import get_security_logger
@@ -272,7 +272,7 @@ async def health_check():
         print(f"✅ Security: Active (threats: {status['active_threats']})")
     except Exception as e:
         print(f"❌ Security: {e}")
-    
+
     print("=" * 50)
     print("Health check complete")
 
@@ -295,16 +295,16 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 async def list_users():
     """List all users in the system."""
     from src.graphrag_api_service.database.sqlite_models import SQLiteManager
-    
+
     db = SQLiteManager('data/graphrag.db')
     await db.initialize()
-    
+
     users = await db.execute_query("""
-        SELECT user_id, username, email, is_active, created_at, last_login_at 
-        FROM users 
+        SELECT user_id, username, email, is_active, created_at, last_login_at
+        FROM users
         ORDER BY created_at DESC
     """)
-    
+
     print("👥 User List")
     print("-" * 80)
     for user in users:
@@ -314,12 +314,12 @@ async def list_users():
 async def deactivate_user(email):
     """Deactivate a user account."""
     from src.graphrag_api_service.database.sqlite_models import SQLiteManager
-    
+
     db = SQLiteManager('data/graphrag.db')
     await db.initialize()
-    
+
     await db.execute_query(
-        "UPDATE users SET is_active = 0 WHERE email = ?", 
+        "UPDATE users SET is_active = 0 WHERE email = ?",
         (email,)
     )
     print(f"User {email} deactivated")
@@ -351,12 +351,12 @@ async def security_audit():
     """Perform security audit of authentication system."""
     print("🔒 Security Audit Report")
     print("=" * 50)
-    
+
     # Check for weak passwords (in a real system, you wouldn't store plaintext)
     from src.graphrag_api_service.database.sqlite_models import SQLiteManager
     db = SQLiteManager('data/graphrag.db')
     await db.initialize()
-    
+
     # Check user activity
     users = await db.execute_query("""
         SELECT COUNT(*) as total,
@@ -364,24 +364,24 @@ async def security_audit():
                SUM(CASE WHEN last_login_at IS NULL THEN 1 ELSE 0 END) as never_logged_in
         FROM users
     """)
-    
+
     total, active, never_logged_in = users[0]
     print(f"📊 User Statistics:")
     print(f"   Total users: {total}")
     print(f"   Active users: {active}")
     print(f"   Never logged in: {never_logged_in}")
-    
+
     # Check security events
     from src.graphrag_api_service.security.logging import get_security_logger
     logger = get_security_logger()
     status = logger.get_security_status()
-    
+
     print(f"\n🚨 Security Status:")
     print(f"   Failed attempts (last hour): {status['failed_attempts_last_hour']}")
     print(f"   Active threats: {status['active_threats']}")
     print(f"   Blocked IPs: {status['blocked_ips']}")
     print(f"   Recent alerts: {status['recent_alerts']}")
-    
+
     # Recommendations
     print(f"\n💡 Recommendations:")
     if never_logged_in > 0:
@@ -501,14 +501,14 @@ When contacting support, provide:
 # Set up monitoring alerts
 def setup_monitoring():
     from src.graphrag_api_service.security.logging import get_security_logger
-    
+
     logger = get_security_logger()
     status = logger.get_security_status()
-    
+
     # Alert thresholds
     if status['failed_attempts_last_hour'] > 100:
         send_alert("High failed login attempts")
-    
+
     if status['active_threats'] > 5:
         send_alert("Multiple active threats detected")
 ```

@@ -21,9 +21,13 @@ class TestAuthenticationIntegration:
 
     def test_user_registration_flow(self, client):
         """Test complete user registration workflow."""
+        import uuid
+
+        unique_id = str(uuid.uuid4())[:8]
+
         registration_data = {
-            "username": "testuser",
-            "email": "test@example.com",
+            "username": f"testuser_{unique_id}",
+            "email": f"test_{unique_id}@example.com",
             "password": "SecurePass123!",  # Meets all complexity requirements
             "full_name": "Test User",
         }
@@ -35,8 +39,8 @@ class TestAuthenticationIntegration:
 
         if response.status_code == 201:
             data = response.json()
-            assert data["username"] == "testuser"
-            assert data["email"] == "test@example.com"
+            assert data["username"] == f"testuser_{unique_id}"
+            assert data["email"] == f"test_{unique_id}@example.com"
             assert "user_id" in data
 
     def test_user_login_flow(self, client):

@@ -469,7 +469,7 @@ class SecurityLogger:
         recent_failures = 0
         active_threats = 0
 
-        for ip, attempts in self.failed_attempts.items():
+        for _ip, attempts in self.failed_attempts.items():
             recent_attempts = [t for t in attempts if t > cutoff_time]
             recent_failures += len(recent_attempts)
 

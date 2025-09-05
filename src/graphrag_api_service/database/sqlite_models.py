@@ -13,10 +13,10 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from passlib.context import CryptContext
+
 # Suppress passlib bcrypt warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
-
-from passlib.context import CryptContext
 
 
 class SQLiteManager:

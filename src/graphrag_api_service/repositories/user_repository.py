@@ -5,8 +5,8 @@
 
 """User repository for handling user data access operations."""
 
+import json
 import logging
-from typing import Any
 
 from ..database.sqlite_models import SQLiteManager
 from ..exceptions import ResourceNotFoundError, ValidationError
@@ -227,7 +227,7 @@ class UserRepository:
 
         except Exception as e:
             self.logger.error(f"Error updating user {user_id}: {e}")
-            if isinstance(e, (ResourceNotFoundError, ValidationError)):
+            if isinstance(e, ResourceNotFoundError | ValidationError):
                 raise
             raise ValidationError(f"Failed to update user: {str(e)}")
 

@@ -5,7 +5,6 @@
 
 """User model for GraphRAG API Service authentication system."""
 
-import uuid
 from datetime import UTC, datetime
 from typing import Any
 

@@ -7,7 +7,6 @@
 
 import logging
 import os
-from pathlib import Path
 
 from ..sqlite_models import SQLiteManager
 
@@ -91,7 +90,7 @@ def _create_default_admin_user(db_manager: SQLiteManager) -> None:
             return
 
         # Create admin user
-        admin_user = db_manager.create_user(
+        db_manager.create_user(
             username=admin_username,
             email=admin_email,
             password=admin_password,

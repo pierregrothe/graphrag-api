@@ -269,7 +269,7 @@ response = requests.post('https://api.graphrag.example.com/auth/login', json={
 if response.status_code == 200:
     tokens = response.json()
     access_token = tokens['access_token']
-    
+
     # Use access token for authenticated requests
     headers = {'Authorization': f'Bearer {access_token}'}
     profile = requests.get('https://api.graphrag.example.com/auth/profile', headers=headers)
@@ -312,14 +312,14 @@ const loginResponse = await fetch('https://api.graphrag.example.com/auth/login',
 if (loginResponse.ok) {
   const tokens = await loginResponse.json();
   const accessToken = tokens.access_token;
-  
+
   // Use access token for authenticated requests
   const profileResponse = await fetch('https://api.graphrag.example.com/auth/profile', {
     headers: {
       'Authorization': `Bearer ${accessToken}`
     }
   });
-  
+
   const profile = await profileResponse.json();
   console.log(profile);
 }

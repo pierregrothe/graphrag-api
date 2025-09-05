@@ -5,7 +5,6 @@
 
 """Integration tests for the GraphRAG API authentication system."""
 
-import asyncio
 import json
 
 # Add src to path for imports
@@ -322,7 +321,7 @@ class TestRateLimiting:
 
         # Make multiple failed login attempts
         responses = []
-        for i in range(10):  # Try more than typical rate limit
+        for _ in range(10):  # Try more than typical rate limit
             response = self.client.post("/auth/login", json=invalid_login_data)
             responses.append(response.status_code)
 

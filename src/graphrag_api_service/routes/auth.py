@@ -21,7 +21,7 @@ from ..auth.admin_api_keys import (
     get_admin_api_key_manager,
 )
 from ..auth.api_keys import APIKeyManager, APIKeyRequest, RateLimitConfig
-from ..auth.jwt_auth import JWTConfig, JWTManager, TokenData
+from ..auth.jwt_auth import JWTConfig, JWTManager
 from ..auth.rate_limiting import RateLimitConfig as AuthRateLimitConfig
 from ..auth.rate_limiting import RateLimiter
 from ..auth.unified_auth import AuthenticatedUser, require_key_management
@@ -34,7 +34,7 @@ from ..exceptions import (
     ResourceNotFoundError,
     ValidationError,
 )
-from ..models.user import UserCreate, UserPasswordUpdate, UserUpdate
+from ..models.user import UserCreate
 from ..models.user import UserLogin as UserLoginModel
 from ..repositories.user_repository import UserRepository
 from ..security import get_security_logger
