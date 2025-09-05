@@ -21,12 +21,12 @@ function Run-Check {
         [string]$Command,
         [string]$Description
     )
-    
+
     Write-Host "`nRunning: $Description" -ForegroundColor Cyan
     Write-Host "Command: $Command" -ForegroundColor Gray
-    
+
     Invoke-Expression $Command
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[SUCCESS] $Description passed" -ForegroundColor Green
         return $true

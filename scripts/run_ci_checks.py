@@ -52,12 +52,12 @@ def run_command(command: str, description: str, env_vars: dict = None) -> bool:
     """Run a command and return success status."""
     print(f"\n{BOLD}Running: {description}{RESET}")
     print(f"Command: {command}")
-    
+
     # Set up environment
     env = os.environ.copy()
     if env_vars:
         env.update(env_vars)
-    
+
     try:
         result = subprocess.run(
             command,
@@ -66,7 +66,7 @@ def run_command(command: str, description: str, env_vars: dict = None) -> bool:
             text=True,
             env=env
         )
-        
+
         if result.returncode == 0:
             print_success(f"{description} passed")
             if result.stdout:
@@ -90,11 +90,11 @@ def main() -> int:
     project_root = Path(__file__).parent.parent
     os.chdir(project_root)
     print_info(f"Working directory: {project_root}")
-    
+
     # Track overall success
     all_passed = True
     results = {}
-    
+
     # Set up environment variables for tests
     test_env = {
         "JWT_SECRET_KEY": "test-secret-key-for-ci-only-12345678",
@@ -104,10 +104,10 @@ def main() -> int:
         "OLLAMA_LLM_MODEL": "llama2",
         "OLLAMA_EMBEDDING_MODEL": "nomic-embed-text"
     }
-    
+
     # ===== CODE QUALITY CHECKS =====
     print_header("CODE QUALITY CHECKS")
-    
+
     # Black formatting check
     if run_command(
         "poetry run black --check src/ tests/",
@@ -118,7 +118,7 @@ def main() -> int:
         results["Black"] = "FAILED"
         all_passed = False
         print_warning("Run 'poetry run black src/ tests/' to fix formatting")
-    
+
     # Ruff linting
     if run_command(
         "poetry run ruff check src/ tests/",
@@ -129,7 +129,7 @@ def main() -> int:
         results["Ruff"] = "FAILED"
         all_passed = False
         print_warning("Run 'poetry run ruff check --fix src/ tests/' to fix issues")
-    
+
     # MyPy type checking
     if run_command(
         "poetry run mypy src/graphrag_api_service",
@@ -140,7 +140,7 @@ def main() -> int:
     else:
         results["MyPy"] = "FAILED"
         all_passed = False
-    
+
     # Bandit security check
     if run_command(
         "poetry run bandit -r src/ -ll",
@@ -151,10 +151,10 @@ def main() -> int:
     else:
         results["Bandit"] = "FAILED"
         all_passed = False
-    
+
     # ===== UNIT TESTS =====
     print_header("UNIT TESTS")
-    
+
     # Run unit tests with coverage
     if run_command(
         "poetry run pytest tests/unit/ --cov=src/graphrag_api_service --cov-report=term-missing -v",
@@ -165,10 +165,10 @@ def main() -> int:
     else:
         results["Unit Tests"] = "FAILED"
         all_passed = False
-    
+
     # ===== ADDITIONAL CHECKS (Not in CI but useful locally) =====
     print_header("ADDITIONAL LOCAL CHECKS")
-    
+
     # Check if pre-commit hooks pass
     if run_command(
         "pre-commit run --all-files",
@@ -178,16 +178,16 @@ def main() -> int:
     else:
         results["Pre-commit"] = "FAILED"
         print_warning("Some pre-commit hooks failed but may have auto-fixed issues")
-    
+
     # ===== SUMMARY =====
     print_header("SUMMARY")
-    
+
     for check, status in results.items():
         if status == "PASSED":
             print(f"{GREEN}[PASS] {check}{RESET}")
         else:
             print(f"{RED}[FAIL] {check}{RESET}")
-    
+
     print()
     if all_passed:
         print_success("All CI checks passed! Ready to commit and push.")

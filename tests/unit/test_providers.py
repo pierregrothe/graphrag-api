@@ -88,11 +88,22 @@ class TestOllamaProvider:
     @pytest.mark.asyncio
     async def test_validate_connection_success(self, ollama_provider):
         """Test successful connection validation."""
-        with patch("httpx.AsyncClient.get") as mock_get:
-            mock_get.return_value = AsyncMock(
-                status_code=200,
-                json=AsyncMock(return_value={"status": "ok"}),
-            )
+        # Mock the Ollama client's list method instead of httpx
+        with patch.object(ollama_provider.client, "list") as mock_list:
+            # Create a mock response that matches the expected structure
+            # The health_check method checks for models.models attribute first
+            mock_model1 = AsyncMock()
+            mock_model1.model = "gemma:4b"
+            mock_model2 = AsyncMock()
+            mock_model2.model = "nomic-embed-text"
+
+            mock_response = AsyncMock()
+            mock_response.models = [mock_model1, mock_model2]
+            mock_list.return_value = mock_response
+
+            # Update the mock to use the correct models that the provider expects
+            mock_model1.model = ollama_provider.llm_model
+            mock_model2.model = ollama_provider.embedding_model
 
             result = await ollama_provider.validate_connection()
             assert result is True
