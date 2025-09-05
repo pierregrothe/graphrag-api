@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # Server Settings
     # Note: 0.0.0.0 binding is intentional for API service - use firewall/proxy for security
     host: str = "0.0.0.0"  # nosec B104 - Required for container deployment
-    port: int = 8000  # Standard port aligned with documentation
+    port: int = 8001  # Changed from 8000 to avoid Docker conflicts
 
     # GraphRAG Settings
     graphrag_config_path: str | None = None
