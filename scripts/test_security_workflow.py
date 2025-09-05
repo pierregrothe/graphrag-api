@@ -444,12 +444,12 @@ class LocalSecurityWorkflow:
         if self.mode == "pr":
             print(f"\n{BOLD}PR Comment Preview:{RESET}")
             print(f"{CYAN}---{RESET}")
-            print(f"## 🔒 Security Check Results\n")
+            print(f"## Security Check Results\n")
             print(f"**Security Score:** {total_score:.1f}/100 (Grade: {grade})\n")
             print(f"| Check | Status | Score | Findings |")
             print(f"|-------|---------|-------|----------|")
             for result in self.results:
-                status = "✅" if result.passed else "❌"
+                status = "PASS" if result.passed else "FAIL"
                 findings = len(result.findings) if result.findings else 0
                 print(f"| {result.name} | {status} | {result.score:.1f} | {findings} |")
             print(f"{CYAN}---{RESET}")
