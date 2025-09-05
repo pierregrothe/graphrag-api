@@ -34,10 +34,15 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
             token_lifetime: Token lifetime in seconds (default: 1 hour)
         """
         super().__init__(app)
-        self.secret_key = secret_key or getattr(settings, "SECRET_KEY", "default-csrf-secret")
-        self.token_lifetime = token_lifetime
-        self.csrf_header_name = "X-CSRF-Token"
-        self.csrf_cookie_name = "csrf_token"
+        # Ensure secret_key is always a string
+        self.secret_key: str
+        if secret_key:
+            self.secret_key = secret_key
+        else:
+            self.secret_key = str(getattr(settings, "SECRET_KEY", "default-csrf-secret"))
+        self.token_lifetime: int = token_lifetime
+        self.csrf_header_name: str = "X-CSRF-Token"
+        self.csrf_cookie_name: str = "csrf_token"
 
         # Methods that require CSRF protection
         self.protected_methods = {"POST", "PUT", "PATCH", "DELETE"}
@@ -165,10 +170,8 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
     def _generate_signature(self, timestamp: str, random_data: str) -> str:
         """Generate HMAC signature for token components."""
         message = f"{timestamp}:{random_data}"
-        if isinstance(self.secret_key, str):
-            secret_key_bytes = self.secret_key.encode()
-        else:
-            secret_key_bytes = self.secret_key
+        # self.secret_key is always a string due to initialization
+        secret_key_bytes: bytes = self.secret_key.encode()
         return hmac.new(secret_key_bytes, message.encode(), hashlib.sha256).hexdigest()
 
     def _set_csrf_cookie(self, response: Response) -> None:

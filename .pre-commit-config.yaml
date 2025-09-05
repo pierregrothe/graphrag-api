@@ -94,7 +94,7 @@ repos:
             stages: [pre-push]
 
           # Security workflow simulation (fast mode for commits)
-          # Temporarily disabled due to timeout issues  
+          # Temporarily disabled due to timeout issues
         # - id: security-check-fast
         #     name: Security Check (Fast Mode)
         #     entry: python scripts/test_security_workflow.py --mode fast
