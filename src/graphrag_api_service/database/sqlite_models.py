@@ -182,7 +182,7 @@ class SQLiteManager:
 
         # Use parameterized query with explicit field validation
         # Note: set_clauses are built from whitelisted allowed_fields, preventing SQL injection
-        query = f"UPDATE workspaces SET {', '.join(set_clauses)}, updated_at = ? WHERE id = ?"
+        query = f"UPDATE workspaces SET {', '.join(set_clauses)}, updated_at = ? WHERE id = ?"  # nosec B608 - Fields are whitelisted
 
         with sqlite3.connect(self.db_path) as conn:
             result = conn.execute(query, values)

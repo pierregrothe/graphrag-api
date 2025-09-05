@@ -34,7 +34,9 @@
       "Bash(poetry run isort:*)",
       "Bash(poetry run pylint:*)",
       "Bash(git rm:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(poetry show:*)",
+      "Bash(poetry run bandit:*)"
     ],
     "deny": [],
     "ask": []

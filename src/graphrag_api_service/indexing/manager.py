@@ -388,7 +388,7 @@ class IndexingManager:
         mock_config = WorkspaceConfig(
             name=f"workspace-{job.workspace_id}",
             description="Mock workspace for indexing",
-            data_path="/tmp/mock_data",
+            data_path="/tmp/mock_data",  # nosec B108 - Mock data for testing only
             output_path=None,
             llm_model_override=None,
             embedding_model_override=None,

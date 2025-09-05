@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
     # Server Settings
     # Note: 0.0.0.0 binding is intentional for API service - use firewall/proxy for security
-    host: str = "0.0.0.0"
+    host: str = "0.0.0.0"  # nosec B104 - Required for container deployment
     port: int = 8000  # Standard port aligned with documentation
 
     # GraphRAG Settings

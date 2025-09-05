@@ -159,7 +159,7 @@ class RedisDistributedCache:
             logger.warning("Loading legacy pickle data - consider migrating to JSON format")
             import pickle
 
-            return pickle.loads(data)
+            return pickle.loads(data)  # nosec B301 - Internal cache data only
 
     async def get(self, namespace: str, key: str) -> Any | None:
         """Get a value from cache.
