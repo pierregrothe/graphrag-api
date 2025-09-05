@@ -197,11 +197,11 @@ jobs:
           channel: '#deployments'
           message: |
             🚀 Documentation platform deployed successfully!
-            
+
             📖 **Documentation**: https://docs.graphrag.com
             🎮 **API Playground**: https://docs.graphrag.com/playground
             📊 **Status**: All systems operational
-            
+
             **Changes**: ${{ github.event.head_commit.message }}
             **Commit**: ${{ github.sha }}
         env:
@@ -215,11 +215,11 @@ jobs:
           channel: '#deployments'
           message: |
             ❌ Documentation platform deployment failed!
-            
+
             **Environment**: Production
             **Commit**: ${{ github.sha }}
             **Workflow**: ${{ github.workflow }}
-            
+
             Please check the deployment logs and take action.
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

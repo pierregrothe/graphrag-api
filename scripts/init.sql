@@ -189,7 +189,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 
 -- Create view for workspace statistics
 CREATE OR REPLACE VIEW workspace_stats AS
-SELECT 
+SELECT
     w.id,
     w.name,
     w.status,
@@ -206,7 +206,7 @@ GROUP BY w.id, w.name, w.status;
 
 -- Create materialized view for query performance stats
 CREATE MATERIALIZED VIEW IF NOT EXISTS query_performance_stats AS
-SELECT 
+SELECT
     workspace_id,
     query_type,
     DATE_TRUNC('hour', created_at) as hour,

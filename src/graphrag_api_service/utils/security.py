@@ -155,8 +155,6 @@ class InputSanitizer:
         Returns:
             Sanitized string
         """
-        if not isinstance(input_str, str):
-            input_str = str(input_str)
 
         # Strip whitespace
         sanitized = input_str.strip()

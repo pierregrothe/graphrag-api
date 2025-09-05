@@ -181,11 +181,11 @@ async function graphragAPI(endpoint: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
-  
+
   if (!response.ok) {
     throw new Error(`API Error: ${response.statusText}`);
   }
-  
+
   return response.json();
 }
 

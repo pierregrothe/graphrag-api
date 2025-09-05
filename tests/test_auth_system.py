@@ -6,8 +6,6 @@
 """Comprehensive unit tests for the GraphRAG API authentication system."""
 
 import os
-
-# Add src to path for imports
 import sys
 import tempfile
 import uuid
@@ -16,14 +14,15 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from src.graphrag_api_service.auth.jwt_auth import JWTConfig, JWTManager
 from src.graphrag_api_service.database.sqlite_models import SQLiteManager
 from src.graphrag_api_service.models.user import User, UserCreate, UserLogin
 from src.graphrag_api_service.repositories.user_repository import UserRepository
 from src.graphrag_api_service.services.auth_service import AuthService
 from src.graphrag_api_service.utils.security import PasswordValidator, RateLimitHelper
+
+# Add src to path for imports (after imports to avoid E402)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 
 class TestUserModel:

@@ -165,40 +165,40 @@
   .heroBanner {
     padding: 2rem 0;
   }
-  
+
   .heroStats {
     gap: 1rem;
     margin-top: 2rem;
   }
-  
+
   .stat {
     min-width: 100px;
   }
-  
+
   .statNumber {
     font-size: 1.5rem;
   }
-  
+
   .buttons {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .quickStart,
   .apiShowcase,
   .enterpriseFeatures {
     padding: 2rem 0;
   }
-  
+
   .quickStartStep {
     padding: 1rem;
     margin-bottom: 2rem;
   }
-  
+
   .codeBlock {
     font-size: 0.8rem;
   }
-  
+
   .featureCard {
     padding: 1.5rem;
     margin-bottom: 1rem;
@@ -211,24 +211,24 @@
     align-items: center;
     gap: 1rem;
   }
-  
+
   .stat {
     display: flex;
     align-items: center;
     gap: 1rem;
     text-align: left;
   }
-  
+
   .statNumber {
     font-size: 1.25rem;
     margin-bottom: 0;
     min-width: 60px;
   }
-  
+
   .statLabel {
     margin-bottom: 0;
   }
-  
+
   .codeBlock {
     padding: 0.75rem;
     font-size: 0.75rem;

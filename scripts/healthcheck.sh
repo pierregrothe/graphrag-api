@@ -19,7 +19,7 @@ log() {
 # Check if service is responding
 check_service() {
     local url="http://${HOST}:${PORT}/health"
-    
+
     if curl -f -s --max-time "$TIMEOUT" "$url" > /dev/null 2>&1; then
         return 0
     else
@@ -31,9 +31,9 @@ check_service() {
 check_detailed_health() {
     local url="http://${HOST}:${PORT}/health/detailed"
     local response
-    
+
     response=$(curl -f -s --max-time "$TIMEOUT" "$url" 2>/dev/null || echo "")
-    
+
     if [ -n "$response" ]; then
         # Parse JSON response to check status
         local status
@@ -45,7 +45,7 @@ try:
 except:
     print('error')
 " 2>/dev/null || echo "error")
-        
+
         if [ "$status" = "healthy" ]; then
             return 0
         else
@@ -60,7 +60,7 @@ except:
 # Check database connectivity
 check_database() {
     local url="http://${HOST}:${PORT}/health/database"
-    
+
     if curl -f -s --max-time "$TIMEOUT" "$url" > /dev/null 2>&1; then
         return 0
     else
@@ -73,9 +73,9 @@ check_database() {
 check_memory() {
     local url="http://${HOST}:${PORT}/health/memory"
     local response
-    
+
     response=$(curl -f -s --max-time "$TIMEOUT" "$url" 2>/dev/null || echo "")
-    
+
     if [ -n "$response" ]; then
         local memory_usage
         memory_usage=$(echo "$response" | python3 -c "
@@ -86,7 +86,7 @@ try:
 except:
     print(100)
 " 2>/dev/null || echo "100")
-        
+
         # Check if memory usage is below 90%
         if [ "$(echo "$memory_usage < 90" | bc -l 2>/dev/null || echo "0")" = "1" ]; then
             return 0
@@ -103,7 +103,7 @@ except:
 comprehensive_check() {
     local checks_passed=0
     local total_checks=4
-    
+
     # Basic service check
     if check_service; then
         checks_passed=$((checks_passed + 1))
@@ -111,7 +111,7 @@ comprehensive_check() {
     else
         log "✗ Service not responding"
     fi
-    
+
     # Detailed health check
     if check_detailed_health; then
         checks_passed=$((checks_passed + 1))
@@ -119,7 +119,7 @@ comprehensive_check() {
     else
         log "✗ Detailed health check failed"
     fi
-    
+
     # Database check
     if check_database; then
         checks_passed=$((checks_passed + 1))
@@ -127,7 +127,7 @@ comprehensive_check() {
     else
         log "✗ Database connectivity failed"
     fi
-    
+
     # Memory check
     if check_memory; then
         checks_passed=$((checks_passed + 1))
@@ -135,10 +135,10 @@ comprehensive_check() {
     else
         log "✗ Memory usage high"
     fi
-    
+
     # Determine overall health
     local health_percentage=$((checks_passed * 100 / total_checks))
-    
+
     if [ $health_percentage -ge 75 ]; then
         log "Overall health: HEALTHY ($checks_passed/$total_checks checks passed)"
         return 0
@@ -151,10 +151,10 @@ comprehensive_check() {
 # Main health check with retries
 main() {
     local attempt=1
-    
+
     while [ $attempt -le $MAX_RETRIES ]; do
         log "Health check attempt $attempt/$MAX_RETRIES"
-        
+
         if [ "$HEALTH_CHECK_MODE" = "comprehensive" ]; then
             if comprehensive_check; then
                 log "Health check PASSED"
@@ -167,15 +167,15 @@ main() {
                 exit 0
             fi
         fi
-        
+
         if [ $attempt -lt $MAX_RETRIES ]; then
             log "Health check failed, retrying in 2 seconds..."
             sleep 2
         fi
-        
+
         attempt=$((attempt + 1))
     done
-    
+
     log "Health check FAILED after $MAX_RETRIES attempts"
     exit 1
 }

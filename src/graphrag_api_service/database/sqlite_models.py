@@ -517,8 +517,9 @@ class SQLiteManager:
                 )
             else:
                 cursor = conn.execute("SELECT COUNT(*) FROM users WHERE email = ?", (email,))
-            count = cursor.fetchone()[0]
-            return count > 0
+            result = cursor.fetchone()
+            count = result[0] if result else 0
+            return bool(count > 0)
 
     def update_user(self, user_id: str, updates: dict[str, Any]) -> bool:
         """Update user information."""

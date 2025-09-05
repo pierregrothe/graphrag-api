@@ -2,12 +2,12 @@
 
 /**
  * Automated API Documentation Generator
- * 
+ *
  * This script automatically generates comprehensive API documentation from:
  * - OpenAPI 3.0 specification
  * - GraphQL schema introspection
  * - Code examples and templates
- * 
+ *
  * Features:
  * - REST API endpoint documentation with interactive examples
  * - GraphQL schema documentation with query examples
@@ -31,41 +31,41 @@ class APIDocumentationGenerator {
       examplesDir: './examples',
       ...config
     };
-    
+
     this.openApiSpec = null;
     this.graphqlSchema = null;
   }
 
   async generate() {
     console.log('🚀 Starting API documentation generation...');
-    
+
     try {
       // Load OpenAPI specification
       await this.loadOpenApiSpec();
-      
+
       // Load GraphQL schema
       await this.loadGraphQLSchema();
-      
+
       // Generate REST API documentation
       await this.generateRestApiDocs();
-      
+
       // Generate GraphQL documentation
       await this.generateGraphQLDocs();
-      
+
       // Generate authentication documentation
       await this.generateAuthDocs();
-      
+
       // Generate error documentation
       await this.generateErrorDocs();
-      
+
       // Generate code examples
       await this.generateCodeExamples();
-      
+
       // Generate interactive playground pages
       await this.generatePlaygroundPages();
-      
+
       console.log('✅ API documentation generation completed successfully!');
-      
+
     } catch (error) {
       console.error('❌ Error generating API documentation:', error);
       process.exit(1);
@@ -74,12 +74,12 @@ class APIDocumentationGenerator {
 
   async loadOpenApiSpec() {
     console.log('📖 Loading OpenAPI specification...');
-    
+
     try {
       const openApiPath = path.resolve(__dirname, this.config.openApiPath);
       const openApiContent = await fs.readFile(openApiPath, 'utf8');
       this.openApiSpec = yaml.load(openApiContent);
-      
+
       console.log(`✅ Loaded OpenAPI spec with ${Object.keys(this.openApiSpec.paths).length} endpoints`);
     } catch (error) {
       console.error('❌ Failed to load OpenAPI specification:', error.message);
@@ -89,7 +89,7 @@ class APIDocumentationGenerator {
 
   async loadGraphQLSchema() {
     console.log('🔍 Loading GraphQL schema...');
-    
+
     try {
       const introspectionQuery = `
         query IntrospectionQuery {
@@ -190,7 +190,7 @@ class APIDocumentationGenerator {
       });
 
       this.graphqlSchema = response.data.data.__schema;
-      
+
       console.log(`✅ Loaded GraphQL schema with ${this.graphqlSchema.types.length} types`);
     } catch (error) {
       console.warn('⚠️ Could not load GraphQL schema (server may not be running):', error.message);
@@ -200,7 +200,7 @@ class APIDocumentationGenerator {
 
   async generateRestApiDocs() {
     console.log('📝 Generating REST API documentation...');
-    
+
     const outputDir = path.resolve(__dirname, this.config.outputDir, 'rest');
     await this.ensureDirectory(outputDir);
 
@@ -307,7 +307,7 @@ See the [Error Codes Reference](/api/errors) for complete error documentation.
 
   generateEndpointsSummary() {
     const categories = {};
-    
+
     for (const [pathPattern, pathItem] of Object.entries(this.openApiSpec.paths)) {
       for (const [method, operation] of Object.entries(pathItem)) {
         if (typeof operation === 'object' && operation.tags) {
@@ -325,7 +325,7 @@ See the [Error Codes Reference](/api/errors) for complete error documentation.
     }
 
     return Object.entries(categories)
-      .map(([category, endpoints]) => 
+      .map(([category, endpoints]) =>
         `| ${category} | ${endpoints.length} | ${endpoints[0]?.summary || 'API operations'} |`
       )
       .join('\n');
@@ -400,7 +400,7 @@ ${this.generateCodeExamplesSection(pathPattern, method, operation)}
       section += `### ${location.charAt(0).toUpperCase() + location.slice(1)} Parameters\n\n`;
       section += '| Name | Type | Required | Description |\n';
       section += '|------|------|----------|-------------|\n';
-      
+
       for (const param of params) {
         section += `| \`${param.name}\` | ${param.schema?.type || 'string'} | ${param.required ? '✅' : '❌'} | ${param.description || 'No description'} |\n`;
       }
@@ -429,7 +429,7 @@ ${JSON.stringify(this.getExampleFromSchema(requestBody.content?.['application/js
 
     for (const [statusCode, response] of Object.entries(responses)) {
       section += `### ${statusCode} - ${response.description}\n\n`;
-      
+
       if (response.content?.['application/json']?.schema) {
         section += '```json\n';
         section += JSON.stringify(this.getExampleFromSchema(response.content['application/json'].schema), null, 2);
@@ -442,7 +442,7 @@ ${JSON.stringify(this.getExampleFromSchema(requestBody.content?.['application/js
 
   generateCodeExamplesSection(pathPattern, method, operation) {
     const examples = this.generateExamplesForOperation(pathPattern, method, operation);
-    
+
     if (examples.length === 0) return '';
 
     let section = '\n## Code Examples\n\n';
@@ -486,7 +486,7 @@ ${JSON.stringify(this.getExampleFromSchema(requestBody.content?.['application/js
   generateCurlExample(pathPattern, method, operation) {
     const methodUpper = method.toUpperCase();
     let curl = `curl -X ${methodUpper} "http://localhost:8000${pathPattern}"`;
-    
+
     curl += ` \\\n  -H "Authorization: Bearer $JWT_TOKEN"`;
     curl += ` \\\n  -H "Content-Type: application/json"`;
 
@@ -626,7 +626,7 @@ ${JSON.stringify(this.getExampleFromSchema(requestBody.content?.['application/js
     }
 
     console.log('📝 Generating GraphQL documentation...');
-    
+
     const outputDir = path.resolve(__dirname, this.config.outputDir, 'graphql');
     await this.ensureDirectory(outputDir);
 
@@ -753,8 +753,8 @@ sidebar_position: 2
     }
 
     // Add other important types
-    const importantTypes = this.graphqlSchema.types.filter(type => 
-      type.kind === 'OBJECT' && 
+    const importantTypes = this.graphqlSchema.types.filter(type =>
+      type.kind === 'OBJECT' &&
       !type.name.startsWith('__') &&
       type.name !== this.graphqlSchema.queryType?.name &&
       type.name !== this.graphqlSchema.mutationType?.name &&
@@ -783,7 +783,7 @@ sidebar_position: 2
     if (type.fields && type.fields.length > 0) {
       doc += `| Field | Type | Description |\n`;
       doc += `|-------|------|-------------|\n`;
-      
+
       for (const field of type.fields.slice(0, 10)) { // Limit fields
         const fieldType = this.formatGraphQLType(field.type);
         doc += `| \`${field.name}\` | ${fieldType} | ${field.description || 'No description'} |\n`;
@@ -906,7 +906,7 @@ subscription EntityUpdates {
 
   async generatePlaygroundPages() {
     console.log('🎮 Generating playground pages...');
-    
+
     const playgroundContent = `---
 title: API Playground
 description: Interactive API testing environment
@@ -925,7 +925,7 @@ Test the GraphRAG API directly from your browser with our interactive playground
     <TabsTrigger value="rest">REST API</TabsTrigger>
     <TabsTrigger value="graphql">GraphQL</TabsTrigger>
   </TabsList>
-  
+
   <TabsContent value="rest">
     <ApiExplorer
       endpoint="/api/entities"
@@ -960,7 +960,7 @@ Test the GraphRAG API directly from your browser with our interactive playground
       ]}
     />
   </TabsContent>
-  
+
   <TabsContent value="graphql">
     <GraphQLPlayground
       endpoint="${this.config.graphqlEndpoint}"

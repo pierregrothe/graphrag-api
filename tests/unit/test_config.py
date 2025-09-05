@@ -21,7 +21,7 @@ from src.graphrag_api_service.config import LLMProvider, Settings
 class TestConfigurationSettings:
     """Test configuration settings and environment variables."""
 
-    def test_default_settings_loads_correctly(self):
+    def test_default_settings_loads_correctly(self) -> None:
         """Test that default settings load with expected values."""
         settings = Settings()
         assert settings.app_name == "GraphRAG API Service"

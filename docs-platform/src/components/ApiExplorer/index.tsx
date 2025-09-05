@@ -100,7 +100,7 @@ const ApiExplorer: React.FC<ApiExplorerProps> = ({
       // Build URL with parameters
       let url = `${baseUrl}${endpoint}`;
       const queryParams = new URLSearchParams();
-      
+
       parameters.forEach(param => {
         if (param.name in paramValues && paramValues[param.name] !== '') {
           if (endpoint.includes(`{${param.name}}`)) {
@@ -175,7 +175,7 @@ const ApiExplorer: React.FC<ApiExplorerProps> = ({
   const generateCurlCommand = () => {
     let url = `${baseUrl}${endpoint}`;
     const queryParams = new URLSearchParams();
-    
+
     parameters.forEach(param => {
       if (param.name in paramValues && paramValues[param.name] !== '') {
         if (endpoint.includes(`{${param.name}}`)) {
@@ -191,7 +191,7 @@ const ApiExplorer: React.FC<ApiExplorerProps> = ({
     }
 
     let curl = `curl -X ${method} "${url}"`;
-    
+
     if (authToken) {
       if (authType === 'jwt') {
         curl += ` \\\n  -H "Authorization: Bearer ${authToken}"`;

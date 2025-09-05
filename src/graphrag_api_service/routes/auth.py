@@ -229,7 +229,7 @@ async def _create_user_in_database(user_data: UserRegistration, auth_service: Au
 
     # Register user through auth service
     registration_result = await auth_service.register_user(user_create)
-    return registration_result["user"]["user_id"]
+    return str(registration_result["user"]["user_id"])
 
 
 async def _check_login_rate_limit(request: Request, email: str) -> None:

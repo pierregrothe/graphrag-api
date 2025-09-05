@@ -9,13 +9,6 @@ import os
 import sys
 from pathlib import Path
 
-# Set testing environment variables
-os.environ["TESTING"] = "true"
-os.environ["RATE_LIMITING_ENABLED"] = "false"
-
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 # Import all fixtures from the fixtures module
 from tests.fixtures.clients import async_test_client, sync_test_client, test_client
 from tests.fixtures.data import (
@@ -25,6 +18,13 @@ from tests.fixtures.data import (
     test_data_path,
 )
 from tests.fixtures.mocks import mock_indexing_manager, mock_llm_provider, mock_workspace_manager
+
+# Add src to path for imports (after imports to avoid E402)
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Set testing environment variables
+os.environ["TESTING"] = "true"
+os.environ["RATE_LIMITING_ENABLED"] = "false"
 
 # Make fixtures available to all tests
 __all__ = [

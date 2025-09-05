@@ -6,8 +6,6 @@
 """Integration tests for the GraphRAG API authentication system."""
 
 import json
-
-# Add src to path for imports
 import sys
 import time
 from pathlib import Path
@@ -15,9 +13,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from src.graphrag_api_service.main import app
+
+# Add src to path for imports (after imports to avoid E402)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 
 class TestAuthenticationFlow:

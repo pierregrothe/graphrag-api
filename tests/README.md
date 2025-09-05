@@ -145,7 +145,7 @@ from src.graphrag_api_service.<module> import <Class>
 
 class Test<Module><Feature>:
     """Test <feature> functionality."""
-    
+
     def test_<action>_<condition>_<expected>(self):
         """Test that <action> with <condition> results in <expected>."""
         # Arrange
@@ -168,7 +168,7 @@ from tests.fixtures.clients import async_test_client
 
 class Test<Feature>Integration:
     """Test <feature> integration."""
-    
+
     @pytest.mark.asyncio
     async def test_<workflow>_<scenario>(self, async_test_client):
         """Test <workflow> in <scenario>."""

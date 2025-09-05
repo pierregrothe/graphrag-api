@@ -224,7 +224,7 @@ const GraphQLPlaygroundComponent: React.FC<GraphQLPlaygroundProps> = ({
 
   const getPlaygroundConfig = () => {
     const headers: Record<string, string> = {};
-    
+
     if (authToken) {
       if (authType === 'jwt') {
         headers['Authorization'] = `Bearer ${authToken}`;
@@ -251,7 +251,7 @@ const GraphQLPlaygroundComponent: React.FC<GraphQLPlaygroundProps> = ({
         {
           endpoint,
           query: selectedExample?.query || defaultQuery || `# Welcome to GraphRAG API GraphQL Playground
-# 
+#
 # GraphQL is a query language for APIs and a runtime for fulfilling those queries with your existing data.
 # GraphQL provides a complete and understandable description of the data in your API,
 # gives clients the power to ask for exactly what they need and nothing more,
@@ -372,7 +372,7 @@ query GetEntities {
           <div className="grid gap-4">
             {examples.map((example, index) => (
               <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader 
+                <CardHeader
                   className="pb-3"
                   onClick={() => setSelectedExample(example)}
                 >

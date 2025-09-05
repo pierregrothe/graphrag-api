@@ -99,7 +99,7 @@ def run_newman_tests() -> int:
         return 0  # Don't fail if Newman isn't installed
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Run API tests for GraphRAG API Service")
     parser.add_argument(

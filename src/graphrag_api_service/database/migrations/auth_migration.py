@@ -63,10 +63,11 @@ def _migration_already_run(db_manager: SQLiteManager) -> bool:
 
         with sqlite3.connect(db_manager.db_path) as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM users")
-            user_count = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            user_count = result[0] if result else 0
 
             # If we have users, assume migration has been run
-            return user_count > 0
+            return bool(user_count > 0)
 
     except sqlite3.OperationalError:
         # Table doesn't exist, migration hasn't been run

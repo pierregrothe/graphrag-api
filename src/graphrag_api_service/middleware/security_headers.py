@@ -8,6 +8,7 @@
 
 import logging
 from collections.abc import Callable
+from typing import cast
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -40,7 +41,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 # Add comprehensive security headers
                 self._add_comprehensive_security_headers(response, request)
 
-            return response  # type: ignore[no-any-return]
+            return cast(Response, response)
 
         except Exception as e:
             logger.error(f"Security headers middleware error: {e}")
@@ -51,7 +52,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 self._add_basic_security_headers(response)
             except Exception:
                 pass
-            return response
+            return cast(Response, response)
 
     def _add_comprehensive_security_headers(self, response: Response, request: Request) -> None:
         """Add comprehensive security headers to the response."""

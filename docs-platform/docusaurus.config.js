@@ -111,7 +111,7 @@ const config = {
     ({
       // Replace with your project's social card
       image: 'img/graphrag-social-card.jpg',
-      
+
       metadata: [
         {name: 'keywords', content: 'graphrag, api, knowledge graph, ai, machine learning, semantic search'},
         {name: 'description', content: 'Enterprise-grade GraphRAG API for building intelligent knowledge graph applications'},

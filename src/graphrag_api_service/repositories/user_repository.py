@@ -157,6 +157,57 @@ class UserRepository:
                 raise
             raise ValidationError(f"Failed to create user: {str(e)}")
 
+    def _prepare_update_data(self, user_update: UserUpdate) -> dict[str, str]:
+        """Prepare update data from UserUpdate model."""
+        update_data = {}
+        if user_update.username is not None:
+            update_data["username"] = user_update.username
+        if user_update.email is not None:
+            update_data["email"] = user_update.email.lower()
+        if user_update.full_name is not None:
+            update_data["full_name"] = user_update.full_name
+        if user_update.is_active is not None:
+            update_data["is_active"] = str(1 if user_update.is_active else 0)
+        if user_update.roles is not None:
+            update_data["roles"] = json.dumps(user_update.roles)
+        if user_update.permissions is not None:
+            update_data["permissions"] = json.dumps(user_update.permissions)
+        return update_data
+
+    async def _validate_update_conflicts(
+        self, user_id: str, update_data: dict[str, str], existing_user: User
+    ) -> None:
+        """Validate that username/email updates don't conflict with existing users."""
+        if "username" not in update_data and "email" not in update_data:
+            return
+
+        email_to_check = update_data.get("email", existing_user.email)
+        username_to_check = update_data.get("username", existing_user.username)
+
+        # Check if another user has this email/username
+        existing_by_email = await self.get_user_by_email(email_to_check)
+        existing_by_username = await self.get_user_by_username(username_to_check)
+
+        if existing_by_email and existing_by_email.user_id != user_id:
+            raise ValidationError("Email already in use by another user")
+        if existing_by_username and existing_by_username.user_id != user_id:
+            raise ValidationError("Username already in use by another user")
+
+    async def _execute_user_update(self, user_id: str, update_data: dict[str, str]) -> User:
+        """Execute the user update in database and return updated user."""
+        success = self.db_manager.update_user(user_id, update_data)
+
+        if not success:
+            raise ValidationError("Failed to update user in database")
+
+        # Return updated user
+        updated_user = await self.get_user_by_id(user_id)
+        if not updated_user:
+            raise ValidationError("User not found after update")
+
+        self.logger.info(f"Updated user: {user_id}")
+        return updated_user
+
     async def update_user(self, user_id: str, user_update: UserUpdate) -> User:
         """Update user information.
 
@@ -177,58 +228,25 @@ class UserRepository:
             if not existing_user:
                 raise ResourceNotFoundError(f"User with ID {user_id} not found")
 
-            # Prepare update data (only include non-None fields)
-            update_data = {}
-            if user_update.username is not None:
-                update_data["username"] = user_update.username
-            if user_update.email is not None:
-                update_data["email"] = user_update.email.lower()
-            if user_update.full_name is not None:
-                update_data["full_name"] = user_update.full_name
-            if user_update.is_active is not None:
-                update_data["is_active"] = str(1 if user_update.is_active else 0)
-            if user_update.roles is not None:
-                update_data["roles"] = json.dumps(user_update.roles)
-            if user_update.permissions is not None:
-                update_data["permissions"] = json.dumps(user_update.permissions)
+            # Prepare update data
+            update_data = self._prepare_update_data(user_update)
 
             if not update_data:
                 # No updates provided, return existing user
                 return existing_user
 
-            # Check for conflicts if username or email is being updated
-            if "username" in update_data or "email" in update_data:
-                email_to_check = update_data.get("email", existing_user.email)
-                username_to_check = update_data.get("username", existing_user.username)
+            # Validate conflicts
+            await self._validate_update_conflicts(user_id, update_data, existing_user)
 
-                # Check if another user has this email/username
-                existing_by_email = await self.get_user_by_email(email_to_check)
-                existing_by_username = await self.get_user_by_username(username_to_check)
+            # Execute update
+            return await self._execute_user_update(user_id, update_data)
 
-                if existing_by_email and existing_by_email.user_id != user_id:
-                    raise ValidationError("Email already in use by another user")
-                if existing_by_username and existing_by_username.user_id != user_id:
-                    raise ValidationError("Username already in use by another user")
-
-            # Update user in database
-            success = self.db_manager.update_user(user_id, update_data)
-
-            if not success:
-                raise ValidationError("Failed to update user in database")
-
-            # Return updated user
-            updated_user = await self.get_user_by_id(user_id)
-            if not updated_user:
-                raise ValidationError("User not found after update")
-
-            self.logger.info(f"Updated user: {user_id}")
-
-            return updated_user
-
+        except ResourceNotFoundError:
+            raise
+        except ValidationError:
+            raise
         except Exception as e:
             self.logger.error(f"Error updating user {user_id}: {e}")
-            if isinstance(e, ResourceNotFoundError | ValidationError):
-                raise
             raise ValidationError(f"Failed to update user: {str(e)}")
 
     async def delete_user(self, user_id: str) -> bool:

@@ -9,7 +9,7 @@ import logging
 import time
 from collections import defaultdict
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from fastapi import HTTPException, Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -71,7 +71,7 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
         try:
             # Only apply rate limiting to authentication endpoints
             if not request.url.path.startswith("/auth/"):
-                return await call_next(request)
+                return cast(Response, await call_next(request))
 
             # Get client identifier (IP address with optional user info)
             client_id = self._get_client_identifier(request)
@@ -114,14 +114,14 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
             if endpoint_config:
                 self._add_rate_limit_headers(response, endpoint_config, client_id, request.url.path)
 
-            return response
+            return cast(Response, response)
 
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Rate limiting middleware error: {e}")
             # Don't block requests on middleware errors
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
     def _get_client_identifier(self, request: Request) -> str:
         """Get unique client identifier for rate limiting."""
@@ -214,8 +214,8 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
             recent_violations = [t for t in violations if t > day_ago]
             hour_violations = [t for t in violations if t > hour_ago]
 
-            stats["violations_last_24h"] += len(recent_violations)
-            stats["violations_last_hour"] += len(hour_violations)
+            stats["violations_last_24h"] = cast(int, stats["violations_last_24h"]) + len(recent_violations)
+            stats["violations_last_hour"] = cast(int, stats["violations_last_hour"]) + len(hour_violations)
 
             if recent_violations:
                 client_violations[client_id] = len(recent_violations)
@@ -253,7 +253,6 @@ _rate_limit_middleware: AuthRateLimitMiddleware | None = None
 
 def get_rate_limit_middleware() -> AuthRateLimitMiddleware:
     """Get the global rate limiting middleware instance."""
-    global _rate_limit_middleware
     if _rate_limit_middleware is None:
         # This will be initialized when added to the app
         raise RuntimeError("Rate limiting middleware not initialized")

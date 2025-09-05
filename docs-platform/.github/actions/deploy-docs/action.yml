@@ -82,21 +82,21 @@ runs:
         # Deploy via SSH
         ssh -i ~/.ssh/deploy_key -p ${{ inputs.port }} ${{ inputs.username }}@${{ inputs.host }} << EOF
           cd /opt/graphrag-docs/${{ inputs.environment }}
-          
+
           # Set environment variables
           export DOCKER_IMAGE_TAG="${{ inputs.image-tag }}"
           export DOMAIN="$DOMAIN"
           export COMPOSE_PROFILES="$COMPOSE_PROFILE"
-          
+
           # Pull latest image
           docker pull ${{ inputs.image-tag }}
-          
+
           # Stop existing containers
           docker-compose down --remove-orphans
-          
+
           # Start new containers
           docker-compose --profile $COMPOSE_PROFILE up -d
-          
+
           # Wait for health check
           echo "Waiting for application to be healthy..."
           for i in {1..30}; do
@@ -110,7 +110,7 @@ runs:
             fi
             sleep 10
           done
-          
+
           # Clean up old images
           docker image prune -f
         EOF
