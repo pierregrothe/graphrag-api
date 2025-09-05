@@ -6,6 +6,9 @@
 # Build stage
 FROM python:3.12-slim as builder
 
+# Build argument for version (passed from CI/CD)
+ARG VERSION=dev
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -38,13 +41,17 @@ RUN cd /tmp && \
 # Production stage
 FROM python:3.12-slim as production
 
+# Build argument for version
+ARG VERSION=dev
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
     ENVIRONMENT=production \
     HOST=0.0.0.0 \
-    PORT=8001
+    PORT=8001 \
+    APP_VERSION=${VERSION}
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
