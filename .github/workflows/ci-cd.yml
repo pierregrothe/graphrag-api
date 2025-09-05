@@ -48,9 +48,15 @@ jobs:
         run: poetry run ruff check src/ tests/
       
       - name: Run MyPy
+        env:
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          DEBUG: true
         run: poetry run mypy src/graphrag_api_service
       
       - name: Check security with Bandit
+        env:
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          DEBUG: true
         run: poetry run bandit -r src/ -ll
 
   # Unit Tests
@@ -113,6 +119,8 @@ jobs:
           REDIS_URL: redis://localhost:6379
           LLM_PROVIDER: ollama
           OLLAMA_BASE_URL: http://localhost:11434
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          DEBUG: true
         run: |
           poetry run pytest tests/ \
             --cov=src/graphrag_api_service \
@@ -178,6 +186,8 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/graphrag_test
           REDIS_URL: redis://localhost:6379
           LLM_PROVIDER: ollama
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          DEBUG: true
         run: poetry run pytest tests/ -m integration -v
 
   # Build Docker Image
